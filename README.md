@@ -18,6 +18,7 @@ Na clínica-escola, os registros são feitos em papel, e muitos pacientes vêm �
 
 O Vínculo acompanha o paciente da fila de espera até o encerramento, com a supervisão presente em cada registro:
 
+- **Login com usuário e senha**: mensagem de erro genérica, bloqueio de 30 segundos após 5 tentativas e registro das tentativas na auditoria.
 - **Fila de espera online**, com aviso de urgência (SAMU 192, CVV 188) e aviso de privacidade.
 - **Triagem e cadastro** pela psicóloga técnica, com consentimentos separados por finalidade.
 - **Alocação:** a direção monta os grupos, o supervisor forma duplas ou trios e o técnico aloca os pacientes.
@@ -31,36 +32,47 @@ O Vínculo acompanha o paciente da fila de espera até o encerramento, com a sup
 ## Como usar
 
 - **Online:** abra o link do GitHub Pages.
-- **No computador:** baixe a pasta e abra o `index.html` com dois cliques (não precisa de servidor).
+- **No computador:** os dados ficam em `dados/dados-iniciais.json`, e o navegador bloqueia a leitura de arquivos JSON quando o `index.html` é aberto com dois cliques. Abra a pasta no VS Code e use a extensão **Live Server** (ou rode `python -m http.server` na pasta e acesse `http://localhost:8000`).
 - Para voltar ao estado inicial, use **"Restaurar dados de demonstração"** na tela de entrada.
 
-### Perfis para demonstrar
+### Contas de demonstração
 
-| Perfil | Quem | O que mostrar |
-|---|---|---|
-| Estagiário(a) | Bia, Duda, Enzo | Só vê os próprios casos; escreve evolução e envia à supervisão |
-| Supervisor(a) | Helena (Grupo A), Rafael (Grupo B) | Valida ou devolve evoluções; registra orientações fora do prontuário |
-| Psicólogo(a) técnico(a) | Ana Lúcia | Fila, triagem, alocação, acesso do paciente e auditoria |
-| Paciente | Paciente Exemplo 01 | Confirma presença e pede cópia do prontuário |
-| Direção do curso | Marta | Só indicadores agregados e grupos de estágio |
+Senha de todas as contas: **`vinculo2026`**. Na tela de login, clicar numa conta preenche usuário e senha.
+
+| Perfil | Quem | Usuário | O que mostrar |
+|---|---|---|---|
+| Estagiário(a) | Bia · Duda · Enzo | `bia.estagiaria` · `duda.estagiaria` · `enzo.estagiario` | Só vê os próprios casos; escreve evolução e envia à supervisão |
+| Supervisor(a) | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; registra orientações fora do prontuário |
+| Psicólogo(a) técnico(a) | Ana Lúcia | `ana.tecnica` | Fila, triagem, alocação, acesso do paciente e auditoria |
+| Paciente | Paciente Exemplo 01 | `paciente01` | Confirma presença e pede cópia do prontuário |
+| Direção do curso | Marta | `marta.direcao` | Só indicadores agregados e grupos de estágio |
+
+Também existem `caio.estagiario`, `lia.estagiaria`, `fabio.estagiario`, `gabi.estagiaria` e `hugo.estagiario` (Hugo começa sem grupo).
 
 O roteiro da apresentação está em [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
 
 ## Estrutura
 
 ```
-index.html               página única; carrega os scripts na ordem
-css/estilo.css           identidade visual (cores em variáveis no topo)
-js/dados.js              dados fictícios de demonstração
-js/estado.js             armazenamento no navegador e auditoria
-js/permissoes.js         regras de acesso e de negócio
-js/ui.js                 topo, menu por perfil e componentes
-js/telas-*.js            telas (entrada, painéis, prontuário, gestão)
-js/acoes.js              o que cada botão faz
-js/app.js                navegação por hash (#/rota) e inicialização
+index.html                 página única; carrega os scripts na ordem
+css/estilo.css             identidade visual (cores em variáveis no topo)
+dados/dados-iniciais.json  dados fictícios de demonstração (usuários, casos, sessões...)
+js/dados.js                lê o JSON e entrega uma cópia nova dos dados
+js/estado.js               armazenamento no navegador, login e auditoria
+js/permissoes.js           regras de acesso e de negócio
+js/ui.js                   topo, menu por perfil e componentes
+js/telas-*.js              telas (entrada, painéis, prontuário, gestão)
+js/acoes.js                o que cada botão e formulário faz
+js/inicio.js               navegação por hash (#/rota) e inicialização
 ```
 
-Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scripts clássicos e dados em `.js` (funciona com duplo clique e no GitHub Pages); caminhos relativos; layout responsivo; foco visível e rótulos em todos os campos.
+Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scripts clássicos; dados num arquivo JSON lido com `fetch` (por isso o site precisa de servidor); caminhos relativos; layout responsivo; foco visível e rótulos em todos os campos.
+
+### Sobre o JSON de dados
+
+- `_meta.versao` identifica a versão dos dados. **Sempre que mudarem o JSON, troquem a versão** (ex.: `2026-11-05.2`): assim o navegador descarta a cópia antiga guardada e carrega os dados novos.
+- Os ids ligam as coleções, como as tabelas de um banco de dados: `casos[].pacienteId → pacientes`, `sessoes[].casoId → casos`, `evolucoes[].sessaoId → sessoes`, `grupos[].subgrupos[].estagiarios → usuarios` e assim por diante. É um bom ponto de partida para o DER da Etapa 2.
+- As senhas estão em texto só porque é protótipo. Num sistema real, o servidor guarda apenas o hash da senha e ela nunca vai para o navegador.
 
 ## Registro de correções em relação à Etapa 1
 
@@ -83,14 +95,37 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 
 **Sugestão para validar com o cliente:** perda de vaga também com 3 faltas intercaladas sem justificativa (regra comum em clínicas-escola).
 
+## Registro de correções — revisão de 05/11/2026
+
+Revisão da versão do grupo (identidade lilás e dados em JSON). O visual foi mantido; só foram corrigidos erros.
+
+| Problema | Correção |
+|---|---|
+| O navegador guardava os dados da versão anterior e ignorava o JSON novo (quem já tinha aberto o site veria dados antigos e o login falharia) | Campo `_meta.versao` no JSON: quando a versão muda, o navegador recarrega os dados |
+| Encerramento por abandono gravado com motivo diferente da lista da tela ("Horário incompatível com o trabalho") | Motivo padronizado: o indicador não divide mais o mesmo motivo em duas barras |
+| Evolução devolvida (e05) aparecia com assinatura do estagiário | Assinatura removida, como o sistema faz ao devolver |
+| Casos encerrados com sessões sem evolução, e alerta de "evolução atrasada" num caso em que não dá mais para escrever | Evoluções validadas incluídas (c05 e c06); alerta só em caso ativo |
+| Caso c06: sessões em março e alta em setembro | Sessões no mesmo semestre da alta |
+| Caso c05: encerrado um mês depois da desistência confirmada | Encerramento na data da desistência |
+| Inscrição de criança (12 anos) sem nome do responsável; inscrições sem o campo `responsavel` | Campo incluído em todas, com o responsável da criança |
+| Sessões "futuras" que já teriam passado na semana da apresentação | Datas ajustadas e uma sessão de 04/11 para registrar presença ao vivo |
+| Dava para marcar presença numa sessão que ainda não aconteceu, e agendar no passado | Presença e falta só a partir do dia da sessão (falta avisada pode antes); agendamento só de hoje em diante |
+| Algumas ações de alocação e de entrega de cópia não conferiam o perfil | Conferência de permissão em todas as ações |
+| Nome do perfil em dourado com contraste 3,1:1 (abaixo do mínimo 4,5:1) | Mesmo dourado, um tom mais escuro só no texto |
+| Campo de senha sem o estilo dos outros campos | Estilo aplicado |
+| Erro 404 do ícone da aba no console | Ícone incluído no `index.html` |
+| Cabeçalho de `inicio.js` com o nome antigo (`app.js`) e risco de erro se a navegação acontecesse antes de o JSON carregar | Comentário corrigido e proteção na inicialização |
+
 ## Registro de decisões
 
 | Decisão | Escolha | Motivo |
 |---|---|---|
 | Nome | Vínculo | Remete ao vínculo terapêutico e ao problema do paciente que não volta |
-| Cores | Verde institucional estimado da Santa Casa | Identidade da faculdade; tons ajustáveis no topo de `css/estilo.css` |
+| Identidade visual | Lilás institucional com detalhes dourados e títulos em serifa | Escolha do grupo; tons ajustáveis no topo de `css/estilo.css` |
 | Escopo | Núcleo + todos os extras | Mostrar o fluxo completo na apresentação |
 | Tecnologia | HTML, CSS e JS puros | Exigência da Etapa 4 e facilidade para explicar o código |
+| Dados | Arquivo JSON separado do código | Dados organizados como coleções com ids, perto de um banco de dados |
+| Login | Usuário e senha com contas de demonstração | Requisito "Login de Usuários" da Etapa 1 |
 
 ## ODS (Agenda 2030 da ONU)
 

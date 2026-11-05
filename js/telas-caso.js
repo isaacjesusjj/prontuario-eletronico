@@ -138,7 +138,8 @@ PEP.telas = PEP.telas || {};
       'Depois de validada, a evolução fica bloqueada: correção só por adendo.</div>';
 
     var atrasadas = sessoesSemEvolucao(caso);
-    if (atrasadas.length && R().ehEstagiarioDoCaso(u, caso)) {
+    // Só em caso ativo: num caso encerrado não dá mais para registrar evolução
+    if (atrasadas.length && caso.status === 'ativo' && R().ehEstagiarioDoCaso(u, caso)) {
       html += '<div class="aviso alerta pequeno">Sessão sem evolução há mais de 48 h: ' + atrasadas.map(function (s) { return data(s.data); }).join(', ') + '.</div>';
     }
 

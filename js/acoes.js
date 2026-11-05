@@ -36,10 +36,18 @@ window.PEP = PEP;
 
   PEP.acoes = {
     // ----- Entrada -----
-    entrar: function (el) {
-      PEP.estado.entrar(el.getAttribute('data-id'));
-      window.location.hash = '#/painel';
-      PEP.app.renderizar();
+    // Conta de demonstração: só preenche o formulário; quem entra é o botão "Entrar"
+    'preencher-login': function (el) {
+      var login = el.getAttribute('data-login');
+      var conta = null;
+      PEP.db.usuarios.forEach(function (x) { if (x.login === login) conta = x; });
+      var campoUsuario = document.getElementById('lg-usuario');
+      var campoSenha = document.getElementById('lg-senha');
+      if (!conta || !campoUsuario || !campoSenha) return;
+      campoUsuario.value = conta.login;
+      campoSenha.value = conta.senha;
+      document.getElementById('login-erro').hidden = true;
+      document.getElementById('lg-entrar').focus();
     },
     sair: function () {
       PEP.estado.sair();
@@ -132,7 +140,10 @@ window.PEP = PEP;
     'registrar-presenca': function (el) {
       var u = usuario(), s = U().porId(PEP.db.sessoes, el.getAttribute('data-id')), c = caso(s.casoId);
       if (!R().podeRegistrarPresenca(u, c)) return PEP.ui.toast('Sem permissão.');
-      s.presenca = el.getAttribute('data-valor');
+      var valor = el.getAttribute('data-valor');
+      // Presença ou falta só a partir do dia da sessão; a falta avisada (justificada) pode vir antes
+      if (s.data > U().hoje() && valor !== 'falta-justificada') return PEP.ui.toast('Presença e falta só podem ser registradas a partir do dia da sessão.');
+      s.presenca = valor;
       var msg = 'Presença registrada.';
       if (R().emRiscoDeAbandono(c)) msg = 'Duas faltas seguidas: o fluxo de abandono foi aberto.';
       concluir(msg, 'Registrou presença: ' + s.presenca, c.id);
@@ -142,6 +153,7 @@ window.PEP = PEP;
       if (!R().podeRegistrarPresenca(u, c)) return PEP.ui.toast('Sem permissão.');
       var d = val('ag-data'), h = val('ag-hora');
       if (!d || !h) return PEP.ui.toast('Informe data e hora.');
+      if (d < U().hoje()) return PEP.ui.toast('Escolha uma data a partir de hoje.');
       PEP.db.sessoes.push({ id: U().novoId('s'), casoId: c.id, data: d, hora: h, presenca: 'agendada', confirmada: false });
       concluir('Sessão agendada.', 'Agendou sessão', c.id);
     },
@@ -243,6 +255,7 @@ window.PEP = PEP;
       concluir(risco ? 'Triagem salva com risco: acione o supervisor e a rede agora.' : 'Triagem concluída e caso criado.', 'Concluiu triagem' + (risco ? ' (risco sinalizado)' : ''), novo.id);
     },
     'alocar-caso': function (el) {
+      if (!R().podeGerirFila(usuario())) return PEP.ui.toast('Sem permissão.');
       var c = caso(el.getAttribute('data-id'));
       c.grupoId = val('ag-' + c.id);
       c.subgrupoId = null;
@@ -250,6 +263,7 @@ window.PEP = PEP;
       concluir('Caso alocado ao grupo. O supervisor define a dupla ou trio.', 'Alocou caso a grupo', c.id);
     },
     'alocar-estagiario': function (el) {
+      if (usuario().perfil !== 'direcao') return PEP.ui.toast('Sem permissão.');
       var id = el.getAttribute('data-id');
       var g = U().porId(PEP.db.grupos, val('gr-' + id));
       PEP.db.estagiariosSemGrupo = PEP.db.estagiariosSemGrupo.filter(function (x) { return x !== id; });
@@ -262,7 +276,9 @@ window.PEP = PEP;
     'definir-dupla': function (el) {
       var g = U().porId(PEP.db.grupos, el.getAttribute('data-grupo'));
       var id = el.getAttribute('data-id');
+      if (g.supervisorId !== usuario().id) return PEP.ui.toast('Sem permissão.');
       var sub = U().porId(g.subgrupos, val('dup-' + id));
+      if (!sub) return PEP.ui.toast('Crie uma dupla ou trio primeiro.');
       g.semDupla = (g.semDupla || []).filter(function (x) { return x !== id; });
       sub.estagiarios.push(id);
       var est = U().porId(PEP.db.usuarios, id);
@@ -271,22 +287,26 @@ window.PEP = PEP;
     },
     'nova-dupla': function (el) {
       var g = U().porId(PEP.db.grupos, el.getAttribute('data-grupo'));
+      if (g.supervisorId !== usuario().id) return PEP.ui.toast('Sem permissão.');
       g.subgrupos.push({ id: U().novoId('d'), nome: 'Dupla/Trio ' + (g.subgrupos.length + 1), estagiarios: [] });
       concluir('Nova dupla/trio criada.', 'Criou dupla/trio', g.id);
     },
     'atribuir-caso': function (el) {
       var c = caso(el.getAttribute('data-id'));
+      if (!R().ehSupervisorDoCaso(usuario(), c)) return PEP.ui.toast('Sem permissão.');
       c.subgrupoId = val('cs-' + c.id);
       concluir('Caso atribuído à dupla.', 'Atribuiu caso a dupla/trio', c.id);
     },
 
     // ----- Acesso do paciente ao prontuário -----
     'conferir-identidade': function (el) {
+      if (usuario().perfil !== 'tecnico') return PEP.ui.toast('Sem permissão.');
       var s = U().porId(PEP.db.solicitacoes, el.getAttribute('data-id'));
       s.status = 'identidade-conferida';
       concluir('Identidade conferida.', 'Conferiu identidade para entrega de cópia', s.casoId);
     },
     'marcar-entregue': function (el) {
+      if (usuario().perfil !== 'tecnico') return PEP.ui.toast('Sem permissão.');
       var s = U().porId(PEP.db.solicitacoes, el.getAttribute('data-id'));
       s.status = 'entregue';
       s.forma = val('forma-' + s.id);
@@ -297,6 +317,21 @@ window.PEP = PEP;
 
   // ----- Formulários -----
   PEP.formularios = {
+    login: function (form) {
+      var r = PEP.estado.autenticar(form.elements.usuario.value, form.elements.senha.value);
+      if (r.ok) {
+        window.location.hash = '#/painel';
+        PEP.app.renderizar();
+        return;
+      }
+      var erro = document.getElementById('login-erro');
+      erro.textContent = r.motivo === 'bloqueado'
+        ? 'Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo.'
+        : 'Usuário ou senha incorretos.';
+      erro.hidden = false;
+      form.elements.senha.value = '';
+      form.elements.senha.focus();
+    },
     inscricao: function (form) {
       var f = form.elements;
       PEP.db.inscricoes.push({

@@ -216,7 +216,7 @@ p { margin: 0 0 .75rem; }
 .campo label { font-weight: 600; font-size: .85rem; color: var(--lilas-950); }
 .campo .dica { font-size: .78rem; color: var(--texto-suave); }
 input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date],
-input[type=time], select, textarea {
+input[type=time], input[type=password], select, textarea {
   font: inherit;
   padding: .6rem .75rem;
   border: 1px solid var(--borda-forte);
@@ -273,7 +273,8 @@ tbody tr:hover td { background: #fcfbfe; }
 .perfil-cartao { display: flex; flex-direction: column; gap: .45rem; text-align: left; cursor: pointer; font: inherit; color: inherit; transition: border-color .15s, transform .15s; }
 .perfil-cartao:hover { border-color: var(--lilas-500); border-top-color: var(--lilas-700); transform: translateY(-2px); }
 .perfil-cartao strong { font-family: var(--serifa); font-size: 1.15rem; font-weight: 600; color: var(--lilas-950); }
-.perfil-tipo { font-size: .68rem; font-weight: 700; text-transform: uppercase; color: var(--dourado); letter-spacing: .14em; }
+/* Dourado mais escuro só no texto: o dourado original (#b08d4a) tem contraste 3,1:1 no branco, abaixo do mínimo 4,5:1 */
+.perfil-tipo { font-size: .68rem; font-weight: 700; text-transform: uppercase; color: #7d5f2a; letter-spacing: .14em; }
 
 /* ---------- Toast ---------- */
 .toast {

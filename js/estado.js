@@ -66,10 +66,21 @@ PEP.estado = (function () {
     try { window.localStorage.removeItem(chave); } catch (e) { /* ignora */ }
   }
 
+  // Versão do arquivo dados/dados-iniciais.json (campo _meta.versao).
+  // Quando o grupo muda o JSON e troca a versão, o navegador descarta a
+  // cópia antiga guardada e carrega os dados novos.
+  function versaoDoJson() {
+    var d = PEP._dadosJson;
+    return d && d._meta ? d._meta.versao : '';
+  }
+
   function carregar() {
     var salvo = ler(CHAVE_DADOS);
     if (salvo) {
-      try { PEP.db = JSON.parse(salvo); return; } catch (e) { /* dados corrompidos: recomeça */ }
+      try {
+        var dados = JSON.parse(salvo);
+        if (dados && dados._meta && dados._meta.versao === versaoDoJson()) { PEP.db = dados; return; }
+      } catch (e) { /* dados corrompidos: recomeça */ }
     }
     PEP.db = PEP.criarDadosIniciais();
     salvar();
@@ -99,6 +110,37 @@ PEP.estado = (function () {
     remover(CHAVE_USUARIO);
   }
 
+  // Login: confere usuário e senha.
+  // SIMULAÇÃO: num sistema real, a conferência acontece no servidor,
+  // que guarda só o hash da senha (a senha nunca vem para o navegador).
+  var tentativas = 0;
+  var bloqueadoAte = 0;
+  var MAX_TENTATIVAS = 5;
+
+  function autenticar(login, senha) {
+    if (Date.now() < bloqueadoAte) return { ok: false, motivo: 'bloqueado' };
+    var alvo = String(login || '').trim().toLowerCase();
+    var achado = null;
+    for (var i = 0; i < PEP.db.usuarios.length; i++) {
+      if (String(PEP.db.usuarios[i].login || '').toLowerCase() === alvo) { achado = PEP.db.usuarios[i]; break; }
+    }
+    if (!achado || achado.senha !== senha) {
+      tentativas++;
+      // Registra a tentativa, nunca a senha digitada
+      registrarAuditoria('Tentativa de login sem sucesso', alvo || '—');
+      if (tentativas >= MAX_TENTATIVAS) {
+        tentativas = 0;
+        bloqueadoAte = Date.now() + 30000; // bloqueio temporário de 30 segundos
+        return { ok: false, motivo: 'bloqueado' };
+      }
+      // Mensagem genérica: não revela se o erro foi no usuário ou na senha
+      return { ok: false, motivo: 'invalido' };
+    }
+    tentativas = 0;
+    entrar(achado.id);
+    return { ok: true, usuario: achado };
+  }
+
   // Trilha de auditoria: quem fez o quê, quando e em qual caso.
   // Nunca guarda conteúdo clínico, só a ação e o identificador.
   function registrarAuditoria(acao, alvo) {
@@ -115,7 +157,7 @@ PEP.estado = (function () {
 
   return {
     carregar: carregar, salvar: salvar, restaurar: restaurar,
-    usuarioAtual: usuarioAtual, entrar: entrar, sair: sair,
+    usuarioAtual: usuarioAtual, entrar: entrar, sair: sair, autenticar: autenticar,
     registrarAuditoria: registrarAuditoria
   };
 })();

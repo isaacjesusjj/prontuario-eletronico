@@ -1,6 +1,7 @@
 /* =========================================================
-   app.js — navegação por hash (#/rota) e inicialização.
-   O hash funciona no GitHub Pages e abrindo o arquivo direto.
+   inicio.js — navegação por hash (#/rota) e inicialização.
+   Os dados vêm de dados/dados-iniciais.json, por isso o site
+   precisa ser aberto por um servidor (GitHub Pages ou Live Server).
    ========================================================= */
 var PEP = window.PEP || {};
 window.PEP = PEP;
@@ -53,6 +54,7 @@ PEP.app = (function () {
   }
 
   function renderizar() {
+    if (!PEP.db) return; // o JSON ainda não terminou de carregar
     var u = PEP.estado.usuarioAtual();
     var rota = lerRota();
     if (!u && !PUBLICAS[rota.nome]) {
@@ -68,7 +70,7 @@ PEP.app = (function () {
     try {
       app.innerHTML = conteudo(u, rota);
     } catch (erro) {
-      app.innerHTML = '<div class="aviso perigo">Erro ao montar a tela. Use "Trocar perfil" e tente de novo.</div>';
+      app.innerHTML = '<div class="aviso perigo">Erro ao montar a tela. Use "Sair" e entre de novo.</div>';
       if (window.console) console.error(erro);
     }
     if (navegou) {

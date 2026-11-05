@@ -36,7 +36,7 @@ PEP.ui = (function () {
     if (u) {
       html += '<div class="usuario-atual"><span>' + esc(u.nome) + '</span>' +
         '<span class="selo-perfil">' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span>' +
-        '<button class="botao secundario pequeno" data-acao="sair">Trocar perfil</button></div>';
+        '<button class="botao secundario pequeno" data-acao="sair">Sair</button></div>';
     }
     topo.innerHTML = html;
   }

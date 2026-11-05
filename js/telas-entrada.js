@@ -9,22 +9,36 @@ PEP.telas = PEP.telas || {};
 (function () {
   var esc = function (t) { return PEP.util.esc(t); };
 
-  // Perfis mostrados na entrada (login simulado)
+  // Contas de demonstração mostradas abaixo do login (clicar preenche o formulário)
   var DESTAQUES = ['u-tec', 'u-sup1', 'u-sup2', 'u-est1', 'u-est3', 'u-est5', 'u-pac1', 'u-dir'];
 
   PEP.telas.entrar = function () {
+    var meta = PEP.db._meta || {};
     var cartoes = DESTAQUES.map(function (id) {
       var u = PEP.util.porId(PEP.db.usuarios, id);
-      return '<button class="cartao perfil-cartao" data-acao="entrar" data-id="' + u.id + '">' +
+      if (!u) return '';
+      return '<button type="button" class="cartao perfil-cartao" data-acao="preencher-login" data-login="' + esc(u.login) + '">' +
         '<span class="perfil-tipo">' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span>' +
         '<strong>' + esc(u.nome) + '</strong>' +
-        '<span class="suave">' + esc(u.descricao) + '</span></button>';
+        '<span class="suave">' + esc(u.descricao) + '</span>' +
+        '<span class="suave pequeno">Usuário: ' + esc(u.login) + '</span></button>';
     }).join('');
 
     return '<h1>Bem-vindo ao Vínculo</h1>' +
       '<p class="suave">Prontuário eletrônico da clínica-escola de Psicologia: do primeiro contato na fila de espera até o encerramento do caso, com supervisão em cada registro.</p>' +
-      '<div class="aviso info"><strong>Login simulado.</strong> Escolha um perfil para ver o sistema como essa pessoa. ' +
-      'Dica para a apresentação: entre como <strong>Bia</strong> e depois como <strong>Enzo</strong> — cada estagiário vê só os próprios casos.</div>' +
+      // Formulário de login: cada perfil vê só o que precisa depois de entrar
+      '<form class="cartao" data-form="login" style="max-width:480px">' +
+      '<h2>Entrar</h2>' +
+      '<div class="aviso perigo" id="login-erro" role="alert" hidden></div>' +
+      '<div class="campo"><label for="lg-usuario">Usuário</label>' +
+      '<input id="lg-usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>' +
+      '<div class="campo"><label for="lg-senha">Senha</label>' +
+      '<input id="lg-senha" name="senha" type="password" autocomplete="current-password" required></div>' +
+      '<button class="botao" type="submit" id="lg-entrar">Entrar</button>' +
+      '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? Procure a secretaria da clínica-escola.</p></form>' +
+      '<h2 style="margin-top:1.6rem">Contas de demonstração</h2>' +
+      '<p class="suave">Contas fictícias para a apresentação. Clique numa conta para preencher o login e depois em <strong>Entrar</strong>. ' +
+      'Senha de todas: <strong>' + esc(meta.senhaDemonstracao || '') + '</strong></p>' +
       '<div class="grade">' + cartoes + '</div>' +
       '<div class="cartao linha entre" style="margin-top:1rem">' +
       '<div><h2>Quer ser atendido(a)?</h2><p class="suave">Entre na fila de espera da clínica-escola. Leva 2 minutos.</p></div>' +

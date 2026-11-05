@@ -1,8 +1,16 @@
 {
+  "_meta": {
+    "versao": "2026-11-05.1",
+    "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP).",
+    "aviso": "Senhas de demonstração em texto só porque é protótipo. Num sistema real, o servidor guarda apenas o hash da senha e ela nunca vai para o navegador.",
+    "senhaDemonstracao": "vinculo2026"
+  },
   "usuarios": [
     {
       "id": "u-tec",
       "nome": "Ana Lúcia",
+      "login": "ana.tecnica",
+      "senha": "vinculo2026",
       "perfil": "tecnico",
       "descricao": "Psicóloga técnica (responsável técnica)",
       "crp": "CRP 00/00001 (fictício)"
@@ -10,6 +18,8 @@
     {
       "id": "u-sup1",
       "nome": "Helena",
+      "login": "helena.supervisora",
+      "senha": "vinculo2026",
       "perfil": "supervisor",
       "descricao": "Supervisora do Grupo A",
       "crp": "CRP 00/00002 (fictício)"
@@ -17,6 +27,8 @@
     {
       "id": "u-sup2",
       "nome": "Rafael",
+      "login": "rafael.supervisor",
+      "senha": "vinculo2026",
       "perfil": "supervisor",
       "descricao": "Supervisor do Grupo B",
       "crp": "CRP 00/00003 (fictício)"
@@ -24,54 +36,72 @@
     {
       "id": "u-est1",
       "nome": "Bia",
+      "login": "bia.estagiaria",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiária · Grupo A, Dupla 1"
     },
     {
       "id": "u-est2",
       "nome": "Caio",
+      "login": "caio.estagiario",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiário · Grupo A, Dupla 1"
     },
     {
       "id": "u-est3",
       "nome": "Duda",
+      "login": "duda.estagiaria",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiária · Grupo A, Dupla 2"
     },
     {
       "id": "u-est4",
       "nome": "Lia",
+      "login": "lia.estagiaria",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiária · Grupo A, Dupla 2"
     },
     {
       "id": "u-est5",
       "nome": "Enzo",
+      "login": "enzo.estagiario",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiário · Grupo B, Trio 1"
     },
     {
       "id": "u-est6",
       "nome": "Fábio",
+      "login": "fabio.estagiario",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiário · Grupo B, Trio 1"
     },
     {
       "id": "u-est7",
       "nome": "Gabi",
+      "login": "gabi.estagiaria",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiária · Grupo B, Trio 1"
     },
     {
       "id": "u-est8",
       "nome": "Hugo",
+      "login": "hugo.estagiario",
+      "senha": "vinculo2026",
       "perfil": "estagiario",
       "descricao": "Estagiário · ainda sem grupo"
     },
     {
       "id": "u-pac1",
       "nome": "Paciente Exemplo 01",
+      "login": "paciente01",
+      "senha": "vinculo2026",
       "perfil": "paciente",
       "descricao": "Paciente em atendimento",
       "pacienteId": "p01"
@@ -79,6 +109,8 @@
     {
       "id": "u-dir",
       "nome": "Marta",
+      "login": "marta.direcao",
+      "senha": "vinculo2026",
       "perfil": "direcao",
       "descricao": "Direção do curso de Psicologia"
     }
@@ -106,7 +138,8 @@
             "u-est4"
           ]
         }
-      ]
+      ],
+      "semDupla": []
     },
     {
       "id": "g-b",
@@ -123,7 +156,8 @@
             "u-est7"
           ]
         }
-      ]
+      ],
+      "semDupla": []
     }
   ],
   "estagiariosSemGrupo": [
@@ -186,6 +220,7 @@
       "nome": "Pessoa Inscrita 01",
       "idade": 27,
       "contato": "(11) 90000-1001 (fictício)",
+      "responsavel": "",
       "resumo": "Ansiedade antes de provas",
       "periodo": "Tarde",
       "data": "2026-09-02",
@@ -196,6 +231,7 @@
       "nome": "Pessoa Inscrita 02",
       "idade": 44,
       "contato": "(11) 90000-1002 (fictício)",
+      "responsavel": "",
       "resumo": "Luto recente na família",
       "periodo": "Manhã",
       "data": "2026-09-15",
@@ -206,6 +242,7 @@
       "nome": "Pessoa Inscrita 03",
       "idade": 12,
       "contato": "(11) 90000-1003 (fictício)",
+      "responsavel": "Responsável Exemplo 03",
       "resumo": "Dificuldade de adaptação na escola (inscrito pelo responsável)",
       "periodo": "Tarde",
       "data": "2026-10-07",
@@ -216,6 +253,7 @@
       "nome": "Pessoa Inscrita 04",
       "idade": 38,
       "contato": "(11) 90000-1004 (fictício)",
+      "responsavel": "",
       "resumo": "Conflitos no relacionamento",
       "periodo": "Noite",
       "data": "2026-10-21",
@@ -338,9 +376,9 @@
         "ensinoAnonimo": false
       },
       "encerramento": {
-        "data": "2026-10-01",
+        "data": "2026-08-29",
         "tipo": "abandono",
-        "motivo": "Horário incompatível com o trabalho",
+        "motivo": "Horário incompatível",
         "registro": "Duas faltas seguidas; contato por telefone confirmou que o horário ficou incompatível. Vaga liberada e orientação sobre nova inscrição."
       }
     },
@@ -350,7 +388,7 @@
       "grupoId": "g-b",
       "subgrupoId": "t-b1",
       "status": "encerrado",
-      "inicio": "2026-03-10",
+      "inicio": "2026-09-02",
       "demanda": "Luto.",
       "objetivos": "Elaboração do luto.",
       "anamnese": {
@@ -427,6 +465,14 @@
       "presenca": "presente"
     },
     {
+      "id": "s23",
+      "casoId": "c01",
+      "data": "2026-11-04",
+      "hora": "14:00",
+      "presenca": "agendada",
+      "confirmada": true
+    },
+    {
       "id": "s05",
       "casoId": "c01",
       "data": "2026-11-11",
@@ -479,7 +525,7 @@
     {
       "id": "s12",
       "casoId": "c03",
-      "data": "2026-11-05",
+      "data": "2026-11-12",
       "hora": "16:00",
       "presenca": "agendada",
       "confirmada": true
@@ -501,7 +547,7 @@
     {
       "id": "s15",
       "casoId": "c04",
-      "data": "2026-11-06",
+      "data": "2026-11-13",
       "hora": "09:00",
       "presenca": "agendada",
       "confirmada": false
@@ -530,28 +576,28 @@
     {
       "id": "s19",
       "casoId": "c06",
-      "data": "2026-03-10",
+      "data": "2026-09-02",
       "hora": "15:00",
       "presenca": "presente"
     },
     {
       "id": "s20",
       "casoId": "c06",
-      "data": "2026-03-17",
+      "data": "2026-09-09",
       "hora": "15:00",
       "presenca": "presente"
     },
     {
       "id": "s21",
       "casoId": "c06",
-      "data": "2026-03-24",
+      "data": "2026-09-16",
       "hora": "15:00",
       "presenca": "presente"
     },
     {
       "id": "s22",
       "casoId": "c06",
-      "data": "2026-03-31",
+      "data": "2026-09-23",
       "hora": "15:00",
       "presenca": "presente"
     }
@@ -641,12 +687,7 @@
       "status": "devolvida",
       "texto": "Sessão 3. Paciente contou com muitos detalhes uma briga com a mãe, que gritou com ela na frente dos vizinhos e a chamou de fracassada.",
       "comentarioSupervisor": "Registre o tema e a intervenção, não o relato detalhado: o prontuário pode ser lido pela paciente. Ex.: \"Trabalhado conflito familiar e o impacto na autoestima\".",
-      "assinaturas": [
-        {
-          "usuarioId": "u-est3",
-          "em": "2026-09-09T18:00"
-        }
-      ],
+      "assinaturas": [],
       "adendos": []
     },
     {
@@ -701,6 +742,106 @@
         {
           "usuarioId": "u-sup1",
           "em": "2026-09-11T09:00"
+        }
+      ],
+      "adendos": []
+    },
+    {
+      "id": "e09",
+      "casoId": "c05",
+      "sessaoId": "s16",
+      "autorId": "u-est7",
+      "data": "2026-08-12",
+      "status": "validada",
+      "texto": "Sessão 1. Acolhimento e contrato terapêutico. Paciente relata insegurança com a escolha profissional. Combinada frequência semanal às 11h.",
+      "assinaturas": [
+        {
+          "usuarioId": "u-est7",
+          "em": "2026-08-12T13:00"
+        },
+        {
+          "usuarioId": "u-sup2",
+          "em": "2026-08-14T09:00"
+        }
+      ],
+      "adendos": []
+    },
+    {
+      "id": "e10",
+      "casoId": "c06",
+      "sessaoId": "s19",
+      "autorId": "u-est5",
+      "data": "2026-09-02",
+      "status": "validada",
+      "texto": "Sessão 1. Acolhimento e contrato terapêutico. Paciente relata perda recente e dificuldade de retomar a rotina. Objetivo combinado: elaboração do luto.",
+      "assinaturas": [
+        {
+          "usuarioId": "u-est5",
+          "em": "2026-09-02T17:00"
+        },
+        {
+          "usuarioId": "u-sup2",
+          "em": "2026-09-04T09:10"
+        }
+      ],
+      "adendos": []
+    },
+    {
+      "id": "e11",
+      "casoId": "c06",
+      "sessaoId": "s20",
+      "autorId": "u-est6",
+      "data": "2026-09-09",
+      "status": "validada",
+      "texto": "Sessão 2. Trabalhadas lembranças e sentimentos ligados à perda. Paciente identifica a rede de apoio familiar.",
+      "assinaturas": [
+        {
+          "usuarioId": "u-est6",
+          "em": "2026-09-09T17:05"
+        },
+        {
+          "usuarioId": "u-sup2",
+          "em": "2026-09-11T09:00"
+        }
+      ],
+      "adendos": []
+    },
+    {
+      "id": "e12",
+      "casoId": "c06",
+      "sessaoId": "s21",
+      "autorId": "u-est7",
+      "data": "2026-09-16",
+      "status": "validada",
+      "texto": "Sessão 3. Paciente relata retomada gradual da rotina. Revisados os objetivos do atendimento.",
+      "assinaturas": [
+        {
+          "usuarioId": "u-est7",
+          "em": "2026-09-16T17:00"
+        },
+        {
+          "usuarioId": "u-sup2",
+          "em": "2026-09-18T08:50"
+        }
+      ],
+      "adendos": []
+    },
+    {
+      "id": "e13",
+      "casoId": "c06",
+      "sessaoId": "s22",
+      "autorId": "u-est5",
+      "data": "2026-09-23",
+      "status": "validada",
+      "texto": "Sessão 4. Avaliação conjunta do processo: objetivos alcançados. Combinada a alta para a próxima semana, com orientação sobre a rede de apoio.",
+      "assinaturas": [
+        {
+          "usuarioId": "u-est5",
+          "em": "2026-09-23T17:10"
+        },
+        {
+          "usuarioId": "u-sup2",
+          "em": "2026-09-25T09:00"
         }
       ],
       "adendos": []
@@ -774,7 +915,7 @@
       "em": "2026-08-29",
       "canal": "Telefone",
       "resultado": "Desistiu",
-      "motivo": "Horário incompatível com o trabalho",
+      "motivo": "Horário incompatível",
       "registradoPor": "u-est5"
     }
   ],
