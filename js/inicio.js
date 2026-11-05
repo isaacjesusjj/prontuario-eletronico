@@ -83,6 +83,15 @@ PEP.app = (function () {
   return { renderizar: renderizar };
 })();
 
-// Inicialização
-PEP.estado.carregar();
-PEP.app.renderizar();
+// Inicialização: primeiro lê o JSON de dados, depois desenha a tela
+PEP.carregarDadosJson()
+  .then(function () {
+    PEP.estado.carregar();
+    PEP.app.renderizar();
+  })
+  .catch(function (erro) {
+    document.getElementById('app').innerHTML =
+      '<div class="aviso perigo"><strong>Não foi possível ler os dados (dados/dados-iniciais.json).</strong> ' +
+      'Abra o site por um servidor (ex.: GitHub Pages ou a extensão Live Server), não com duplo clique no arquivo.</div>';
+    if (window.console) console.error(erro);
+  });
