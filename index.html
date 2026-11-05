@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Título neutro: nunca colocar nome de paciente no título da aba -->
+  <title>Vínculo — Prontuário da Clínica-Escola</title>
+  <meta name="description" content="Protótipo acadêmico de prontuário eletrônico para clínica-escola de Psicologia. Dados fictícios.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <!-- Aviso fixo: protótipo, dados fictícios, permissões simuladas -->
+  <div class="faixa-aviso" role="note">
+    Protótipo acadêmico · dados 100% fictícios · permissões simuladas no navegador
+  </div>
+
+  <header class="topo" id="topo"></header>
+
+  <div class="layout">
+    <nav class="menu" id="menu" aria-label="Menu principal"></nav>
+    <main class="conteudo" id="app" tabindex="-1">
+      <noscript>Ative o JavaScript para usar o protótipo.</noscript>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scripts clássicos (sem type="module"): funcionam no GitHub Pages e com duplo clique -->
+  <script src="js/dados.js"></script>
+  <script src="js/estado.js"></script>
+  <script src="js/permissoes.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/telas-entrada.js"></script>
+  <script src="js/telas-painel.js"></script>
+  <script src="js/telas-caso.js"></script>
+  <script src="js/telas-caso-extra.js"></script>
+  <script src="js/telas-gestao.js"></script>
+  <script src="js/telas-gestao2.js"></script>
+  <script src="js/acoes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
