@@ -72,6 +72,7 @@ Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scr
 
 - `_meta.versao` identifica a versão dos dados. **Sempre que mudarem o JSON, troquem a versão** (ex.: `2026-11-05.2`): assim o navegador descarta a cópia antiga guardada e carrega os dados novos.
 - Os ids ligam as coleções, como as tabelas de um banco de dados: `casos[].pacienteId → pacientes`, `sessoes[].casoId → casos`, `evolucoes[].sessaoId → sessoes`, `grupos[].subgrupos[].estagiarios → usuarios` e assim por diante. É um bom ponto de partida para o DER da Etapa 2.
+- Para conferir o JSON depois de editar: `python ferramentas/validar_json.py` (ids únicos, referências entre coleções e regras do prontuário). Os avisos que aparecem hoje são cenários de demonstração de propósito: sessões do caso c03 sem evolução, para mostrar o alerta; caso c02 sem sessão futura, para mostrar o fluxo de abandono; sessão de 04/11 para registrar presença ao vivo.
 - As senhas estão em texto só porque é protótipo. Num sistema real, o servidor guarda apenas o hash da senha e ela nunca vai para o navegador.
 
 ## Registro de correções em relação à Etapa 1
