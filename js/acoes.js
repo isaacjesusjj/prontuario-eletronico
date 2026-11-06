@@ -1,7 +1,9 @@
 /* =========================================================
    acoes.js — o que acontece quando o usuário clica ou envia
    um formulário. Cada botão tem data-acao="nome-da-acao".
-   Toda ação importante vai para a trilha de auditoria.
+   Ordem de toda ação: confere a permissão → valida → grava
+   pela camada de dados (PEP.repo) → registra na auditoria →
+   salva → redesenha a tela.
    ========================================================= */
 var PEP = window.PEP || {};
 window.PEP = PEP;
@@ -9,45 +11,111 @@ window.PEP = PEP;
 (function () {
   var U = function () { return PEP.util; };
   var R = function () { return PEP.regras; };
+  var V = function () { return PEP.validar; };
+  var repo = function () { return PEP.repo; };
 
-  function val(id) {
-    var el = document.getElementById(id);
-    return el ? String(el.value || '').trim() : '';
-  }
-  function marcado(id) {
-    var el = document.getElementById(id);
-    return !!(el && el.checked);
-  }
+  function el(id) { return document.getElementById(id); }
+  function val(id) { var e = el(id); return e ? String(e.value || '').trim() : ''; }
+  function marcado(id) { var e = el(id); return !!(e && e.checked); }
   function usuario() { return PEP.estado.usuarioAtual(); }
-  function caso(id) { return U().porId(PEP.db.casos, id); }
-  function evolucao(id) { return U().porId(PEP.db.evolucoes, id); }
+  function caso(id) { return repo().porId('casos', id); }
+  function evolucao(id) { return repo().porId('evolucoes', id); }
+  function negar() { PEP.ui.toast('Sem permissão.'); }
 
-  // Salva, registra na auditoria, avisa e redesenha a tela
+  // Data e hora local (AAAA-MM-DDTHH:MM) daqui a "ms" milissegundos
+  function dataHora(ms) {
+    var d = new Date(Date.now() + (ms || 0)), dd = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return d.getFullYear() + '-' + dd(d.getMonth() + 1) + '-' + dd(d.getDate()) + 'T' + dd(d.getHours()) + ':' + dd(d.getMinutes());
+  }
+
+  // Grava, registra na auditoria, avisa e redesenha a tela
   function concluir(mensagem, acaoAuditoria, alvo) {
     if (acaoAuditoria) PEP.estado.registrarAuditoria(acaoAuditoria, alvo);
-    PEP.estado.salvar();
+    repo().salvar();
     if (mensagem) PEP.ui.toast(mensagem);
     PEP.app.renderizar();
   }
 
-  function removerSessoesFuturas(casoId) {
-    PEP.db.sessoes = PEP.db.sessoes.filter(function (s) { return !(s.casoId === casoId && s.presenca === 'agendada'); });
+  function assinar(tipo, alvoId, u, papel, conteudo) {
+    repo().inserir('assinaturas', { alvoTipo: tipo, alvoId: alvoId, usuarioId: u.id, papel: papel, em: U().agora(),
+      hash: conteudo ? PEP.seguranca.sha256(conteudo) : null });
+  }
+
+  function cancelarSessoesFuturas(casoId) {
+    PEP.db.sessoes.filter(function (s) { return s.casoId === casoId && s.presenca === 'agendada'; })
+      .forEach(function (s) { repo().atualizar('sessoes', s.id, { presenca: 'cancelada' }); });
+  }
+
+  // ---------- Identificação do paciente (triagem e edição) ----------
+  function lerIdentificacao(p) {
+    return {
+      nome: val(p + '-nome'), nomeSocial: val(p + '-social'), dataNascimento: val(p + '-nasc'),
+      cpf: V().soDigitos(val(p + '-cpf')), telefone: V().soDigitos(val(p + '-tel')), email: val(p + '-email'),
+      responsavelNome: val(p + '-resp'), responsavelTelefone: V().soDigitos(val(p + '-resptel')), canalLembrete: val(p + '-canal')
+    };
+  }
+
+  function errosIdentificacao(p, d, opcoes) {
+    var e = [];
+    if (!V().nome(d.nome)) e.push([p + '-nome', 'Informe o nome completo (só letras, de 2 a 80 caracteres).']);
+    if (d.nomeSocial && !V().nome(d.nomeSocial)) e.push([p + '-social', 'Nome social com caracteres inválidos.']);
+    var dn = V().dataNascimento(d.dataNascimento);
+    if (!dn.ok) e.push([p + '-nasc', dn.msg]);
+    if (d.cpf) {
+      if (!V().cpf(d.cpf)) e.push([p + '-cpf', 'CPF inválido: confira os números.']);
+      else {
+        var dup = V().cpfJaCadastrado(d.cpf, opcoes.ignorar);
+        if (dup && dup.tipo === 'paciente' && dup.id !== opcoes.pacientePermitido) e.push([p + '-cpf', 'Este CPF já está cadastrado para outro paciente.']);
+      }
+    } else if (!opcoes.semCpfPermitido) e.push([p + '-cpf', 'Informe o CPF.']);
+    if (!V().telefone(d.telefone)) e.push([p + '-tel', 'Telefone inválido: use DDD + número, ex.: (11) 91234-5678.']);
+    if (d.email && !V().email(d.email)) e.push([p + '-email', 'E-mail inválido.']);
+    if (dn.ok && U().idade(d.dataNascimento) < 18 && !V().nome(d.responsavelNome)) e.push([p + '-resp', 'Menor de 18 anos: informe o responsável legal.']);
+    if (d.responsavelTelefone && !V().telefone(d.responsavelTelefone)) e.push([p + '-resptel', 'Telefone do responsável inválido.']);
+    return e;
+  }
+
+  // ---------- Importação de estudantes (CSV) ----------
+  function conferirLinhas(texto) {
+    var linhas = String(texto || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    if (linhas.length && /nome/i.test(linhas[0]) && /mail/i.test(linhas[0])) linhas.shift();
+    var vistos = { mat: {}, email: {}, login: {} };
+    return linhas.slice(0, 500).map(function (l, i) {
+      var c = l.split(l.indexOf(';') !== -1 ? ';' : ',').map(function (x) { return x.trim(); });
+      var r = { n: i + 1, nome: c[0] || '', matricula: c[1] || '', email: (c[2] || '').toLowerCase() };
+      r.login = r.email.split('@')[0];
+      if (!V().nome(r.nome)) r.erro = 'nome inválido';
+      else if (!V().matricula(r.matricula)) r.erro = 'matrícula inválida';
+      else if (!V().email(r.email)) r.erro = 'e-mail inválido';
+      else if (vistos.mat[r.matricula] || PEP.db.usuarios.some(function (u) { return u.matricula === r.matricula; })) r.erro = 'matrícula já cadastrada';
+      else if (vistos.email[r.email] || PEP.db.usuarios.some(function (u) { return String(u.email).toLowerCase() === r.email; })) r.erro = 'e-mail já cadastrado';
+      else if (vistos.login[r.login] || PEP.db.usuarios.some(function (u) { return u.login === r.login; })) r.erro = 'usuário já existe';
+      vistos.mat[r.matricula] = vistos.email[r.email] = vistos.login[r.login] = true;
+      return r;
+    });
   }
 
   PEP.acoes = {
-    // ----- Entrada -----
+    // ----- Acessibilidade e entrada -----
+    'fonte-menor': function () { PEP.acessibilidade.mudarFonte(-1); },
+    'fonte-maior': function () { PEP.acessibilidade.mudarFonte(1); },
+    'alto-contraste': function () { PEP.acessibilidade.alternarContraste(); },
+    vlibras: function () { PEP.acessibilidade.abrirVlibras(); },
+    'continuar-sessao': function () { PEP.app.continuarSessao(); },
+
+    'mostrar-senha': function (b) {
+      var campo = el(b.getAttribute('data-alvo'));
+      var mostrar = campo.type === 'password';
+      campo.type = mostrar ? 'text' : 'password';
+      b.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+      b.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+    },
     // Conta de demonstração: só preenche o formulário; quem entra é o botão "Entrar"
-    'preencher-login': function (el) {
-      var login = el.getAttribute('data-login');
-      var conta = null;
-      PEP.db.usuarios.forEach(function (x) { if (x.login === login) conta = x; });
-      var campoUsuario = document.getElementById('lg-usuario');
-      var campoSenha = document.getElementById('lg-senha');
-      if (!conta || !campoUsuario || !campoSenha) return;
-      campoUsuario.value = conta.login;
-      campoSenha.value = conta.senha;
-      document.getElementById('login-erro').hidden = true;
-      document.getElementById('lg-entrar').focus();
+    'preencher-login': function (b) {
+      el('lg-usuario').value = b.getAttribute('data-login');
+      el('lg-senha').value = PEP.db._meta.senhaDemonstracao;
+      el('login-erro').hidden = true;
+      el('lg-entrar').focus();
     },
     sair: function () {
       PEP.estado.sair();
@@ -60,16 +128,26 @@ window.PEP = PEP;
       PEP.ui.toast('Dados de demonstração restaurados.');
       PEP.app.renderizar();
     },
-    imprimir: function () {
-      var c = (window.location.hash.split('/')[2] || '');
-      PEP.estado.registrarAuditoria('Gerou cópia do prontuário (PDF)', c);
+    imprimir: function (b) {
+      PEP.estado.registrarAuditoria('Gerou cópia do prontuário (PDF)', b.getAttribute('data-caso') || '—');
       if (typeof window.print === 'function') window.print();
     },
 
+    // ----- Primeiro acesso e conta -----
+    'aceitar-termo': function (b) {
+      var u = usuario();
+      if (!marcado('tm-ok')) { PEP.form.aplicar(document, [['tm-ok', 'Marque a caixa para confirmar que leu o termo.']]); return; }
+      var termo = b.getAttribute('data-termo');
+      repo().inserir('aceites', { usuarioId: u.id, termo: termo, versao: PEP.config().termos[termo], em: U().agora() });
+      window.location.hash = '#/painel';
+      concluir('Termo aceito. Bom trabalho!', 'Aceitou o termo de ' + (termo === 'sigilo' ? 'responsabilidade e sigilo' : 'uso e privacidade') + ' (v' + PEP.config().termos[termo] + ')', u.id);
+    },
+
     // ----- Paciente -----
-    'confirmar-sessao': function (el) {
-      var s = U().porId(PEP.db.sessoes, el.getAttribute('data-id'));
-      s.confirmada = true;
+    'confirmar-sessao': function (b) {
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
+      if (u.perfil !== 'paciente' || c.pacienteId !== u.pacienteId) return negar();
+      repo().atualizar('sessoes', s.id, { confirmada: true });
       concluir('Presença confirmada. Obrigado por avisar!', 'Confirmou presença na sessão', s.casoId);
     },
     'solicitar-copia': function () {
@@ -77,270 +155,518 @@ window.PEP = PEP;
       var casos = PEP.db.casos.filter(function (c) { return c.pacienteId === u.pacienteId; });
       if (!casos.length) return PEP.ui.toast('Nenhum prontuário encontrado.');
       var c = casos[casos.length - 1];
-      PEP.db.solicitacoes.push({ id: U().novoId('sol'), pacienteId: u.pacienteId, casoId: c.id, em: U().hoje(), status: 'recebida', forma: '', entregueEm: '' });
+      repo().inserir('solicitacoes', { pacienteId: u.pacienteId, casoId: c.id, em: U().agora(), status: 'recebida', forma: '', entregueEm: '', conferidoPor: null, entreguePor: null });
       concluir('Pedido enviado. A equipe vai conferir sua identidade e entregar a cópia.', 'Solicitou acesso ao prontuário', c.id);
+    },
+    'paciente-consentimento': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso')), fin = b.getAttribute('data-fin');
+      var f = PEP.lista('finalidadesConsentimento').filter(function (x) { return x.id === fin; })[0];
+      if (u.perfil !== 'paciente' || c.pacienteId !== u.pacienteId || !f || f.obrigatoria) return negar();
+      var conceder = b.getAttribute('data-valor') === 'sim';
+      repo().inserir('consentimentos', { casoId: c.id, finalidade: fin, concedido: conceder, termoVersao: PEP.config().termos.consentimento, registradoPor: u.id, em: U().agora() });
+      concluir(conceder ? 'Autorização registrada.' : 'Autorização revogada. Vale a partir de agora.', (conceder ? 'Concedeu' : 'Revogou') + ' consentimento: ' + fin, c.id);
+    },
+    'pedido-titular': function () {
+      var u = usuario(), p = R().pacienteDoUsuario(u);
+      if (!p) return negar();
+      var desc = val('pt-desc');
+      if (desc.length < 5) { PEP.form.aplicar(el('form-titular'), [['pt-desc', 'Descreva o pedido em poucas palavras.']]); return; }
+      repo().inserir('pedidosTitular', { titularTipo: 'paciente', titularId: p.id, tipo: val('pt-tipo'), descricao: desc, em: U().agora(), status: 'aberto', resposta: '', respondidoPor: null, respondidoEm: null });
+      concluir('Pedido enviado. A resposta vem em até ' + PEP.regra('prazoRespostaTitularDias') + ' dias.', 'Fez pedido de titular (LGPD): ' + val('pt-tipo'), p.id);
+    },
+
+    // ----- Anamnese, demanda e objetivos (versionados) -----
+    'salvar-anamnese': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeEditarAnamnese(u, c)) return negar();
+      var erros = [];
+      if (val('an-demanda').length < 5) erros.push(['an-demanda', 'Descreva a demanda.']);
+      if (val('an-objetivos').length < 5) erros.push(['an-objetivos', 'Descreva os objetivos.']);
+      if (!PEP.form.aplicar(el('form-anamnese'), erros)) return;
+      var atual = R().anamneseAtual(c);
+      var nova = { casoId: c.id, versao: (atual.versao || 0) + 1, autorId: u.id, em: U().agora() };
+      ['demanda', 'objetivos', 'queixa', 'sintomas', 'historicoFamiliar', 'medicacoes', 'historicoClinico'].forEach(function (k) { nova[k] = val('an-' + k); });
+      repo().inserir('anamneses', nova);
+      assinar('anamnese', nova.id, u, u.perfil === 'supervisor' ? 'supervisor' : 'estagiario', JSON.stringify(nova));
+      concluir('Versão ' + nova.versao + ' salva. As anteriores continuam guardadas.', 'Registrou versão ' + nova.versao + ' da anamnese', c.id);
+    },
+    'assinar-anamnese': function (b) {
+      var u = usuario(), a = repo().porId('anamneses', b.getAttribute('data-id')), c = caso(a.casoId);
+      if (!R().podeAssinarAnamnese(u, c)) return negar();
+      assinar('anamnese', a.id, u, 'supervisor', null);
+      concluir('Versão assinada pela supervisão.', 'Assinou anamnese (versão ' + a.versao + ')', c.id);
+    },
+    'registrar-consentimento': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (u.perfil !== 'tecnico') return negar();
+      var conceder = b.getAttribute('data-valor') === 'sim', fin = b.getAttribute('data-fin');
+      repo().inserir('consentimentos', { casoId: c.id, finalidade: fin, concedido: conceder, termoVersao: PEP.config().termos.consentimento, registradoPor: u.id, em: U().agora() });
+      concluir(conceder ? 'Concessão registrada.' : 'Revogação registrada.', 'Registrou consentimento ' + fin + ': ' + (conceder ? 'sim' : 'não'), c.id);
     },
 
     // ----- Evoluções -----
-    'nova-evolucao': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeEscreverEvolucao(u, c)) return PEP.ui.toast('Sem permissão.');
+    'nova-evolucao': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeEscreverEvolucao(u, c)) return negar();
       var texto = val('nova-texto');
-      if (texto.length < 10) return PEP.ui.toast('Escreva a evolução antes de salvar.');
-      var enviar = el.getAttribute('data-modo') === 'enviar';
-      PEP.db.evolucoes.push({
-        id: U().novoId('e'), casoId: c.id, sessaoId: val('nova-sessao') || null, autorId: u.id, data: U().hoje(),
-        status: enviar ? 'enviada' : 'rascunho', texto: texto,
-        assinaturas: enviar ? [{ usuarioId: u.id, em: U().agora() }] : [], adendos: []
-      });
+      if (texto.length < 10) { PEP.form.aplicar(document, [['nova-texto', 'Escreva a evolução (pelo menos 10 caracteres).']]); return; }
+      var enviar = b.getAttribute('data-modo') === 'enviar';
+      var e = repo().inserir('evolucoes', { casoId: c.id, sessaoId: val('nova-sessao') || null, autorId: u.id, data: U().hoje(),
+        status: enviar ? 'enviada' : 'rascunho', texto: texto, comentarioSupervisor: '' });
+      if (enviar) assinar('evolucao', e.id, u, 'estagiario', texto);
       concluir(enviar ? 'Evolução assinada e enviada à supervisão.' : 'Rascunho salvo.', enviar ? 'Assinou e enviou evolução' : 'Salvou rascunho de evolução', c.id);
     },
-    'salvar-evolucao': function (el) {
-      var u = usuario(), e = evolucao(el.getAttribute('data-id')), c = caso(e.casoId);
+    'salvar-evolucao': function (b) {
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
       if (e.autorId !== u.id || !R().podeEscreverEvolucao(u, c) || e.status === 'validada' || e.status === 'enviada') return PEP.ui.toast('Esta evolução não pode ser editada.');
       var texto = val('ev-' + e.id);
-      if (texto.length < 10) return PEP.ui.toast('Escreva a evolução antes de salvar.');
-      e.texto = texto;
-      if (el.getAttribute('data-modo') === 'enviar') {
-        e.status = 'enviada';
-        e.comentarioSupervisor = '';
-        e.assinaturas = [{ usuarioId: u.id, em: U().agora() }];
+      if (texto.length < 10) { PEP.form.aplicar(document, [['ev-' + e.id, 'Escreva a evolução (pelo menos 10 caracteres).']]); return; }
+      if (b.getAttribute('data-modo') === 'enviar') {
+        repo().atualizar('evolucoes', e.id, { texto: texto, status: 'enviada', comentarioSupervisor: '' });
+        assinar('evolucao', e.id, u, 'estagiario', texto);
         concluir('Evolução assinada e enviada à supervisão.', 'Assinou e enviou evolução', c.id);
       } else {
+        repo().atualizar('evolucoes', e.id, { texto: texto });
         concluir('Rascunho salvo.', 'Salvou rascunho de evolução', c.id);
       }
     },
-    'validar-evolucao': function (el) {
-      var u = usuario(), e = evolucao(el.getAttribute('data-id')), c = caso(e.casoId);
-      if (!R().podeValidar(u, c) || e.status !== 'enviada') return PEP.ui.toast('Sem permissão.');
-      e.status = 'validada';
-      e.assinaturas.push({ usuarioId: u.id, em: U().agora() });
+    'validar-evolucao': function (b) {
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
+      if (!R().podeValidar(u, c) || e.status !== 'enviada') return negar();
+      repo().atualizar('evolucoes', e.id, { status: 'validada' });
+      assinar('evolucao', e.id, u, 'supervisor', e.texto);
       concluir('Evolução validada e bloqueada.', 'Validou e assinou evolução', c.id);
     },
-    'devolver-evolucao': function (el) {
-      var u = usuario(), e = evolucao(el.getAttribute('data-id')), c = caso(e.casoId);
-      if (!R().podeValidar(u, c) || e.status !== 'enviada') return PEP.ui.toast('Sem permissão.');
+    'devolver-evolucao': function (b) {
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
+      if (!R().podeValidar(u, c) || e.status !== 'enviada') return negar();
       var comentario = val('com-' + e.id);
-      if (comentario.length < 5) return PEP.ui.toast('Escreva um comentário para o estagiário.');
-      e.status = 'devolvida';
-      e.comentarioSupervisor = comentario;
-      e.assinaturas = [];
+      if (comentario.length < 5) { PEP.form.aplicar(document, [['com-' + e.id, 'Escreva um comentário para o estagiário.']]); return; }
+      repo().atualizar('evolucoes', e.id, { status: 'devolvida', comentarioSupervisor: comentario });
       concluir('Evolução devolvida com comentário.', 'Devolveu evolução para ajuste', c.id);
     },
-    'adicionar-adendo': function (el) {
-      var u = usuario(), e = evolucao(el.getAttribute('data-id')), c = caso(e.casoId);
-      if (!R().podeAdendo(u, c) || e.status !== 'validada') return PEP.ui.toast('Sem permissão.');
+    'adicionar-adendo': function (b) {
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
+      if (!R().podeAdendo(u, c) || e.status !== 'validada') return negar();
       var texto = val('adtxt-' + e.id);
-      if (texto.length < 5) return PEP.ui.toast('Escreva o texto do adendo.');
-      e.adendos.push({ id: U().novoId('ad'), autorId: u.id, em: U().agora(), motivo: val('admot-' + e.id), texto: texto });
+      if (texto.length < 5) { PEP.form.aplicar(document, [['adtxt-' + e.id, 'Escreva o texto do adendo.']]); return; }
+      repo().inserir('adendos', { evolucaoId: e.id, autorId: u.id, em: U().agora(), motivo: val('admot-' + e.id), texto: texto });
       concluir('Adendo registrado. O texto original continua intacto.', 'Registrou adendo em evolução validada', c.id);
     },
 
-    // ----- Sessões, faltas e abandono -----
-    'registrar-presenca': function (el) {
-      var u = usuario(), s = U().porId(PEP.db.sessoes, el.getAttribute('data-id')), c = caso(s.casoId);
-      if (!R().podeRegistrarPresenca(u, c)) return PEP.ui.toast('Sem permissão.');
-      var valor = el.getAttribute('data-valor');
+    // ----- Sessões, faltas, lembretes e abandono -----
+    'registrar-presenca': function (b) {
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
+      if (!R().podeRegistrarPresenca(u, c) || s.presenca !== 'agendada') return negar();
+      var valor = b.getAttribute('data-valor');
+      if (['presente', 'falta', 'falta-justificada'].indexOf(valor) === -1) return negar();
       // Presença ou falta só a partir do dia da sessão; a falta avisada (justificada) pode vir antes
       if (s.data > U().hoje() && valor !== 'falta-justificada') return PEP.ui.toast('Presença e falta só podem ser registradas a partir do dia da sessão.');
-      s.presenca = valor;
-      var msg = 'Presença registrada.';
-      if (R().emRiscoDeAbandono(c)) msg = 'Duas faltas seguidas: o fluxo de abandono foi aberto.';
-      concluir(msg, 'Registrou presença: ' + s.presenca, c.id);
+      repo().atualizar('sessoes', s.id, { presenca: valor, presencaRegistradaPor: u.id });
+      var msg = R().emRiscoDeAbandono(c) ? 'Faltas seguidas: o fluxo de abandono foi aberto.' : 'Presença registrada.';
+      concluir(msg, 'Registrou presença: ' + valor, c.id);
     },
-    'agendar-sessao': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeRegistrarPresenca(u, c)) return PEP.ui.toast('Sem permissão.');
+    'agendar-sessao': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeRegistrarPresenca(u, c)) return negar();
       var d = val('ag-data'), h = val('ag-hora');
-      if (!d || !h) return PEP.ui.toast('Informe data e hora.');
-      if (d < U().hoje()) return PEP.ui.toast('Escolha uma data a partir de hoje.');
-      PEP.db.sessoes.push({ id: U().novoId('s'), casoId: c.id, data: d, hora: h, presenca: 'agendada', confirmada: false });
-      concluir('Sessão agendada.', 'Agendou sessão', c.id);
+      var erros = [];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) erros.push(['ag-data', 'Informe a data.']);
+      else if (d < U().hoje()) erros.push(['ag-data', 'Escolha uma data a partir de hoje.']);
+      if (!/^\d{2}:\d{2}$/.test(h)) erros.push(['ag-hora', 'Informe a hora.']);
+      else if (h < '07:00' || h > '21:00') erros.push(['ag-hora', 'A clínica atende das 7h às 21h.']);
+      // A mesma dupla não pode ter duas sessões no mesmo horário
+      var conflito = PEP.db.sessoes.some(function (s) {
+        var outro = caso(s.casoId);
+        return s.data === d && s.hora === h && s.presenca === 'agendada' && (s.casoId === c.id || (c.subgrupoId && outro.subgrupoId === c.subgrupoId));
+      });
+      if (!erros.length && conflito) erros.push(['ag-hora', 'A dupla ou trio já tem sessão neste horário.']);
+      if (!PEP.form.aplicar(document, erros)) return;
+      repo().inserir('sessoes', { casoId: c.id, data: d, hora: h, presenca: 'agendada', confirmada: false });
+      concluir('Sessão agendada para ' + U().formatarData(d) + ' às ' + h + '.', 'Agendou sessão', c.id);
     },
-    'registrar-contato': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeRegistrarPresenca(u, c)) return PEP.ui.toast('Sem permissão.');
+    lembrete: function (b) {
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
+      if (!R().podeRegistrarPresenca(u, c) || !R().consentiu(c, 'lembretes')) return negar();
+      var p = PEP.ui.pacienteDoCaso(c), canal = b.getAttribute('data-canal');
+      // Sem nome do serviço, do profissional nem conteúdo clínico
+      var msg = 'Olá! Lembrete: você tem um horário agendado na Clínica-Escola em ' + U().formatarData(s.data) + ' às ' + s.hora +
+        '. Se não puder vir, avise com antecedência respondendo esta mensagem.';
+      var url;
+      if (canal === 'whatsapp') {
+        var tel = PEP.ui.idade(p) < 18 && p.responsavelTelefone ? p.responsavelTelefone : p.telefone;
+        url = 'https://wa.me/55' + V().soDigitos(tel) + '?text=' + encodeURIComponent(msg);
+      } else {
+        if (!p.email) return PEP.ui.toast('Paciente sem e-mail cadastrado.');
+        url = 'mailto:' + encodeURIComponent(p.email) + '?subject=' + encodeURIComponent('Lembrete de horário') + '&body=' + encodeURIComponent(msg);
+      }
+      repo().inserir('lembretes', { sessaoId: s.id, canal: canal, em: U().agora(), enviadoPor: u.id });
+      concluir('Lembrete aberto no ' + (canal === 'whatsapp' ? 'WhatsApp' : 'e-mail') + '. Confira e envie.', 'Gerou lembrete de sessão (' + canal + ')', c.id);
+      window.open(url, '_blank', 'noopener');
+    },
+    'registrar-contato': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeRegistrarPresenca(u, c)) return negar();
       var resultado = val('ct-resultado');
-      PEP.db.contatos.push({ id: U().novoId('ct'), casoId: c.id, em: U().hoje(), canal: val('ct-canal'), resultado: resultado, motivo: val('ct-motivo'), registradoPor: u.id });
+      repo().inserir('contatos', { casoId: c.id, em: U().hoje(), canal: val('ct-canal'), resultado: resultado, motivo: val('ct-motivo'), registradoPor: u.id });
       concluir(resultado === 'Retornará' ? 'Contato registrado. Agende a próxima sessão.' : 'Tentativa de contato registrada.', 'Registrou tentativa de contato', c.id);
     },
-    'encerrar-abandono': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeEncerrar(u, c)) return PEP.ui.toast('Sem permissão.');
+    'encerrar-abandono': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeEncerrar(u, c)) return negar();
       var contatos = PEP.db.contatos.filter(function (ct) { return ct.casoId === c.id; });
       if (!contatos.length) return PEP.ui.toast('Registre ao menos uma tentativa de contato antes de liberar a vaga.');
       var comMotivo = contatos.filter(function (ct) { return ct.motivo; });
       var motivo = comMotivo.length ? comMotivo[comMotivo.length - 1].motivo : 'Não informado';
-      c.status = 'encerrado';
-      c.encerramento = { data: U().hoje(), tipo: 'abandono', motivo: motivo,
-        registro: 'Encerrado por abandono após ' + R().faltasSeguidas(c) + ' faltas seguidas e ' + contatos.length + ' tentativa(s) de contato. Vaga liberada para a fila.' };
-      removerSessoesFuturas(c.id);
+      repo().inserir('encerramentos', { casoId: c.id, data: U().hoje(), tipo: 'abandono', motivo: motivo, registradoPor: u.id,
+        registro: 'Encerrado por abandono após ' + R().faltasSeguidas(c) + ' faltas seguidas e ' + contatos.length + ' tentativa(s) de contato. Vaga liberada para a fila.' });
+      repo().atualizar('casos', c.id, { status: 'encerrado' });
+      cancelarSessoesFuturas(c.id);
       concluir('Caso encerrado e vaga liberada.', 'Encerrou caso por abandono e liberou a vaga', c.id);
     },
-    'encerrar-caso': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeEncerrar(u, c)) return PEP.ui.toast('Sem permissão.');
+    'encerrar-caso': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeEncerrar(u, c)) return negar();
       var motivo = val('enc-motivo');
-      if (!motivo) return PEP.ui.toast('Informe o motivo do encerramento.');
-      c.status = 'encerrado';
-      c.encerramento = { data: U().hoje(), tipo: val('enc-tipo'), motivo: motivo, registro: val('enc-registro') || '—' };
-      removerSessoesFuturas(c.id);
-      concluir('Caso encerrado.', 'Encerrou caso (' + c.encerramento.tipo + ')', c.id);
+      if (motivo.length < 3) { PEP.form.aplicar(document, [['enc-motivo', 'Informe o motivo do encerramento.']]); return; }
+      repo().inserir('encerramentos', { casoId: c.id, data: U().hoje(), tipo: val('enc-tipo'), motivo: motivo, registro: val('enc-registro') || '—', registradoPor: u.id });
+      repo().atualizar('casos', c.id, { status: 'encerrado' });
+      cancelarSessoesFuturas(c.id);
+      concluir('Caso encerrado.', 'Encerrou caso (' + val('enc-tipo') + ')', c.id);
     },
 
     // ----- Documentos, anexos, área restrita e supervisão -----
-    'emitir-declaracao': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().ehEstagiarioDoCaso(u, c)) return PEP.ui.toast('Sem permissão.');
-      var fin = val('dc-fin'), dest = val('dc-dest');
-      if (!fin || !dest) return PEP.ui.toast('Informe finalidade e destinatário.');
-      PEP.db.documentos.push({ id: U().novoId('doc'), casoId: c.id, tipo: 'Declaração', titulo: 'Declaração de comparecimento',
-        finalidade: fin, destinatario: dest, emitidoEm: U().hoje(), autorId: u.id, assinadoPor: [u.id] });
+    'emitir-declaracao': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().ehEstagiarioDoCaso(u, c)) return negar();
+      var fin = val('dc-fin'), dest = val('dc-dest'), erros = [];
+      if (fin.length < 3) erros.push(['dc-fin', 'Informe a finalidade (Res. CFP 05/2025, art. 12).']);
+      if (dest.length < 3) erros.push(['dc-dest', 'Informe o destinatário.']);
+      if (!PEP.form.aplicar(document, erros)) return;
+      var d = repo().inserir('documentos', { casoId: c.id, tipo: 'Declaração', titulo: 'Declaração de comparecimento', finalidade: fin, destinatario: dest, emitidoEm: U().hoje(), autorId: u.id });
+      assinar('documento', d.id, u, 'estagiario', d.titulo + '|' + fin + '|' + dest);
       concluir('Declaração criada. Falta a assinatura do supervisor.', 'Emitiu declaração (aguardando supervisor)', c.id);
     },
-    'assinar-documento': function (el) {
-      var u = usuario(), d = U().porId(PEP.db.documentos, el.getAttribute('data-id')), c = caso(d.casoId);
-      if (!R().ehSupervisorDoCaso(u, c)) return PEP.ui.toast('Sem permissão.');
-      if (d.assinadoPor.indexOf(u.id) === -1) d.assinadoPor.push(u.id);
+    'assinar-documento': function (b) {
+      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), c = caso(d.casoId);
+      if (!R().ehSupervisorDoCaso(u, c)) return negar();
+      if (!R().assinadoPeloSupervisor('documento', d.id)) assinar('documento', d.id, u, 'supervisor', d.titulo + '|' + d.finalidade + '|' + d.destinatario);
       concluir('Documento assinado.', 'Assinou documento', c.id);
     },
-    anexar: function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeVerCaso(u, c)) return PEP.ui.toast('Sem permissão.');
-      var input = document.getElementById('ax-arquivo');
-      var nome = input && input.files && input.files.length ? input.files[0].name : '';
-      if (!nome) return PEP.ui.toast('Escolha um arquivo.');
-      PEP.db.anexos.push({ id: U().novoId('a'), casoId: c.id, arquivo: nome, descricao: val('ax-desc') || '—', enviadoPor: u.id, em: U().hoje() });
-      concluir('Anexo registrado (simulação: só o nome do arquivo).', 'Anexou arquivo', c.id);
+    anexar: function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeVerCaso(u, c) || c.status !== 'ativo') return negar();
+      var input = el('ax-arquivo');
+      var file = input && input.files && input.files[0];
+      if (!file) { PEP.form.aplicar(document, [['ax-arquivo', 'Escolha um arquivo.']]); return; }
+      b.disabled = true;
+      PEP.arquivos.guardar(file).then(function (r) {
+        b.disabled = false;
+        if (r.erro) { PEP.form.aplicar(document, [['ax-arquivo', r.erro]]); return; }
+        repo().inserir('anexos', { casoId: c.id, nome: V().nomeArquivoSeguro(file.name), tipo: file.type, tamanho: file.size, descricao: val('ax-desc') || '—',
+          enviadoPor: u.id, em: U().hoje(), hash: r.hash, arquivoId: r.arquivoId });
+        concluir('Anexo guardado. Conteúdo conferido e hash registrado.', 'Anexou arquivo', c.id);
+      }).catch(function () { b.disabled = false; PEP.ui.toast('Não foi possível guardar o arquivo neste navegador.'); });
     },
-    'registrar-avaliacao': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!(R().ehEstagiarioDoCaso(u, c) || R().ehSupervisorDoCaso(u, c))) return PEP.ui.toast('Sem permissão.');
+    'abrir-anexo': function (b) {
+      var u = usuario(), a = repo().porId('anexos', b.getAttribute('data-id')), c = caso(a.casoId);
+      if (!R().podeVerCaso(u, c)) return negar();
+      PEP.arquivos.obter(a.arquivoId).then(function (blob) {
+        if (!blob) return PEP.ui.toast('Arquivo não encontrado neste navegador.');
+        PEP.estado.registrarAuditoria('Abriu anexo', c.id);
+        window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+      });
+    },
+    'registrar-avaliacao': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!(R().ehEstagiarioDoCaso(u, c) || R().ehSupervisorDoCaso(u, c))) return negar();
       var inst = val('av-inst');
-      if (!inst) return PEP.ui.toast('Informe o instrumento.');
-      PEP.db.avaliacoes.push({ id: U().novoId('av'), casoId: c.id, instrumento: inst, aplicadoPor: u.id, em: U().hoje(), observacao: val('av-obs') || '—' });
+      if (inst.length < 3) { PEP.form.aplicar(document, [['av-inst', 'Informe o instrumento.']]); return; }
+      repo().inserir('avaliacoes', { casoId: c.id, instrumento: inst, aplicadoPor: u.id, em: U().hoje(), observacao: val('av-obs') || '—' });
       concluir('Registrado na área restrita.', 'Registrou aplicação de instrumento', c.id);
     },
-    'registrar-orientacao': function (el) {
-      var u = usuario(), c = caso(el.getAttribute('data-caso'));
-      if (!R().podeEscreverOrientacao(u, c)) return PEP.ui.toast('Sem permissão.');
+    'registrar-orientacao': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeEscreverOrientacao(u, c)) return negar();
       var texto = val('or-texto');
-      if (texto.length < 5) return PEP.ui.toast('Escreva a orientação.');
-      PEP.db.orientacoes.push({ id: U().novoId('o'), casoId: c.id, supervisorId: u.id, em: U().agora(), texto: texto });
+      if (texto.length < 5) { PEP.form.aplicar(document, [['or-texto', 'Escreva a orientação.']]); return; }
+      repo().inserir('orientacoes', { casoId: c.id, supervisorId: u.id, em: U().agora(), texto: texto });
       concluir('Orientação registrada.', 'Registrou orientação de supervisão', c.id);
     },
 
-    // ----- Fila, triagem e alocação -----
-    'concluir-triagem': function (el) {
+    // ----- Fila, triagem, cadastro e alocação -----
+    'concluir-triagem': function (b) {
       var u = usuario();
-      if (!R().podeGerirFila(u)) return PEP.ui.toast('Sem permissão.');
-      var i = U().porId(PEP.db.inscricoes, el.getAttribute('data-id'));
-      var risco = val('tr-risco') === 'risco';
+      if (!R().podeGerirFila(u)) return negar();
+      var i = repo().porId('inscricoes', b.getAttribute('data-id'));
       if (val('tr-destino') === 'externo') {
-        i.status = 'encaminhado-externo';
+        repo().atualizar('inscricoes', i.id, { status: 'encaminhado-externo' });
         window.location.hash = '#/fila';
         return concluir('Encaminhamento externo registrado.', 'Triagem: encaminhamento externo', i.id);
       }
-      var paciente = { id: U().novoId('p'), nome: val('tr-nome') || i.nome, idade: Number(val('tr-idade')) || i.idade, contato: val('tr-contato'), responsavel: val('tr-resp') };
+      var d = lerIdentificacao('tr');
+      var existente = d.cpf ? PEP.db.pacientes.filter(function (p) { return p.cpf === d.cpf; })[0] : null;
+      var erros = errosIdentificacao('tr', d, { semCpfPermitido: i.semCpf, ignorar: { inscricaoId: i.id }, pacientePermitido: existente && existente.id });
+      if (val('tr-demanda').length < 5) erros.push(['tr-demanda', 'Descreva a demanda identificada.']);
       var grupoId = val('tr-grupo') || null;
-      PEP.db.pacientes.push(paciente);
-      var novo = { id: U().novoId('c'), pacienteId: paciente.id, grupoId: grupoId, subgrupoId: null,
-        status: grupoId ? 'ativo' : 'aguardando-alocacao', inicio: U().hoje(),
-        demanda: val('tr-demanda'), objetivos: 'A definir no início do atendimento.',
-        anamnese: { queixa: '', historicoFamiliar: '', medicacoes: '', sintomas: '', historicoClinico: '' },
-        consentimentos: { contrato: marcado('tr-c1'), supervisaoGrupo: marcado('tr-c2'), gravacao: marcado('tr-c3'), ensinoAnonimo: marcado('tr-c4') } };
-      PEP.db.casos.push(novo);
-      i.status = 'triada';
+      if (grupoId && !marcado('tr-c-contrato')) erros.push(['tr-c-contrato', 'Para alocar a um grupo, registre o contrato terapêutico.']);
+      if (!PEP.form.aplicar(el('form-triagem'), erros)) return;
+      if (existente && PEP.db.casos.some(function (c) { return c.pacienteId === existente.id && c.status !== 'encerrado'; })) {
+        return PEP.ui.toast('Este paciente já tem um caso em andamento: não é possível abrir outro.');
+      }
+      var paciente;
+      if (existente) paciente = repo().atualizar('pacientes', existente.id, d);
+      else { d.criadoEm = U().hoje(); paciente = repo().inserir('pacientes', d); }
+      var novo = repo().inserir('casos', { pacienteId: paciente.id, grupoId: grupoId, subgrupoId: null, status: grupoId ? 'ativo' : 'aguardando-alocacao', inicio: U().hoje() });
+      repo().inserir('anamneses', { casoId: novo.id, versao: 1, autorId: u.id, em: U().agora(), demanda: val('tr-demanda'), objetivos: 'A definir no início do atendimento.',
+        queixa: '', sintomas: '', historicoFamiliar: '', medicacoes: '', historicoClinico: '' });
+      PEP.lista('finalidadesConsentimento').forEach(function (f) {
+        repo().inserir('consentimentos', { casoId: novo.id, finalidade: f.id, concedido: marcado('tr-c-' + f.id), termoVersao: PEP.config().termos.consentimento, registradoPor: u.id, em: U().agora() });
+      });
+      repo().atualizar('inscricoes', i.id, { status: 'triada', casoId: novo.id });
+      var risco = val('tr-risco') === 'risco';
       window.location.hash = '#/fila';
-      concluir(risco ? 'Triagem salva com risco: acione o supervisor e a rede agora.' : 'Triagem concluída e caso criado.', 'Concluiu triagem' + (risco ? ' (risco sinalizado)' : ''), novo.id);
+      concluir(risco ? 'Triagem salva com risco: acione o supervisor e a rede agora.' : (existente ? 'Triagem concluída: novo caso ligado ao cadastro existente.' : 'Triagem concluída e caso criado.'),
+        'Concluiu triagem' + (risco ? ' (risco sinalizado)' : '') + (existente ? ' (paciente já cadastrado)' : ''), novo.id);
     },
-    'alocar-caso': function (el) {
-      if (!R().podeGerirFila(usuario())) return PEP.ui.toast('Sem permissão.');
-      var c = caso(el.getAttribute('data-id'));
-      c.grupoId = val('ag-' + c.id);
-      c.subgrupoId = null;
-      c.status = 'ativo';
+    'marcar-duplicada': function (b) {
+      if (!R().podeGerirFila(usuario())) return negar();
+      var i = repo().porId('inscricoes', b.getAttribute('data-id'));
+      repo().atualizar('inscricoes', i.id, { status: 'duplicada' });
+      window.location.hash = '#/fila';
+      concluir('Inscrição marcada como duplicada e retirada da fila.', 'Marcou inscrição duplicada', i.id);
+    },
+    'salvar-paciente': function (b) {
+      var u = usuario();
+      if (!R().podeEditarCadastro(u)) return negar();
+      var p = repo().porId('pacientes', b.getAttribute('data-id'));
+      var d = lerIdentificacao('pc');
+      var erros = errosIdentificacao('pc', d, { semCpfPermitido: !p.cpf, ignorar: { pacienteId: p.id } });
+      if (!PEP.form.aplicar(el('form-paciente'), erros)) return;
+      repo().atualizar('pacientes', p.id, d);
+      var c = PEP.db.casos.filter(function (x) { return x.pacienteId === p.id; }).pop();
+      if (c) window.location.hash = '#/caso/' + c.id;
+      concluir('Cadastro atualizado.', 'Editou cadastro do paciente', p.id);
+    },
+    'alocar-caso': function (b) {
+      if (!R().podeGerirFila(usuario())) return negar();
+      var c = caso(b.getAttribute('data-id'));
+      if (!R().consentiu(c, 'contrato')) return PEP.ui.toast('Registre o contrato terapêutico nos consentimentos do caso antes de alocar.');
+      repo().atualizar('casos', c.id, { grupoId: val('ag-' + c.id), subgrupoId: null, status: 'ativo' });
       concluir('Caso alocado ao grupo. O supervisor define a dupla ou trio.', 'Alocou caso a grupo', c.id);
     },
-    'alocar-estagiario': function (el) {
-      if (usuario().perfil !== 'direcao') return PEP.ui.toast('Sem permissão.');
-      var id = el.getAttribute('data-id');
-      var g = U().porId(PEP.db.grupos, val('gr-' + id));
-      PEP.db.estagiariosSemGrupo = PEP.db.estagiariosSemGrupo.filter(function (x) { return x !== id; });
-      g.semDupla = g.semDupla || [];
-      g.semDupla.push(id);
-      var est = U().porId(PEP.db.usuarios, id);
-      est.descricao = 'Estagiário(a) · ' + g.nome + ', sem dupla';
+    'alocar-estagiario': function (b) {
+      if (!R().podeGerirEstudantes(usuario())) return negar();
+      var id = b.getAttribute('data-id');
+      if (R().alocacaoDoEstagiario(id)) return PEP.ui.toast('Este estagiário já está alocado.');
+      var g = repo().porId('grupos', val('gr-' + id));
+      repo().inserir('alocacoes', { estagiarioId: id, grupoId: g.id, subgrupoId: null, inicio: U().hoje(), fim: null });
       concluir('Estagiário alocado ao ' + g.nome + '.', 'Alocou estagiário a grupo', g.id);
     },
-    'definir-dupla': function (el) {
-      var g = U().porId(PEP.db.grupos, el.getAttribute('data-grupo'));
-      var id = el.getAttribute('data-id');
-      if (g.supervisorId !== usuario().id) return PEP.ui.toast('Sem permissão.');
-      var sub = U().porId(g.subgrupos, val('dup-' + id));
-      if (!sub) return PEP.ui.toast('Crie uma dupla ou trio primeiro.');
-      g.semDupla = (g.semDupla || []).filter(function (x) { return x !== id; });
-      sub.estagiarios.push(id);
-      var est = U().porId(PEP.db.usuarios, id);
-      est.descricao = 'Estagiário(a) · ' + g.nome + ', ' + sub.nome;
+    'encerrar-estagio': function (b) {
+      if (!R().podeGerirEstudantes(usuario())) return negar();
+      var id = b.getAttribute('data-id'), a = R().alocacaoDoEstagiario(id);
+      if (!a) return;
+      if (typeof window.confirm === 'function' && !window.confirm('Encerrar o vínculo de estágio de ' + PEP.ui.nomeUsuario(id) + '? O acesso aos casos termina agora.')) return;
+      repo().atualizar('alocacoes', a.id, { fim: U().hoje() });
+      concluir('Vínculo encerrado. O acesso aos casos terminou; o histórico continua.', 'Encerrou vínculo de estágio', id);
+    },
+    'definir-dupla': function (b) {
+      var u = usuario(), g = repo().porId('grupos', b.getAttribute('data-grupo')), id = b.getAttribute('data-id');
+      var a = R().alocacaoDoEstagiario(id);
+      if (g.supervisorId !== u.id || !a || a.grupoId !== g.id) return negar();
+      var sub = repo().porId('subgrupos', val('dup-' + id));
+      if (!sub || sub.grupoId !== g.id) return PEP.ui.toast('Crie uma dupla ou trio primeiro.');
+      repo().atualizar('alocacoes', a.id, { subgrupoId: sub.id });
       concluir('Estagiário incluído na ' + sub.nome + '.', 'Definiu dupla/trio', g.id);
     },
-    'nova-dupla': function (el) {
-      var g = U().porId(PEP.db.grupos, el.getAttribute('data-grupo'));
-      if (g.supervisorId !== usuario().id) return PEP.ui.toast('Sem permissão.');
-      g.subgrupos.push({ id: U().novoId('d'), nome: 'Dupla/Trio ' + (g.subgrupos.length + 1), estagiarios: [] });
+    'nova-dupla': function (b) {
+      var g = repo().porId('grupos', b.getAttribute('data-grupo'));
+      if (g.supervisorId !== usuario().id) return negar();
+      var n = R().subgruposDoGrupo(g.id).length + 1;
+      repo().inserir('subgrupos', { grupoId: g.id, nome: 'Dupla/Trio ' + n });
       concluir('Nova dupla/trio criada.', 'Criou dupla/trio', g.id);
     },
-    'atribuir-caso': function (el) {
-      var c = caso(el.getAttribute('data-id'));
-      if (!R().ehSupervisorDoCaso(usuario(), c)) return PEP.ui.toast('Sem permissão.');
-      c.subgrupoId = val('cs-' + c.id);
+    'atribuir-caso': function (b) {
+      var c = caso(b.getAttribute('data-id'));
+      if (!R().ehSupervisorDoCaso(usuario(), c)) return negar();
+      var sub = repo().porId('subgrupos', val('cs-' + c.id));
+      if (!sub || sub.grupoId !== c.grupoId) return negar();
+      repo().atualizar('casos', c.id, { subgrupoId: sub.id });
       concluir('Caso atribuído à dupla.', 'Atribuiu caso a dupla/trio', c.id);
     },
 
+    // ----- Estudantes (direção) -----
+    'conferir-importacao': function () {
+      if (!R().podeGerirEstudantes(usuario())) return negar();
+      var arq = el('im-arquivo').files && el('im-arquivo').files[0];
+      var ler = arq ? arq.text() : Promise.resolve(val('im-texto'));
+      ler.then(function (texto) {
+        PEP.telas._importacao = { texto: texto, linhas: conferirLinhas(texto) };
+        PEP.app.renderizar();
+      });
+    },
+    'importar-estudantes': function (b) {
+      var u = usuario();
+      if (!R().podeGerirEstudantes(u) || !PEP.telas._importacao) return negar();
+      var validas = PEP.telas._importacao.linhas.filter(function (l) { return !l.erro; });
+      b.disabled = true;
+      b.textContent = 'Criando contas…';
+      var resultado = [];
+      validas.reduce(function (promessa, l) {
+        return promessa.then(function () {
+          var senha = PEP.seguranca.senhaProvisoria();
+          return PEP.seguranca.hashSenha(senha).then(function (hash) {
+            repo().inserir('usuarios', { nome: l.nome, login: l.login, email: l.email, perfil: 'estagiario', cargo: 'Estagiário(a)', crp: null, matricula: l.matricula,
+              pacienteId: null, senhaHash: hash, senhaProvisoria: true, ativo: true, criadoEm: U().hoje() });
+            resultado.push({ nome: l.nome, login: l.login, senha: senha });
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        PEP.telas._importacao = { resultado: resultado };
+        concluir(resultado.length + ' conta(s) criada(s).', 'Importou ' + resultado.length + ' estudante(s)', '—');
+      });
+    },
+    'fechar-importacao': function () { PEP.telas._importacao = null; PEP.app.renderizar(); },
+
     // ----- Acesso do paciente ao prontuário -----
-    'conferir-identidade': function (el) {
-      if (usuario().perfil !== 'tecnico') return PEP.ui.toast('Sem permissão.');
-      var s = U().porId(PEP.db.solicitacoes, el.getAttribute('data-id'));
-      s.status = 'identidade-conferida';
+    'conferir-identidade': function (b) {
+      var u = usuario();
+      if (u.perfil !== 'tecnico') return negar();
+      var s = repo().porId('solicitacoes', b.getAttribute('data-id'));
+      repo().atualizar('solicitacoes', s.id, { status: 'identidade-conferida', conferidoPor: u.id });
       concluir('Identidade conferida.', 'Conferiu identidade para entrega de cópia', s.casoId);
     },
-    'marcar-entregue': function (el) {
-      if (usuario().perfil !== 'tecnico') return PEP.ui.toast('Sem permissão.');
-      var s = U().porId(PEP.db.solicitacoes, el.getAttribute('data-id'));
-      s.status = 'entregue';
-      s.forma = val('forma-' + s.id);
-      s.entregueEm = U().hoje();
+    'gerar-link': function (b) {
+      var u = usuario();
+      if (u.perfil !== 'tecnico') return negar();
+      var s = repo().porId('solicitacoes', b.getAttribute('data-id'));
+      if (s.status !== 'identidade-conferida') return negar();
+      var token = PEP.seguranca.tokenAleatorio(24);
+      repo().inserir('linksAcesso', { solicitacaoId: s.id, casoId: s.casoId, tokenHash: PEP.seguranca.sha256(token), criadoPor: u.id, criadoEm: U().agora(),
+        expiraEm: dataHora(PEP.regra('linkPacienteHoras') * 3600000), revogadoEm: null, acessos: 0, falhas: 0 });
+      PEP.telas._ultimoLink = { url: window.location.origin + window.location.pathname + '#/acesso/' + token };
+      concluir('Link gerado. Copie e envie ao paciente.', 'Gerou link de leitura do prontuário', s.casoId);
+    },
+    'copiar-link': function () {
+      var campo = el('link-gerado');
+      var feito = function () { PEP.ui.toast('Link copiado.'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(campo.value).then(feito, function () { campo.select(); });
+      else { campo.select(); feito(); }
+    },
+    'revogar-link': function (b) {
+      if (usuario().perfil !== 'tecnico') return negar();
+      var l = repo().porId('linksAcesso', b.getAttribute('data-id'));
+      repo().atualizar('linksAcesso', l.id, { revogadoEm: U().agora() });
+      concluir('Link revogado.', 'Revogou link de leitura', l.casoId);
+    },
+    'marcar-entregue': function (b) {
+      var u = usuario();
+      if (u.perfil !== 'tecnico') return negar();
+      var s = repo().porId('solicitacoes', b.getAttribute('data-id'));
+      repo().atualizar('solicitacoes', s.id, { status: 'entregue', forma: val('forma-' + s.id), entregueEm: U().hoje(), entreguePor: u.id });
+      PEP.telas._ultimoLink = null;
       concluir('Cópia entregue ao paciente.', 'Entregou cópia do prontuário', s.casoId);
+    },
+    'responder-titular': function (b) {
+      var u = usuario();
+      if (!R().podeAtenderTitular(u)) return negar();
+      var p = repo().porId('pedidosTitular', b.getAttribute('data-id'));
+      var resp = val('resp-' + p.id);
+      if (resp.length < 5) { PEP.form.aplicar(document, [['resp-' + p.id, 'Escreva a resposta ao titular.']]); return; }
+      repo().atualizar('pedidosTitular', p.id, { status: 'respondido', resposta: resp, respondidoPor: u.id, respondidoEm: U().agora() });
+      concluir('Resposta registrada.', 'Respondeu pedido de titular (LGPD)', p.id);
+    },
+    'verificar-auditoria': function () {
+      if (!R().podeVerAuditoria(usuario())) return negar();
+      PEP.telas._verificacao = PEP.estado.verificarAuditoria();
+      PEP.app.renderizar();
     }
   };
 
   // ----- Formulários -----
   PEP.formularios = {
     login: function (form) {
-      var r = PEP.estado.autenticar(form.elements.usuario.value, form.elements.senha.value);
-      if (r.ok) {
-        window.location.hash = '#/painel';
-        PEP.app.renderizar();
-        return;
-      }
-      var erro = document.getElementById('login-erro');
-      erro.textContent = r.motivo === 'bloqueado'
-        ? 'Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo.'
-        : 'Usuário ou senha incorretos.';
-      erro.hidden = false;
-      form.elements.senha.value = '';
-      form.elements.senha.focus();
+      var botao = el('lg-entrar'), erro = el('login-erro');
+      botao.disabled = true;
+      botao.textContent = 'Conferindo…';
+      PEP.estado.autenticar(form.elements.usuario.value, form.elements.senha.value).then(function (r) {
+        botao.disabled = false;
+        botao.textContent = 'Entrar';
+        if (r.ok) {
+          window.location.hash = '#/painel';
+          PEP.app.renderizar();
+          return;
+        }
+        erro.textContent = r.motivo === 'bloqueado' ? 'Muitas tentativas sem sucesso. Aguarde ' + (r.segundos || 30) + ' segundos e tente de novo.' :
+          r.motivo === 'sem-cripto' ? 'Abra o site pelo endereço https (GitHub Pages) ou por localhost: o navegador só libera a criptografia nesses endereços.' :
+          'Usuário ou senha incorretos.';
+        erro.hidden = false;
+        form.elements.senha.value = '';
+        form.elements.senha.focus();
+      });
     },
     inscricao: function (form) {
-      var f = form.elements;
-      PEP.db.inscricoes.push({
-        id: U().novoId('i'), nome: f.nome.value.trim(), idade: Number(f.idade.value), contato: f.contato.value.trim(),
-        responsavel: f.responsavel.value.trim(), resumo: f.resumo.value.trim(), periodo: f.periodo.value,
-        data: U().hoje(), status: 'aguardando'
-      });
-      PEP.estado.registrarAuditoria('Nova inscrição na fila de espera', '—');
+      var f = form.elements, erros = [];
+      var d = { nome: f.nome.value.trim(), social: f.social.value.trim(), nasc: f.nascimento.value, cpf: V().soDigitos(f.cpf.value), semCpf: f.semcpf.checked,
+        telefone: V().soDigitos(f.telefone.value), email: f.email.value.trim(), responsavel: f.responsavel.value.trim(), resumo: f.resumo.value.trim() };
+      if (!V().nome(d.nome)) erros.push(['f-nome', 'Informe seu nome completo (só letras).']);
+      if (d.social && !V().nome(d.social)) erros.push(['f-social', 'Use só letras.']);
+      var dn = V().dataNascimento(d.nasc);
+      if (!dn.ok) erros.push(['f-nasc', dn.msg]);
+      if (!d.semCpf && !V().cpf(d.cpf)) erros.push(['f-cpf', d.cpf ? 'CPF inválido: confira os números.' : 'Informe o CPF ou marque "Não tenho CPF".']);
+      if (!V().telefone(d.telefone)) erros.push(['f-tel', 'Telefone inválido: use DDD + número, ex.: (11) 91234-5678.']);
+      if (d.email && !V().email(d.email)) erros.push(['f-email', 'E-mail inválido.']);
+      var menor = dn.ok && U().idade(d.nasc) < 18;
+      if (menor && !V().nome(d.responsavel)) erros.push(['f-resp', 'Menor de 18 anos: informe o responsável legal.']);
+      if (menor && !f.responsavelOk.checked) erros.push(['f-respok', 'O responsável precisa autorizar a inscrição.']);
+      if (d.resumo.length < 3) erros.push(['f-resumo', 'Conte em poucas palavras o motivo.']);
+      if (!f.ciente.checked) erros.push(['f-ciente', 'É preciso ler o aviso de privacidade para entrar na fila.']);
+      if (!PEP.form.aplicar(form, erros)) return;
+      // Duplicidade: fica sinalizada para a equipe, sem aparecer para quem preenche
+      var dup = d.semCpf ? null : V().cpfJaCadastrado(d.cpf);
+      var i = repo().inserir('inscricoes', { nome: d.nome, nomeSocial: d.social, dataNascimento: d.nasc, cpf: d.semCpf ? '' : d.cpf, semCpf: d.semCpf,
+        telefone: d.telefone, email: d.email, responsavelNome: d.responsavel, resumo: d.resumo, periodo: f.periodo.value,
+        data: U().hoje(), status: 'aguardando', avisoVersao: PEP.config().termos.privacidade, duplicidade: dup });
+      PEP.estado.registrarAuditoria('Nova inscrição na fila de espera', i.id, 'visitante');
       window.location.hash = '#/inscricao-ok';
+      PEP.app.renderizar();
+    },
+    'trocar-senha': function (form) {
+      var u = usuario(), atual = el('ts-atual').value, nova = el('ts-nova').value, confirma = el('ts-confirma').value;
+      PEP.seguranca.conferirSenha(atual, u.senhaHash).then(function (confere) {
+        var erros = [];
+        if (!confere) erros.push(['ts-atual', 'Senha atual incorreta.']);
+        var av = PEP.seguranca.avaliarSenha(nova, { login: u.login, nome: PEP.ui.nomeUsuario(u.id), email: u.email });
+        if (!av.ok) erros.push(['ts-nova', av.erros.join(' ')]);
+        else if (nova === atual) erros.push(['ts-nova', 'A nova senha precisa ser diferente da atual.']);
+        if (confirma !== nova) erros.push(['ts-confirma', 'As duas senhas não são iguais.']);
+        if (!PEP.form.aplicar(form, erros)) return;
+        return PEP.seguranca.hashSenha(nova).then(function (hash) {
+          var eraProvisoria = u.senhaProvisoria;
+          repo().atualizar('usuarios', u.id, { senhaHash: hash, senhaProvisoria: false });
+          if (eraProvisoria) window.location.hash = '#/painel';
+          concluir('Senha alterada.', 'Trocou a senha', u.id);
+        });
+      });
+    },
+    'abrir-link': function (form) {
+      var token = form.elements.token.value, hash = PEP.seguranca.sha256(token);
+      var link = PEP.db.linksAcesso.filter(function (l) { return l.tokenHash === hash; })[0];
+      if (!link || link.revogadoEm || link.expiraEm < U().agora()) return PEP.app.renderizar();
+      var c = caso(link.casoId), p = PEP.ui.pacienteDoCaso(c);
+      var dono = PEP.db.usuarios.filter(function (x) { return x.pacienteId === p.id; })[0];
+      if (form.elements.nascimento.value !== p.dataNascimento) {
+        var falhas = (link.falhas || 0) + 1;
+        repo().atualizar('linksAcesso', link.id, falhas >= 5 ? { falhas: falhas, revogadoEm: U().agora() } : { falhas: falhas });
+        PEP.estado.registrarAuditoria(falhas >= 5 ? 'Link de leitura bloqueado por tentativas' : 'Tentativa de abrir link de leitura sem sucesso', c.id, 'visitante');
+        PEP.form.aplicar(form, [['lk-nasc', falhas >= 5 ? 'Link bloqueado. Peça um novo à clínica.' : 'Data não confere. Tentativas restantes: ' + (5 - falhas) + '.']]);
+        if (falhas >= 5) PEP.app.renderizar();
+        return;
+      }
+      PEP.telas._linkLiberado = link.id;
+      repo().atualizar('linksAcesso', link.id, { acessos: (link.acessos || 0) + 1, ultimoAcessoEm: U().agora() });
+      PEP.estado.registrarAuditoria('Paciente leu o prontuário por link', c.id, dono ? dono.id : 'visitante');
       PEP.app.renderizar();
     }
   };
@@ -355,5 +681,26 @@ window.PEP = PEP;
   document.addEventListener('submit', function (ev) {
     var nome = ev.target.getAttribute('data-form');
     if (nome && PEP.formularios[nome]) { ev.preventDefault(); PEP.formularios[nome](ev.target); }
+  });
+
+  // Campos que reagem enquanto a pessoa digita
+  document.addEventListener('input', function (ev) {
+    var t = ev.target;
+    if (t.id === 'f-nasc') {
+      var linha = el('linha-resp-ok');
+      if (linha) linha.hidden = !(t.value && U().idade(t.value) < 18);
+    }
+    if (t.id === 'f-semcpf' || t.id === 'f-cpf') { var cpf = el('f-cpf'); if (cpf) cpf.disabled = el('f-semcpf').checked; }
+    if (t.id === 'ts-nova') {
+      var u = usuario();
+      var av = PEP.seguranca.avaliarSenha(t.value, u ? { login: u.login, nome: PEP.ui.nomeUsuario(u.id), email: u.email } : {});
+      var barra = el('ts-barra');
+      barra.style.width = (t.value ? (av.forca + 1) * 20 : 0) + '%';
+      barra.className = 'forca-' + av.forca;
+      el('ts-forca').textContent = t.value ? 'Força: ' + av.rotulo + (av.ok ? ' · atende às regras' : ' · ' + av.erros[0]) : 'Força: —';
+    }
+  });
+  document.addEventListener('change', function (ev) {
+    if (ev.target.id === 'f-semcpf') { var cpf = el('f-cpf'); cpf.disabled = ev.target.checked; if (ev.target.checked) cpf.value = ''; }
   });
 })();

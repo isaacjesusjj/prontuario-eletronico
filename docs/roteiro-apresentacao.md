@@ -1,97 +1,101 @@
-# Roteiro de apresentação — Vínculo
+# Roteiro de apresentação — Vínculo (03/12/2026)
 
-Duração sugerida: 8 a 10 minutos. A divisão entre os integrantes é só uma sugestão.
+Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slides. A divisão entre os integrantes é só uma sugestão.
 
 ## Antes de começar
 
-1. Abra o site pelo link: https://isaacjesusjj.github.io/prontuario-eletronico/ (com dois cliques no arquivo ele não carrega os dados).
-2. Na tela de login, clique em **"Restaurar dados de demonstração"** (rodapé).
-3. Deixe o navegador em tela cheia, com zoom de 100% a 125%.
-4. Para trocar de perfil, use **"Sair"** no topo e entre com outra conta.
+1. Abra o site pelo link: https://isaacjesusjj.github.io/prontuario-eletronico/
+2. Na tela de login, clique em **"Restaurar dados de demonstração"** (rodapé). Isso também ajusta as datas: a sessão "de hoje" cai no dia da apresentação.
+3. Navegador em tela cheia, zoom entre 100% e 125%.
+4. Para trocar de perfil, use **"Sair"** no topo. Senha de todas as contas: **demonstracao2026**.
 
 ## Cola de logins
-
-Senha de todas as contas: **vinculo2026**. Na tela de login, clicar no cartão da conta preenche usuário e senha; depois é só clicar em **Entrar** (ou apertar Enter).
 
 | Quem | Perfil | Usuário |
 |---|---|---|
 | Ana Lúcia | Psicóloga técnica | `ana.tecnica` |
 | Helena | Supervisora do Grupo A | `helena.supervisora` |
-| Rafael | Supervisor do Grupo B | `rafael.supervisor` |
-| Bia | Estagiária (Grupo A, Dupla 1) | `bia.estagiaria` |
-| Duda | Estagiária (Grupo A, Dupla 2) | `duda.estagiaria` |
+| Bia | Estagiária (Grupo A, Dupla 1) — ainda não aceitou o termo | `bia.estagiaria` |
 | Enzo | Estagiário (Grupo B, Trio 1) | `enzo.estagiario` |
+| Iara | Estagiária do semestre passado (vínculo encerrado) | `iara.estagiaria` |
 | Paciente Exemplo 01 | Paciente | `paciente01` |
 | Marta | Direção do curso | `marta.direcao` |
 
-## 1. Abertura e login — Isaac (1,5 min)
+## 1. Abertura, fila e CPF — Isaac (2 min)
 
 - O problema: registros em papel e pacientes que vêm uma vez e não voltam.
-- A proposta: um prontuário que acompanha o paciente da fila de espera até o encerramento, com supervisão em cada registro.
-- **Login:** digite `bia.estagiaria` com uma senha errada → aparece **"Usuário ou senha incorretos"**, sem dizer qual dos dois errou (para não ajudar quem tenta adivinhar).
-- Explique: cada perfil vê só o que precisa depois de entrar. Depois de 5 erros seguidos, o login fica bloqueado por 30 segundos. Toda tentativa vai para a auditoria (a senha digitada nunca é gravada).
-- Aviso: protótipo com dados fictícios; login e permissões rodam no navegador só para a demonstração.
+- **Entrar na fila de espera** → enviar vazio: os campos com erro ficam marcados e o foco vai para o primeiro.
+- Digite o CPF `123.456.789-00` → "CPF inválido" (dígito verificador).
+- Frase: "Se o CPF já estiver cadastrado, o formulário **não avisa**: isso revelaria quem é paciente da clínica. Quem vê é a equipe."
 
-## 2. Paciente entra na fila — Isaac (1 min)
+## 2. Login e primeiro acesso — Isaac (1,5 min)
 
-- Na tela de login → **Entrar na fila de espera** (não precisa de conta).
-- Mostre o **aviso de urgência** (SAMU 192, CVV 188) e o **aviso de privacidade**.
-- Preencha e envie.
+- `bia.estagiaria` com senha errada → mensagem genérica. "Com 5 erros, bloqueia por 30 segundos, e a senha digitada nunca é gravada."
+- Login certo → **Termo de responsabilidade e sigilo** antes de tudo (Res. CFP 05/2025, art. 10, III). Sem aceitar, não navega.
+- "A senha não fica no JSON: só o hash, com 600 mil iterações."
 
-## 3. Psicóloga técnica — Daniel (1,5 min)
+## 3. Psicóloga técnica — Daniel (2 min)
 
-- Entre com `ana.tecnica` → **Fila de espera** → **Triar** a primeira inscrição.
-- Mostre os **consentimentos por finalidade** (gravação, supervisão em grupo, uso em ensino).
-- Aloque ao **Grupo A** e conclua.
-- Abra **Auditoria**: aparecem os logins, a tentativa com senha errada e cada abertura de prontuário.
+- `ana.tecnica` → **Fila de espera**: a inscrição **i05** aparece com "CPF já cadastrado".
+- **Triar** → aviso: o novo caso fica ligado ao cadastro que já existe, sem duplicar o paciente.
+- Mostre os **consentimentos por finalidade**: cada um com data, quem registrou e versão do termo.
+- **Auditoria** → **Verificar integridade**: "Cadeia íntegra".
 
 ## 4. Estagiária — Dilson (2 min)
 
-- **Sair** → entre com `bia.estagiaria` → painel com evoluções pendentes.
-- Abra **Paciente Exemplo 01** → **Sessões e faltas** → na sessão de **04/11**, clique em **Presente**.
-- Vá em **Evoluções** → **Nova evolução** → escolha a sessão de 04/11 → escreva tema, intervenção e plano → **Assinar e enviar à supervisão**.
-- **Sair** → entre com `enzo.estagiario`: ele vê outros casos. Cada estagiário só acessa os casos da própria dupla ou trio.
+- `bia.estagiaria` → **Paciente Exemplo 01** → **Sessões e faltas** → sessão de **hoje** → **Presente**.
+- **Lembrete WhatsApp** numa sessão futura: a mensagem não tem nome do serviço nem conteúdo clínico.
+- **Evoluções** → **Nova evolução** → tema, intervenção e plano → **Assinar e enviar à supervisão**.
+- **Agenda** → semana e mês.
+- Tente abrir um caso do Enzo: **acesso não permitido** (e a tentativa vai para a auditoria).
 
 ## 5. Supervisora — Isaac (1,5 min)
 
-- **Sair** → entre com `helena.supervisora` → **Validação** → abra a evolução da Bia → **Validar e assinar**.
-- Mostre que a evolução validada **não tem campo de edição**: correção só por **adendo**.
-- Aba **Supervisão**: orientações ficam **fora do prontuário** (o paciente não recebe isso na cópia).
+- `helena.supervisora` → **Validação** → **Validar e assinar**. A evolução validada não tem mais campo de edição: correção só por **adendo**.
+- Aba **Supervisão**: orientações fora do prontuário (o paciente não recebe isso na cópia).
 
-## 6. Abandono de tratamento — Daniel (1,5 min)
+## 6. Abandono de tratamento — Daniel (1 min)
 
-- **Sair** → entre com `bia.estagiaria` → **Paciente Exemplo 02** → **Sessões e faltas**.
-- Duas faltas seguidas abriram o **fluxo de abandono**.
-- Registre a tentativa de contato com o motivo (ex.: "Transporte ou distância") → **Encerrar por abandono e liberar a vaga**.
+- `bia.estagiaria` → **Paciente Exemplo 02** → **Sessões e faltas**: duas faltas seguidas abriram o **fluxo de abandono**.
+- Registre o contato com o motivo → **Encerrar por abandono e liberar a vaga**.
 - Frase-chave: "Antes, a vaga era só realocada. Agora a clínica sabe **por que** o paciente saiu."
 
-## 7. Paciente e acesso ao prontuário — Dilson (1 min)
+## 7. Paciente e LGPD — Dilson (1,5 min)
 
-- **Sair** → entre com `paciente01` → **Confirmar presença** → **Meu prontuário** → **Pedir cópia**.
-- **Sair** → entre com `ana.tecnica` → **Acesso do paciente** → **Identidade conferida** → **Gerar cópia (PDF)**.
-- Mostre que a cópia **não traz** rascunhos, orientações de supervisão nem testes.
+- `paciente01` → **Meus dados (LGPD)**: dados guardados, autorizações (revogar lembretes) e pedido ao encarregado.
+- **Meu prontuário** → **Pedir cópia**. Depois, `ana.tecnica` → **Acesso do paciente** → identidade conferida → **gerar link de leitura** (72 h, pede a data de nascimento).
 
-## 8. Direção e fechamento — Dilson (1 min)
+## 8. Direção, rodízio e fechamento — Dilson (1 min)
 
-- **Sair** → entre com `marta.direcao` → **Indicadores**: atendidos, taxa de retorno e **motivos de abandono** — sem nomes de pacientes.
-- Tente abrir um prontuário: **acesso não permitido**.
-- Próximos passos: Etapas 2 e 3 do PIC (baixa fidelidade, navegação, DER e Figma) e, no futuro, back-end com segurança real.
+- `marta.direcao` → **Indicadores** (sem nomes) → **Grupos de estágio** → **Encerrar estágio**: o acesso termina na hora.
+- `iara.estagiaria`: entra, mas não vê nenhum caso (vínculo do semestre passado).
+- Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade** (A−/A+, contraste, Libras).
+- Passe para os slides: "Agora, por que isso é viável."
 
-## Se der tempo
+## Provas ao vivo (F12)
 
-- Entre com `duda.estagiaria` → **Paciente Exemplo 03** → **Evoluções**: uma evolução **devolvida** pela supervisora, com o comentário explicando o que corrigir, e o alerta de **sessões sem evolução**.
+- **Network:** recarregue e mostre `dados-iniciais.json` (200) e que **nenhum** arquivo vem de outro site.
+- **Console:** `PEP.db.usuarios[0].senhaHash` → mostra `pbkdf2-sha256$600000$...` (nada de senha).
+- **Console (como Bia):** `PEP.regras.podeVerCaso(PEP.estado.usuarioAtual(), PEP.util.porId(PEP.db.casos, 'c04'))` → `false`.
+- **Console (como Ana):** `PEP.db.auditoria[1].acao = 'apaguei'` → **Auditoria** → **Verificar integridade** → "Cadeia quebrada no evento 2".
+- **Console:** `PEP.validar.cpf('123.456.789-00')` → `false`.
+- **Application:** `sessionStorage` tem a sessão (some ao fechar a aba); `localStorage` tem a cópia dos dados.
 
 ## Perguntas prováveis
 
-- **Os dados são reais?** Não. Tudo é fictício; no sistema real, nada de dado de paciente em ambiente de teste.
-- **Onde ficam os dados?** No arquivo `dados/dados-iniciais.json`, organizado em coleções ligadas por ids (usuários, casos, sessões, evoluções…), como tabelas de um banco de dados. As mudanças feitas na demonstração ficam guardadas no navegador.
-- **As senhas ficam no JSON?** No protótipo, sim, porque tudo roda no navegador. No sistema real, o servidor confere o login e guarda só o hash da senha; a senha nunca chega ao navegador.
-- **Por que a direção não vê o prontuário?** Sigilo: a função dela é acadêmica, e indicadores agregados bastam.
-- **Por que não dá para editar uma evolução?** O prontuário é documento: corrigir apagando esconderia o que foi registrado. O adendo corrige deixando rastro.
-- **Por que o paciente pode pedir o prontuário?** É direito dele pela Resolução CFP 05/2025. Por isso o registro é técnico e objetivo, e a supervisão fica separada.
-- **E a segurança?** Aqui é simulada no navegador. No sistema real: login institucional, servidor, banco de dados e criptografia.
+- **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
+- **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
+- **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
+- **Como provam que funciona?** 154 verificações automáticas no site, 56 no banco (PostgreSQL de verdade) e o validador do JSON.
+- **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS): a estagiária só recebe as linhas dos casos dela.
+- **Por que a senha não exige símbolo?** O NIST proibiu regras de composição em 2025: elas levam a senhas previsíveis. Vale o comprimento (15 caracteres) e a lista de senhas comuns.
+- **Os dados são reais?** Não. Tudo é fictício; CPFs gerados por algoritmo.
+- **Por que a direção não vê o prontuário?** Sigilo: a função dela é acadêmica; indicadores bastam.
+- **Por que o paciente pode ler o prontuário?** É direito dele (Res. CFP 05/2025, art. 13). Por isso o registro é técnico e a supervisão fica separada.
+- **E o Figma?** É a Etapa 3, feita a partir das telas do site.
 
 ## Plano B
 
-- **Sem internet:** abra a pasta do projeto no VS Code e use a extensão **Live Server**. Com dois cliques no `index.html` o navegador bloqueia a leitura do JSON e aparece um aviso.
-- **Algo estranho na tela:** clique em **Sair** e depois em **"Restaurar dados de demonstração"**.
+- **Sem internet:** abra a pasta no VS Code com a extensão **Live Server**.
+- **Algo estranho na tela:** **Sair** → **"Restaurar dados de demonstração"**.
+- **VLibras não abre:** depende do site do governo; mostre a declaração de acessibilidade.

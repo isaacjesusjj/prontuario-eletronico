@@ -1,6 +1,6 @@
 /* =========================================================
    telas-caso.js — prontuário do caso (parte 1):
-   cabeçalho, abas, resumo/anamnese e evoluções.
+   cabeçalho, abas, resumo/anamnese/consentimentos e evoluções.
    ========================================================= */
 var PEP = window.PEP || {};
 window.PEP = PEP;
@@ -28,8 +28,8 @@ PEP.telas = PEP.telas || {};
     var podePdf = u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, caso);
     return '<a href="#/casos" class="suave">← Casos</a>' +
       '<div class="cartao" style="margin-top:.5rem"><div class="linha entre"><div>' +
-      '<h1 style="margin:0">' + esc(p.nome) + '</h1>' +
-      '<p class="suave" style="margin:0">' + esc(p.idade) + ' anos · caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + '</p></div>' +
+      '<h1 style="margin:0">' + esc(p.nomeSocial || p.nome) + '</h1>' +
+      '<p class="suave" style="margin:0">' + esc(PEP.ui.idade(p)) + ' anos · caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + '</p></div>' +
       '<div class="linha">' + PEP.ui.etiquetaCaso(caso) +
       (podePdf ? '<a class="botao secundario pequeno" href="#/imprimir/' + caso.id + '">Cópia em PDF</a>' : '') + '</div></div>' +
       '<p class="pequeno" style="margin:.6rem 0 0"><strong>Equipe:</strong> ' + (g ? esc(g.nome) + (sg ? ' · ' + esc(sg.nome) : '') : 'sem grupo') +
@@ -42,41 +42,87 @@ PEP.telas = PEP.telas || {};
     }).join('') + '</nav>';
   }
 
-  // ---------- Aba: resumo e anamnese ----------
-  function abaResumo(u, caso) {
-    var p = PEP.ui.pacienteDoCaso(caso);
-    var a = caso.anamnese || {};
-    var c = caso.consentimentos || {};
-    var sim = function (v) { return v ? '<span class="etiqueta validada">sim</span>' : '<span class="etiqueta rascunho">não</span>'; };
-    return '<div class="grade-2">' +
-      '<div class="cartao"><h2>Identificação</h2><p><strong>Nome:</strong> ' + esc(p.nome) + '<br><strong>Idade:</strong> ' + esc(p.idade) +
-      '<br><strong>Contato:</strong> ' + esc(p.contato) + (p.responsavel ? '<br><strong>Responsável legal:</strong> ' + esc(p.responsavel) : '') + '</p>' +
-      (p.idade < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') + '</div>' +
-      '<div class="cartao"><h2>Avaliação de demanda e objetivos</h2><p><strong>Demanda:</strong> ' + esc(caso.demanda) + '</p><p><strong>Objetivos:</strong> ' + esc(caso.objetivos) + '</p></div></div>' +
-      '<div class="cartao"><h2>Anamnese</h2><div class="grade-2">' +
-      '<p><strong>Queixa principal</strong><br>' + esc(a.queixa || '—') + '</p>' +
-      '<p><strong>Sintomas relatados</strong><br>' + esc(a.sintomas || '—') + '</p>' +
-      '<p><strong>Histórico familiar</strong><br>' + esc(a.historicoFamiliar || '—') + '</p>' +
-      '<p><strong>Medicações</strong><br>' + esc(a.medicacoes || '—') + '</p>' +
-      '<p><strong>Histórico clínico</strong><br>' + esc(a.historicoClinico || '—') + '</p></div></div>' +
-      '<div class="cartao"><h2>Consentimentos (por finalidade)</h2><table><tbody>' +
-      '<tr><td>Contrato terapêutico assinado</td><td>' + sim(c.contrato) + '</td></tr>' +
-      '<tr><td>Discussão do caso em supervisão em grupo</td><td>' + sim(c.supervisaoGrupo) + '</td></tr>' +
-      '<tr><td>Gravação de sessões para supervisão</td><td>' + sim(c.gravacao) + '</td></tr>' +
-      '<tr><td>Uso do caso, sem identificação, em ensino e pesquisa</td><td>' + sim(c.ensinoAnonimo) + '</td></tr>' +
-      '</tbody></table><p class="suave pequeno">Todo meio de registro ou observação precisa ser informado ao paciente desde o início (Código de Ética, art. 14).</p></div>';
-  }
-
-  // ---------- Aba: evoluções ----------
-  function assinaturas(e) {
-    if (!e.assinaturas.length) return '';
-    return '<div class="assinaturas">Assinado por: ' + e.assinaturas.map(function (s) {
-      return esc(PEP.ui.nomeUsuario(s.usuarioId)) + ' em ' + data(s.em);
+  function linhaAssinaturas(tipo, id) {
+    var lista = tipo === 'evolucao' ? R().assinaturasVigentes(PEP.util.porId(PEP.db.evolucoes, id)) : R().assinaturasDe(tipo, id);
+    if (!lista.length) return '';
+    return '<div class="assinaturas">Assinado por: ' + lista.map(function (s) {
+      return esc(PEP.ui.nomeUsuario(s.usuarioId)) + ' (' + (s.papel === 'supervisor' ? 'supervisão' : 'estagiário') + ') em ' + data(s.em);
     }).join(' · ') + '</div>';
   }
 
+  // ---------- Aba: resumo, anamnese e consentimentos ----------
+  var CAMPOS_ANAMNESE = [['demanda', 'Avaliação de demanda'], ['objetivos', 'Objetivos do trabalho'], ['queixa', 'Queixa principal'],
+    ['sintomas', 'Sintomas relatados'], ['historicoFamiliar', 'Histórico familiar'], ['medicacoes', 'Medicações'], ['historicoClinico', 'Histórico clínico']];
+
+  function blocoAnamnese(u, caso) {
+    var a = R().anamneseAtual(caso);
+    var versoes = R().anamnesesDoCaso(caso);
+    var html = '<div class="cartao"><div class="linha entre"><h2>Avaliação de demanda, objetivos e anamnese</h2>' +
+      (a.versao ? '<span class="suave pequeno">Versão ' + a.versao + ' · ' + esc(PEP.ui.nomeUsuario(a.autorId)) + ' em ' + data(a.em) + '</span>' : '') + '</div>' +
+      '<div class="grade-2">' + CAMPOS_ANAMNESE.map(function (c) {
+        return '<p><strong>' + c[1] + '</strong><br>' + esc(a[c[0]] || '—') + '</p>';
+      }).join('') + '</div>' + (a.id ? linhaAssinaturas('anamnese', a.id) : '');
+
+    if (a.id && R().podeAssinarAnamnese(u, caso) && !R().assinadoPeloSupervisor('anamnese', a.id)) {
+      html += '<button class="botao pequeno" style="margin-top:.6rem" data-acao="assinar-anamnese" data-id="' + a.id + '">Assinar versão ' + a.versao + ' (supervisão)</button>';
+    }
+    if (R().podeEditarAnamnese(u, caso)) {
+      html += '<details style="margin-top:.8rem"><summary><strong>Atualizar anamnese, demanda e objetivos</strong></summary>' +
+        '<p class="suave pequeno" style="margin-top:.5rem">Salvar cria uma nova versão; as anteriores ficam guardadas. Registre o necessário: o paciente pode ler o prontuário.</p>' +
+        '<div class="grade-2" id="form-anamnese">' + CAMPOS_ANAMNESE.map(function (c) {
+          return '<div class="campo"><label for="an-' + c[0] + '">' + c[1] + (c[0] === 'demanda' || c[0] === 'objetivos' ? ' *' : '') + '</label>' +
+            '<textarea id="an-' + c[0] + '" style="min-height:80px">' + esc(a[c[0]] || '') + '</textarea></div>';
+        }).join('') + '</div>' +
+        '<button class="botao pequeno" data-acao="salvar-anamnese" data-caso="' + caso.id + '">Salvar nova versão</button></details>';
+    }
+    if (versoes.length > 1) {
+      html += '<details style="margin-top:.8rem"><summary>Versões anteriores (' + (versoes.length - 1) + ')</summary>' +
+        versoes.slice(0, -1).reverse().map(function (v) {
+          return '<div class="adendo"><strong>Versão ' + v.versao + '</strong> · ' + esc(PEP.ui.nomeUsuario(v.autorId)) + ' em ' + data(v.em) +
+            '<br><strong>Demanda:</strong> ' + esc(v.demanda) + '<br><strong>Objetivos:</strong> ' + esc(v.objetivos) + '</div>';
+        }).join('') + '</details>';
+    }
+    return html + '</div>';
+  }
+
+  function blocoConsentimentos(u, caso) {
+    var html = '<div class="cartao"><h2>Consentimentos (um por finalidade)</h2><div class="tabela-rolagem"><table>' +
+      '<caption class="sr-only">Situação de cada consentimento do caso</caption><thead><tr><th scope="col">Finalidade</th><th scope="col">Situação</th><th scope="col">Registro</th><th scope="col"></th></tr></thead><tbody>';
+    PEP.lista('finalidadesConsentimento').forEach(function (f) {
+      var c = R().consentimentoAtual(caso, f.id);
+      var hist = R().historicoConsentimento(caso, f.id);
+      var situacao = c && c.concedido ? '<span class="etiqueta validada">sim</span>' : '<span class="etiqueta rascunho">não</span>';
+      var revogado = hist.length > 1 && c && !c.concedido ? ' <span class="suave pequeno">(revogado)</span>' : '';
+      var acao = '';
+      if (u.perfil === 'tecnico' && caso.status !== 'encerrado' && !(f.obrigatoria && c && c.concedido)) {
+        acao = '<button class="botao secundario pequeno" data-acao="registrar-consentimento" data-caso="' + caso.id + '" data-fin="' + f.id + '" data-valor="' + (c && c.concedido ? 'nao' : 'sim') + '">' +
+          (c && c.concedido ? 'Registrar revogação' : 'Registrar concessão') + '</button>';
+      }
+      html += '<tr><td>' + esc(f.nome) + (f.obrigatoria ? ' <span class="suave pequeno">(necessário para atender)</span>' : '') + '</td><td>' + situacao + revogado + '</td>' +
+        '<td class="pequeno">' + (c ? data(c.em) + ' · ' + esc(PEP.ui.nomeUsuario(c.registradoPor)) + ' · termo ' + esc(c.termoVersao) : '—') + '</td><td>' + acao + '</td></tr>';
+    });
+    return html + '</tbody></table></div><p class="suave pequeno">Todo meio de registro ou observação precisa ser informado ao paciente desde o início (Código de Ética, art. 14). ' +
+      'Revogar é um direito do paciente (LGPD, art. 8º, § 5º) e vira um novo registro: o histórico não se apaga.</p></div>';
+  }
+
+  function abaResumo(u, caso) {
+    var p = PEP.ui.pacienteDoCaso(caso);
+    var canal = PEP.lista('canaisLembrete').filter(function (c) { return c.valor === p.canalLembrete; })[0];
+    return '<div class="cartao"><div class="linha entre"><h2>Identificação</h2>' +
+      (R().podeEditarCadastro(u) ? '<a class="botao secundario pequeno" href="#/paciente/' + p.id + '/editar">Editar cadastro</a>' : '') + '</div>' +
+      '<div class="grade-2"><p><strong>Nome:</strong> ' + esc(p.nome) + (p.nomeSocial ? '<br><strong>Nome social:</strong> ' + esc(p.nomeSocial) : '') +
+      '<br><strong>Nascimento:</strong> ' + data(p.dataNascimento) + ' (' + esc(PEP.ui.idade(p)) + ' anos)' +
+      '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) + '</p>' +
+      '<p><strong>Telefone:</strong> ' + esc(PEP.validar.formatarTelefone(p.telefone)) + '<br><strong>E-mail:</strong> ' + esc(p.email || '—') +
+      (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + esc(p.responsavelNome) : '') +
+      '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') + '</p></div>' +
+      (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') + '</div>' +
+      blocoAnamnese(u, caso) + blocoConsentimentos(u, caso);
+  }
+
+  // ---------- Aba: evoluções ----------
   function adendos(e) {
-    return e.adendos.map(function (ad) {
+    return R().adendosDe(e.id).map(function (ad) {
       return '<div class="adendo"><strong>Adendo</strong> · ' + esc(ad.motivo) + ' · ' + esc(PEP.ui.nomeUsuario(ad.autorId)) + ' em ' + data(ad.em) +
         '<br>' + esc(ad.texto) + '</div>';
     }).join('');
@@ -98,7 +144,7 @@ PEP.telas = PEP.telas || {};
 
     html += '<div class="texto">' + esc(e.texto) + '</div>';
     if (e.comentarioSupervisor && e.status === 'devolvida') html += '<div class="comentario-sup"><strong>Supervisão:</strong> ' + esc(e.comentarioSupervisor) + '</div>';
-    html += assinaturas(e) + adendos(e);
+    html += linhaAssinaturas('evolucao', e.id) + adendos(e);
 
     if (e.status === 'enviada' && R().podeValidar(u, caso)) {
       html += '<div class="campo" style="margin-top:.6rem"><label for="com-' + e.id + '">Comentário para o estagiário (obrigatório para devolver)</label>' +
@@ -110,16 +156,16 @@ PEP.telas = PEP.telas || {};
     if (e.status === 'validada' && R().podeAdendo(u, caso)) {
       html += '<details style="margin-top:.6rem"><summary>Adicionar adendo (correção ou complemento)</summary>' +
         '<div class="campo" style="margin-top:.5rem"><label for="admot-' + e.id + '">Motivo</label><select id="admot-' + e.id + '">' +
-        '<option>Correção de informação</option><option>Complemento</option><option>Esclarecimento da supervisão</option></select></div>' +
+        PEP.ui.opcoes(PEP.lista('motivosAdendo')) + '</select></div>' +
         '<div class="campo"><label for="adtxt-' + e.id + '">Texto do adendo</label><textarea id="adtxt-' + e.id + '" style="min-height:70px"></textarea></div>' +
         '<button class="botao pequeno" data-acao="adicionar-adendo" data-id="' + e.id + '">Registrar adendo</button></details>';
     }
     return html + '</div>';
   }
 
-  // Sessões com presença e sem evolução há mais de 48 horas
+  // Sessões com presença e sem evolução há mais tempo que o prazo (padrão 48 h)
   function sessoesSemEvolucao(caso) {
-    var limite = new Date(Date.now() - 48 * 3600 * 1000);
+    var limite = new Date(Date.now() - PEP.regra('prazoEvolucaoHoras') * 3600 * 1000);
     return PEP.db.sessoes.filter(function (s) {
       if (s.casoId !== caso.id || s.presenca !== 'presente') return false;
       if (new Date(s.data + 'T' + s.hora) > limite) return false;
@@ -138,9 +184,8 @@ PEP.telas = PEP.telas || {};
       'Depois de validada, a evolução fica bloqueada: correção só por adendo.</div>';
 
     var atrasadas = sessoesSemEvolucao(caso);
-    // Só em caso ativo: num caso encerrado não dá mais para registrar evolução
     if (atrasadas.length && caso.status === 'ativo' && R().ehEstagiarioDoCaso(u, caso)) {
-      html += '<div class="aviso alerta pequeno">Sessão sem evolução há mais de 48 h: ' + atrasadas.map(function (s) { return data(s.data); }).join(', ') + '.</div>';
+      html += '<div class="aviso alerta pequeno">Sessão sem evolução há mais de ' + PEP.regra('prazoEvolucaoHoras') + ' h: ' + atrasadas.map(function (s) { return data(s.data); }).join(', ') + '.</div>';
     }
 
     if (R().podeEscreverEvolucao(u, caso)) {
@@ -151,8 +196,8 @@ PEP.telas = PEP.telas || {};
         '<div class="campo" style="margin-top:.6rem"><label for="nova-sessao">Sessão</label><select id="nova-sessao">' +
         sessoes.map(function (s) { return '<option value="' + s.id + '">' + data(s.data) + ' às ' + esc(s.hora) + '</option>'; }).join('') +
         '<option value="">Sem sessão vinculada</option></select></div>' +
-        '<div class="campo"><label for="nova-texto">Texto</label><span class="dica">Modelo: tema trabalhado · intervenção · resposta do paciente · plano para a próxima sessão.</span>' +
-        '<textarea id="nova-texto"></textarea></div>' +
+        '<div class="campo"><label for="nova-texto">Texto</label><span class="dica" id="nova-texto-dica">Modelo: tema trabalhado · intervenção · resposta do paciente · plano para a próxima sessão.</span>' +
+        '<textarea id="nova-texto" aria-describedby="nova-texto-dica"></textarea></div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="rascunho">Salvar rascunho</button>' +
         '<button class="botao pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="enviar">Assinar e enviar à supervisão</button></div></details>';
     }
@@ -164,9 +209,9 @@ PEP.telas = PEP.telas || {};
   // ---------- Tela principal do caso ----------
   PEP.telas.caso = function (u, casoId, aba) {
     var caso = PEP.util.porId(PEP.db.casos, casoId);
-    if (!caso) return '<p>Caso não encontrado.</p>';
+    if (!caso) return '<h1>Caso não encontrado</h1>';
     if (!R().podeVerCaso(u, caso)) {
-      return PEP.ui.semPermissao('Você não está alocado(a) neste caso. Estagiários só acessam os casos da própria dupla ou trio; supervisores, os casos dos seus grupos.');
+      return PEP.ui.semPermissao('Você não está alocado(a) neste caso. Estagiários só acessam os casos da própria dupla ou trio, enquanto o vínculo de estágio estiver ativo; supervisores, os casos dos seus grupos.');
     }
     var permitidas = abasDoCaso(u, caso).map(function (a) { return a[0]; });
     if (permitidas.indexOf(aba) === -1) aba = 'resumo';
@@ -189,9 +234,9 @@ PEP.telas = PEP.telas || {};
     if (!casos.length) return html + '<p class="vazio">Nenhum caso.</p>';
     return html + '<div class="grade">' + casos.map(function (c) {
       var g = PEP.regras.grupoDoCaso(c);
-      return '<a class="cartao" style="text-decoration:none;color:inherit" href="#/caso/' + c.id + '">' +
-        '<div class="linha entre"><strong>' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</strong>' + PEP.ui.etiquetaCaso(c) + '</div>' +
-        '<p class="suave pequeno" style="margin:.4rem 0 0">' + (g ? esc(g.nome) + ' · ' + esc(g.foco) : 'Aguardando alocação') + '</p></a>';
+      return '<a class="cartao cartao-link" href="#/caso/' + c.id + '">' +
+        '<span class="linha entre"><strong>' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</strong>' + PEP.ui.etiquetaCaso(c) + '</span>' +
+        '<span class="suave pequeno" style="display:block;margin-top:.4rem">' + (g ? esc(g.nome) + ' · ' + esc(g.foco) : 'Aguardando alocação') + '</span></a>';
     }).join('') + '</div>';
   };
 })();

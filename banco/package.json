@@ -1,0 +1,12 @@
+{
+  "name": "vinculo-banco",
+  "private": true,
+  "type": "module",
+  "description": "Teste do schema do Vínculo num PostgreSQL de verdade (PGlite)",
+  "scripts": {
+    "test": "node testar_banco.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.15"
+  }
+}

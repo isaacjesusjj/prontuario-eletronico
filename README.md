@@ -1,12 +1,12 @@
 # Vínculo — Prontuário Eletrônico da Clínica-Escola de Psicologia
 
-Protótipo funcional do **Projeto Integrador de Curso (PIC)** — Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026 (Etapa 4: HTML, CSS e JavaScript).
+Protótipo funcional do **Projeto Integrador de Curso (PIC)** — Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.
 
 **Site:** https://isaacjesusjj.github.io/prontuario-eletronico/
 
 **Grupo:** Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima.
 
-> ⚠️ **Protótipo acadêmico.** Todos os dados são fictícios. Login, permissões e banco de dados são simulados no navegador, só para demonstração. Autenticação real, servidor, banco de dados e criptografia são etapas futuras.
+> ⚠️ **Protótipo acadêmico, pronto para ligar o banco.** Todos os dados são fictícios. Hoje os dados ficam no navegador; o banco (PostgreSQL no Supabase) já tem schema, migração e testes prontos em [`banco/`](banco/README.md). A troca é uma linha em `js/config-banco.js`.
 
 ---
 
@@ -18,62 +18,87 @@ Na clínica-escola, os registros são feitos em papel, e muitos pacientes vêm �
 
 O Vínculo acompanha o paciente da fila de espera até o encerramento, com a supervisão presente em cada registro:
 
-- **Login com usuário e senha**: mensagem de erro genérica, bloqueio de 30 segundos após 5 tentativas e registro das tentativas na auditoria.
-- **Fila de espera online**, com aviso de urgência (SAMU 192, CVV 188) e aviso de privacidade.
-- **Triagem e cadastro** pela psicóloga técnica, com consentimentos separados por finalidade.
-- **Alocação:** a direção monta os grupos, o supervisor forma duplas ou trios e o técnico aloca os pacientes.
-- **Prontuário do caso:** anamnese, evoluções, documentos emitidos e anexos.
-- **Evolução com validação:** rascunho → enviada à supervisão → validada (assinatura do estagiário e do supervisor) → bloqueada. Correção só por adendo.
+- **Fila de espera online** com aviso de urgência (SAMU 192, CVV 188), validação de CPF, telefone e data de nascimento, e regra para menores (responsável legal autoriza).
+- **CPF já cadastrado:** o formulário público não revela (mesma mensagem para todos); a equipe vê a duplicidade na fila e, na triagem, o novo caso é ligado ao cadastro existente.
+- **Triagem e cadastro** com consentimentos separados por finalidade, cada um com data, responsável e versão do termo; revogar vira novo registro.
+- **Alocação:** a direção monta os grupos e encerra os vínculos no fim do semestre; o supervisor forma duplas ou trios; o técnico aloca os pacientes (só com contrato terapêutico registrado).
+- **Prontuário do caso:** anamnese, demanda e objetivos com versões, evoluções, documentos, anexos com upload real e cópia em PDF.
+- **Evolução com validação:** rascunho → enviada → validada (assinatura do estagiário e do supervisor, com hash do texto) → bloqueada. Correção só por adendo.
 - **Fluxo de abandono:** duas faltas seguidas sem justificativa abrem o registro de contato e motivo antes de liberar a vaga.
-- **Indicadores agregados:** pacientes atendidos, taxa de retorno, média de sessões e motivos de abandono.
-- **Acesso do paciente ao prontuário**, com conferência de identidade e cópia em PDF.
-- **Trilha de auditoria:** quem abriu ou alterou cada prontuário, e quando.
+- **Agenda em calendário** (dia, semana, mês e lista) e **lembretes** por WhatsApp ou e-mail, sem conteúdo clínico e só com autorização.
+- **Acesso do paciente:** pedido de cópia, conferência de identidade e **link de leitura temporário** (72 h, confirma a data de nascimento, o sistema guarda só o hash).
+- **LGPD:** aviso de privacidade, termos de uso, termo de sigilo no primeiro acesso, "Meus dados" do paciente (direitos do art. 18) e fila de pedidos com prazo.
+- **Segurança:** senhas só como hash (PBKDF2, 600 mil iterações), política de senha do NIST (15 caracteres, sem regra de símbolo), senha provisória com troca obrigatória, bloqueio por tentativas, sessão que encerra por inatividade com aviso, auditoria com cadeia de hash verificável.
+- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras, erros ligados aos campos, títulos por tela. 45 telas conferidas com axe-core, sem violações.
+- **Indicadores agregados:** pacientes atendidos, taxa de retorno, média de sessões, motivos de abandono e espera na fila.
+
+As regras e as normas de onde elas vêm estão no próprio site, em **Regras e leis** (`#/regras`).
 
 ## Como usar
 
 - **Online:** abra o link do GitHub Pages.
-- **No computador:** os dados ficam em `dados/dados-iniciais.json`, e o navegador bloqueia a leitura de arquivos JSON quando o `index.html` é aberto com dois cliques. Abra a pasta no VS Code e use a extensão **Live Server** (ou rode `python -m http.server` na pasta e acesse `http://localhost:8000`).
-- Para voltar ao estado inicial, use **"Restaurar dados de demonstração"** na tela de entrada.
+- **No computador:** abra a pasta no VS Code com a extensão **Live Server** (ou rode `python -m http.server` e acesse `http://localhost:8000`). Com dois cliques no `index.html` o navegador bloqueia a leitura do JSON e a criptografia.
+- Antes de apresentar, use **"Restaurar dados de demonstração"** na tela de entrada.
 
 ### Contas de demonstração
 
-Senha de todas as contas: **`vinculo2026`**. Na tela de login, clicar numa conta preenche usuário e senha.
+Senha de todas: **`demonstracao2026`** (no JSON só existe o hash). Na tela de login, clicar numa conta preenche o usuário e a senha.
 
 | Perfil | Quem | Usuário | O que mostrar |
 |---|---|---|---|
-| Estagiário(a) | Bia · Duda · Enzo | `bia.estagiaria` · `duda.estagiaria` · `enzo.estagiario` | Só vê os próprios casos; escreve evolução e envia à supervisão |
-| Supervisor(a) | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; registra orientações fora do prontuário |
-| Psicólogo(a) técnico(a) | Ana Lúcia | `ana.tecnica` | Fila, triagem, alocação, acesso do paciente e auditoria |
-| Paciente | Paciente Exemplo 01 | `paciente01` | Confirma presença e pede cópia do prontuário |
-| Direção do curso | Marta | `marta.direcao` | Só indicadores agregados e grupos de estágio |
+| Estagiário(a) | Bia · Duda · Enzo | `bia.estagiaria` · `duda.estagiaria` · `enzo.estagiario` | Bia ainda não aceitou o termo de sigilo: mostra o primeiro acesso |
+| Supervisor(a) | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; orientações fora do prontuário |
+| Psicólogo(a) técnico(a) | Ana Lúcia | `ana.tecnica` | Fila (inscrição i05 com CPF já cadastrado), triagem, acesso do paciente, pedidos LGPD, auditoria |
+| Paciente | Paciente Exemplo 01 | `paciente01` | Confirma sessão, pede cópia, "Meus dados" |
+| Direção do curso | Marta | `marta.direcao` | Indicadores, grupos, importar estudantes, encerrar vínculo |
 
-Também existem `caio.estagiario`, `lia.estagiaria`, `fabio.estagiario`, `gabi.estagiaria` e `hugo.estagiario` (Hugo começa sem grupo).
+Também existem `caio.estagiario`, `lia.estagiaria`, `fabio.estagiario`, `gabi.estagiaria`, `hugo.estagiario` (sem grupo) e `iara.estagiaria` (vínculo do semestre passado, encerrado: entra, mas não vê casos).
+
+**Datas da demonstração:** os dados foram escritos como se hoje fosse 06/11/2026 (`_meta.dataBase`). O site desloca todas as datas para que esse dia vire o dia de hoje; assim, no dia da apresentação, a sessão "de hoje" e as próximas sessões continuam corretas.
 
 O roteiro da apresentação está em [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
 
 ## Estrutura
 
 ```
-index.html                 página única; carrega os scripts na ordem
-css/estilo.css             identidade visual (cores em variáveis no topo)
-dados/dados-iniciais.json  dados fictícios de demonstração (usuários, casos, sessões...)
-js/dados.js                lê o JSON e entrega uma cópia nova dos dados
-js/estado.js               armazenamento no navegador, login e auditoria
-js/permissoes.js           regras de acesso e de negócio
-js/ui.js                   topo, menu por perfil e componentes
-js/telas-*.js              telas (entrada, painéis, prontuário, gestão)
-js/acoes.js                o que cada botão e formulário faz
-js/inicio.js               navegação por hash (#/rota) e inicialização
+index.html                  página única; carrega os scripts na ordem
+css/estilo.css              identidade visual, acessibilidade e alto contraste
+fontes/                     fontes servidas pelo próprio site (licença SIL OFL)
+dados/dados-iniciais.json   dados fictícios: uma coleção por tabela do banco, + _config (listas e regras)
+js/config-banco.js          ÚNICO lugar para trocar o JSON pelo banco
+js/repositorio.js           camada de dados: toda gravação passa por aqui
+js/adaptador-supabase.js    adaptador do PostgreSQL/Supabase (desligado até a migração)
+js/dados.js                 lê o JSON, configuração e datas relativas
+js/seguranca.js             SHA-256, hash de senha (PBKDF2), política de senha, tokens
+js/estado.js                sessão, login, bloqueio e auditoria encadeada
+js/validadores.js           CPF, telefone, e-mail, datas, arquivos, máscaras e erros acessíveis
+js/arquivos.js              upload real (IndexedDB hoje; Supabase Storage com o banco)
+js/permissoes.js            regras de acesso e de negócio (iguais às políticas RLS do banco)
+js/ui.js, acessibilidade.js topo, menu, rodapé, A−/A+, contraste, VLibras
+js/telas-*.js               telas (entrada, painéis, prontuário, gestão, agenda, conta, LGPD)
+js/acoes.js                 o que cada botão e formulário faz
+js/inicio.js                rotas (#/rota), primeiro acesso, inatividade e inicialização
+banco/                      schema PostgreSQL, migração JSON → banco, testes e projeção
+testes/                     testes automáticos do site (Playwright + axe-core)
+ferramentas/validar_json.py confere o JSON antes de migrar
+docs/                       roteiro, diagramas (DER, navegação, casos de uso), LGPD, baixa fidelidade
 ```
 
-Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scripts clássicos; dados num arquivo JSON lido com `fetch` (por isso o site precisa de servidor); caminhos relativos; layout responsivo; foco visível e rótulos em todos os campos.
+Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scripts clássicos; caminhos relativos; layout responsivo; sem chamadas a servidores de terceiros; política de segurança de conteúdo (CSP) no `index.html`.
 
-### Sobre o JSON de dados
+## Banco de dados
 
-- `_meta.versao` identifica a versão dos dados. **Sempre que mudarem o JSON, troquem a versão** (ex.: `2026-11-05.2`): assim o navegador descarta a cópia antiga guardada e carrega os dados novos.
-- Os ids ligam as coleções, como as tabelas de um banco de dados: `casos[].pacienteId → pacientes`, `sessoes[].casoId → casos`, `evolucoes[].sessaoId → sessoes`, `grupos[].subgrupos[].estagiarios → usuarios` e assim por diante. É um bom ponto de partida para o DER da Etapa 2.
-- Para conferir o JSON depois de editar: `python ferramentas/validar_json.py` (ids únicos, referências entre coleções e regras do prontuário). Os avisos que aparecem hoje são cenários de demonstração de propósito: sessões do caso c03 sem evolução, para mostrar o alerta; caso c02 sem sessão futura, para mostrar o fluxo de abandono; sessão de 04/11 para registrar presença ao vivo.
-- As senhas estão em texto só porque é protótipo. Num sistema real, o servidor guarda apenas o hash da senha e ela nunca vai para o navegador.
+PostgreSQL no Supabase (região São Paulo). Projeção: ~84 MB por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~1,6 GB em 20 anos de guarda. Tudo em [`banco/README.md`](banco/README.md): schema, migração, passo a passo e garantias.
+
+## Testes
+
+| O quê | Como rodar | Resultado |
+|---|---|---|
+| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 154 de 154 |
+| Banco: schema, migração, imutabilidade, RLS por perfil, auditoria | `cd banco && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 56 de 56 |
+| JSON antes de migrar | `python ferramentas/validar_json.py` | 0 problemas |
+
+Preparação: `pip install playwright`, `cd testes && npm install` e `cd banco && npm install`.
 
 ## Registro de correções em relação à Etapa 1
 
@@ -84,9 +109,9 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 | Direção do curso via todos os prontuários, documentos e dados de pacientes | Direção vê só indicadores agregados e grupos de estágio | Sigilo (Código de Ética) e princípio da necessidade (LGPD) |
 | Tabela permitia ao Psicólogo Técnico editar/remover evolução | Ninguém edita ou apaga evolução validada; correção só por adendo | Coerência com o próprio requisito de imutabilidade da Etapa 1 |
 | Evolução salva pelo estudante, sem revisão | Ciclo com validação e assinatura do supervisor | Res. CFP 01/2009, art. 3º, e Res. CFP 05/2025, art. 19 |
-| Técnico "autorizava" o acesso do paciente | O sistema registra o pedido, confere a identidade e entrega; o técnico organiza a entrega | O prontuário é de acesso irrestrito ao paciente (Res. CFP 05/2025, art. 13) |
+| Técnico "autorizava" o acesso do paciente | O sistema registra o pedido, confere a identidade e entrega | O prontuário é de acesso irrestrito ao paciente (Res. CFP 05/2025, art. 13) |
 | Testes psicológicos anexados ao prontuário e incluídos no PDF | Testes numa área restrita, fora do prontuário e do PDF | Res. CFP 05/2025, art. 14, e Res. CFP 01/2009 |
-| Local das orientações de supervisão não definido | Registro de supervisão separado, fora do prontuário e do PDF | Res. CFP 05/2025, art. 17, §2º |
+| Local das orientações de supervisão não definido | Registro de supervisão separado, fora do prontuário e do PDF | Res. CFP 05/2025, art. 17 |
 | Duas faltas → realocar outro paciente | Duas faltas sem justificativa abrem o fluxo de contato e motivo; só então a vaga é liberada | Ataca a dor principal do cliente: saber por que o paciente não volta |
 | Supervisor acessava "todos os casos" | Supervisor acessa os casos dos seus grupos | Princípio da necessidade; a técnica responsável continua vendo todos, com auditoria |
 | Alocação com três responsáveis diferentes | Direção monta grupos; supervisor forma duplas/trios; técnico aloca pacientes | Inconsistência entre requisitos, casos de uso e funcionalidades |
@@ -96,37 +121,20 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 
 **Sugestão para validar com o cliente:** perda de vaga também com 3 faltas intercaladas sem justificativa (regra comum em clínicas-escola).
 
-## Registro de correções — revisão de 05/11/2026
-
-Revisão da versão do grupo (identidade lilás e dados em JSON). O visual foi mantido; só foram corrigidos erros.
-
-| Problema | Correção |
-|---|---|
-| O navegador guardava os dados da versão anterior e ignorava o JSON novo (quem já tinha aberto o site veria dados antigos e o login falharia) | Campo `_meta.versao` no JSON: quando a versão muda, o navegador recarrega os dados |
-| Encerramento por abandono gravado com motivo diferente da lista da tela ("Horário incompatível com o trabalho") | Motivo padronizado: o indicador não divide mais o mesmo motivo em duas barras |
-| Evolução devolvida (e05) aparecia com assinatura do estagiário | Assinatura removida, como o sistema faz ao devolver |
-| Casos encerrados com sessões sem evolução, e alerta de "evolução atrasada" num caso em que não dá mais para escrever | Evoluções validadas incluídas (c05 e c06); alerta só em caso ativo |
-| Caso c06: sessões em março e alta em setembro | Sessões no mesmo semestre da alta |
-| Caso c05: encerrado um mês depois da desistência confirmada | Encerramento na data da desistência |
-| Inscrição de criança (12 anos) sem nome do responsável; inscrições sem o campo `responsavel` | Campo incluído em todas, com o responsável da criança |
-| Sessões "futuras" que já teriam passado na semana da apresentação | Datas ajustadas e uma sessão de 04/11 para registrar presença ao vivo |
-| Dava para marcar presença numa sessão que ainda não aconteceu, e agendar no passado | Presença e falta só a partir do dia da sessão (falta avisada pode antes); agendamento só de hoje em diante |
-| Algumas ações de alocação e de entrega de cópia não conferiam o perfil | Conferência de permissão em todas as ações |
-| Nome do perfil em dourado com contraste 3,1:1 (abaixo do mínimo 4,5:1) | Mesmo dourado, um tom mais escuro só no texto |
-| Campo de senha sem o estilo dos outros campos | Estilo aplicado |
-| Erro 404 do ícone da aba no console | Ícone incluído no `index.html` |
-| Cabeçalho de `inicio.js` com o nome antigo (`app.js`) e risco de erro se a navegação acontecesse antes de o JSON carregar | Comentário corrigido e proteção na inicialização |
-
 ## Registro de decisões
 
 | Decisão | Escolha | Motivo |
 |---|---|---|
 | Nome | Vínculo | Remete ao vínculo terapêutico e ao problema do paciente que não volta |
 | Identidade visual | Lilás institucional com detalhes dourados e títulos em serifa | Escolha do grupo; tons ajustáveis no topo de `css/estilo.css` |
-| Escopo | Núcleo + todos os extras | Mostrar o fluxo completo na apresentação |
-| Tecnologia | HTML, CSS e JS puros | Exigência da Etapa 4 e facilidade para explicar o código |
-| Dados | Arquivo JSON separado do código | Dados organizados como coleções com ids, perto de um banco de dados |
-| Login | Usuário e senha com contas de demonstração | Requisito "Login de Usuários" da Etapa 1 |
+| Tecnologia das telas | HTML, CSS e JS puros | Exigência da Etapa 4 e facilidade para explicar o código |
+| Banco | PostgreSQL no Supabase, região São Paulo | Volume pequeno; regras de acesso no próprio banco (RLS); login com MFA; dados no Brasil; custo zero no PIC |
+| Dados | JSON com uma coleção por tabela, sem dados repetidos; listas e regras em `_config` | A migração vira "uma coleção = uma tabela"; regra muda sem mexer no código |
+| Senha | NIST SP 800-63B-4: 15 caracteres, sem regra de composição, lista de senhas comuns; PBKDF2 600 mil | Recomendação atual; regras de símbolo geram senhas piores |
+| CPF repetido no formulário público | Mesma mensagem para todos; duplicidade só para a equipe | Avisar "CPF já cadastrado" revelaria quem é paciente da clínica |
+| Datas da demonstração | Relativas a `_meta.dataBase` | A demonstração não "envelhece" até o dia da apresentação |
+| Fontes | Servidas pelo próprio site | Nenhum dado de navegação vai para terceiros |
+| Exclusões | Nada é apagado; correção por adendo, revogação por novo registro, sessão cancelada | Imutabilidade do prontuário e trilha completa |
 
 ## ODS (Agenda 2030 da ONU)
 
@@ -140,15 +148,20 @@ Revisão da versão do grupo (identidade lilás e dados em JSON). O visual foi m
 
 ## Próximas etapas
 
-1. Etapa 1 revisada: correções acima e associação com ODS.
-2. Etapa 2: protótipo de baixa fidelidade, diagrama de navegação e DER.
-3. Etapa 3: protótipo de alta fidelidade no Figma.
-4. Evolução futura: back-end, banco de dados, autenticação real e criptografia.
+1. Etapa 1 revisada: correções acima, ODS e casos de uso atualizados ([`docs/diagramas.md`](docs/diagramas.md)).
+2. Etapa 2: baixa fidelidade ([`docs/baixa-fidelidade/`](docs/baixa-fidelidade/)), diagrama de navegação e DER ([`docs/diagramas.md`](docs/diagramas.md)).
+3. Etapa 3: protótipo de alta fidelidade no Figma (feito pelo grupo, a partir das telas do site).
+4. Ligar o banco: seguir [`banco/README.md`](banco/README.md).
+5. Produção: MFA, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Function para o link do paciente, backup no plano Pro.
 
 ## Referências
 
-- Resolução CFP nº 05/2025 (estágios e serviço-escola)
+- Lei Geral de Proteção de Dados — Lei nº 13.709/2018; Res. CD/ANPD nº 15/2024 (incidentes); Enunciado CD/ANPD nº 1/2023 (crianças e adolescentes)
+- Resolução CFP nº 05/2025 (estágios e serviço-escola; art. 5º suspenso por liminar do STF na ADI 7911)
 - Resolução CFP nº 01/2009 (registro documental e prontuário)
 - Código de Ética Profissional do Psicólogo (Resolução CFP nº 10/2005)
-- Resolução CFP nº 31/2022 (avaliação psicológica e SATEPSI)
-- Lei Geral de Proteção de Dados — Lei nº 13.709/2018
+- Resolução CFP nº 06/2019 (documentos), nº 31/2022 (avaliação psicológica e SATEPSI), nº 09/2024 (atendimento por TDICs)
+- Lei nº 13.787/2018 (guarda de prontuário em meio digital); Lei nº 14.063/2020 (assinaturas eletrônicas)
+- Marco Civil da Internet — Lei nº 12.965/2014, art. 15
+- Lei Brasileira de Inclusão — Lei nº 13.146/2015, art. 63; ABNT NBR 17225:2025 (WCAG 2.2)
+- NIST SP 800-63B-4 (2025); OWASP Password Storage Cheat Sheet

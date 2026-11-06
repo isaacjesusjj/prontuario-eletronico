@@ -1,355 +1,283 @@
 """Validador do arquivo dados/dados-iniciais.json do Vínculo.
-Confere sintaxe, ids únicos, referências entre coleções (como chaves estrangeiras)
-e regras do prontuário (ex.: evolução validada tem assinatura do estagiário e do supervisor).
-Uso, na pasta do projeto:  python ferramentas/validar_json.py  [arquivo.json]  [AAAA-MM-DD]
+
+Confere o que o banco também vai conferir (banco/schema.sql), antes de migrar:
+sintaxe, ids únicos, chaves estrangeiras entre coleções, valores das listas fechadas,
+CPF (dígitos verificadores e repetição), telefones, datas, senhas só como hash e
+regras do prontuário (assinaturas, consentimentos, abandono, vínculo de estágio).
+
+Uso, na pasta do projeto:  python ferramentas/validar_json.py  [arquivo.json]
 """
+import hashlib
 import json
 import re
 import sys
-from collections import Counter
-from datetime import date, datetime, timedelta
+from collections import Counter, defaultdict
+from datetime import date
 
 caminho = sys.argv[1] if len(sys.argv) > 1 else "dados/dados-iniciais.json"
-hoje = date.fromisoformat(sys.argv[2]) if len(sys.argv) > 2 else date.today()
 problemas, avisos = [], []
-
-
-def p(msg):
-    problemas.append(msg)
-
-
-def a(msg):
-    avisos.append(msg)
-
+p, a = problemas.append, avisos.append
 
 with open(caminho, encoding="utf-8") as f:
     texto = f.read()
 try:
     db = json.loads(texto)
 except json.JSONDecodeError as e:
-    print("JSON INVÁLIDO:", e)
-    sys.exit(2)
+    sys.exit(f"JSON INVÁLIDO: {e}")
 
-if texto.startswith("﻿"):
-    p("arquivo começa com BOM (pode quebrar leitores)")
-
-ESPERADAS = ["usuarios", "grupos", "estagiariosSemGrupo", "pacientes", "inscricoes", "casos", "sessoes",
-             "evolucoes", "orientacoes", "documentos", "anexos", "avaliacoes", "contatos", "solicitacoes", "auditoria"]
-for k in ESPERADAS:
+COLECOES = ["usuarios", "grupos", "subgrupos", "alocacoes", "pacientes", "inscricoes", "casos", "anamneses", "consentimentos",
+            "encerramentos", "sessoes", "evolucoes", "assinaturas", "adendos", "orientacoes", "documentos", "anexos", "avaliacoes",
+            "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "auditoria"]
+for c in COLECOES:
+    if c not in db:
+        p(f"coleção ausente: {c}")
+for c in db:
+    if not c.startswith("_") and c not in COLECOES:
+        p(f"coleção sem tabela no banco: {c}")
+for k in ("_meta", "_config"):
     if k not in db:
-        p(f"coleção ausente: {k}")
-for k in db:
-    if k not in ESPERADAS and not k.startswith("_"):
-        a(f"coleção não usada pelo código: {k}")
+        p(f"seção ausente: {k}")
+cfg = db.get("_config", {})
+for k in ("regras", "listas", "termos", "instituicao", "demo"):
+    if k not in cfg:
+        p(f"_config sem {k}")
 
 RE_DATA = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RE_DH = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$")
-RE_HORA = re.compile(r"^\d{2}:\d{2}$")
 
 
-def data_ok(v, onde, campo, dh=False):
+def data_ok(v, onde, dh=False, vazio=False):
+    if vazio and v in (None, ""):
+        return True
     if not isinstance(v, str) or not (RE_DH if dh else RE_DATA).match(v):
-        p(f"{onde}: {campo} fora do formato ({v!r})")
-        return None
+        p(f"{onde}: data fora do formato ({v!r})")
+        return False
     try:
-        return datetime.fromisoformat(v) if dh else date.fromisoformat(v)
+        date.fromisoformat(v[:10])
     except ValueError:
-        p(f"{onde}: {campo} é data impossível ({v!r})")
-        return None
+        p(f"{onde}: data impossível ({v!r})")
+        return False
+    return True
 
 
-# ids únicos (globalmente, porque a auditoria aponta "alvo" por id)
-todos = Counter()
-for k in ESPERADAS:
-    for item in db.get(k, []):
-        if isinstance(item, dict) and "id" in item:
-            todos[item["id"]] += 1
-for g in db.get("grupos", []):
-    for s in g.get("subgrupos", []):
-        todos[s["id"]] += 1
+def cpf_valido(c):
+    if not re.fullmatch(r"\d{11}", c or "") or len(set(c)) == 1:
+        return False
+    for t in (9, 10):
+        d = (sum(int(c[i]) * (t + 1 - i) for i in range(t)) * 10) % 11
+        if (0 if d == 10 else d) != int(c[t]):
+            return False
+    return True
+
+
+# ---------- ids únicos e índices ----------
+todos = Counter(x["id"] for c in COLECOES for x in db.get(c, []) if isinstance(x, dict) and "id" in x)
 for i, n in todos.items():
     if n > 1:
         p(f"id repetido: {i} ({n}x)")
+IDX = {c: {x["id"]: x for x in db.get(c, [])} for c in COLECOES}
+U, P, C, S, G, SUB, E = (IDX[k] for k in ("usuarios", "pacientes", "casos", "sessoes", "grupos", "subgrupos", "evolucoes"))
 
-U = {u["id"]: u for u in db["usuarios"]}
-P = {x["id"]: x for x in db["pacientes"]}
-C = {x["id"]: x for x in db["casos"]}
-S = {x["id"]: x for x in db["sessoes"]}
-G = {x["id"]: x for x in db["grupos"]}
-SUB = {s["id"]: (g["id"], s) for g in db["grupos"] for s in g["subgrupos"]}
 
-PERFIS = {"tecnico", "supervisor", "estagiario", "paciente", "direcao"}
-logins = Counter()
+def fk(colecao, campo, destino, nulo=False):
+    for x in db.get(colecao, []):
+        v = x.get(campo)
+        if v is None and nulo:
+            continue
+        if v not in IDX[destino]:
+            p(f"{colecao} {x.get('id')}: {campo}={v!r} não existe em {destino}")
+
+
+for col, campo, dest, nulo in [
+    ("usuarios", "pacienteId", "pacientes", True), ("grupos", "supervisorId", "usuarios", False), ("subgrupos", "grupoId", "grupos", False),
+    ("alocacoes", "estagiarioId", "usuarios", False), ("alocacoes", "grupoId", "grupos", False), ("alocacoes", "subgrupoId", "subgrupos", True),
+    ("casos", "pacienteId", "pacientes", False), ("casos", "grupoId", "grupos", True), ("casos", "subgrupoId", "subgrupos", True),
+    ("inscricoes", "casoId", "casos", True), ("anamneses", "casoId", "casos", False), ("anamneses", "autorId", "usuarios", False),
+    ("consentimentos", "casoId", "casos", False), ("consentimentos", "registradoPor", "usuarios", False), ("encerramentos", "casoId", "casos", False),
+    ("sessoes", "casoId", "casos", False), ("evolucoes", "casoId", "casos", False), ("evolucoes", "sessaoId", "sessoes", True),
+    ("evolucoes", "autorId", "usuarios", False), ("assinaturas", "usuarioId", "usuarios", False), ("adendos", "evolucaoId", "evolucoes", False),
+    ("orientacoes", "casoId", "casos", False), ("documentos", "casoId", "casos", False), ("anexos", "casoId", "casos", False),
+    ("avaliacoes", "casoId", "casos", False), ("contatos", "casoId", "casos", False), ("lembretes", "sessaoId", "sessoes", False),
+    ("solicitacoes", "pacienteId", "pacientes", False), ("solicitacoes", "casoId", "casos", False), ("linksAcesso", "casoId", "casos", False),
+    ("aceites", "usuarioId", "usuarios", False)]:
+    fk(col, campo, dest, nulo)
+
+# ---------- usuários e senhas ----------
+PERFIS = set(cfg.get("listas", {}).get("perfis", {}))
+logins, emails = Counter(), Counter()
 for u in db["usuarios"]:
-    if u.get("perfil") not in PERFIS:
-        p(f"usuário {u['id']}: perfil inválido {u.get('perfil')!r}")
-    for campo in ("nome", "descricao"):
-        if not u.get(campo):
-            p(f"usuário {u['id']}: {campo} vazio")
-    if u.get("perfil") in ("tecnico", "supervisor") and not u.get("crp"):
-        a(f"usuário {u['id']}: psicólogo sem CRP")
-    if u.get("perfil") == "paciente" and u.get("pacienteId") not in P:
-        p(f"usuário {u['id']}: pacienteId inexistente")
-    if "login" in u:
-        logins[u["login"].lower()] += 1
-for l, n in logins.items():
+    onde = f"usuário {u['id']}"
+    if u["perfil"] not in PERFIS:
+        p(f"{onde}: perfil inválido")
+    if "senha" in u:
+        p(f"{onde}: senha em texto (só pode existir senhaHash)")
+    if not str(u.get("senhaHash", "")).startswith("pbkdf2-sha256$"):
+        p(f"{onde}: senhaHash fora do formato pbkdf2-sha256$iterações$sal$hash")
+    if (u["perfil"] == "paciente") != bool(u.get("pacienteId")):
+        p(f"{onde}: só paciente tem pacienteId")
+    if u["perfil"] in ("tecnico", "supervisor") and not u.get("crp"):
+        p(f"{onde}: psicólogo sem CRP")
+    if u["perfil"] != "paciente" and not u.get("nome"):
+        p(f"{onde}: sem nome")
+    if u["perfil"] == "paciente" and u.get("nome"):
+        a(f"{onde}: nome do paciente repetido em usuarios (fica só em pacientes)")
+    logins[u["login"].lower()] += 1
+    emails[u["email"].lower()] += 1
+for l, n in list(logins.items()) + list(emails.items()):
     if n > 1:
-        p(f"login repetido: {l}")
-if logins and len(logins) != len(db["usuarios"]):
-    p("nem todos os usuários têm login")
+        p(f"login ou e-mail repetido: {l}")
 
-# grupos
-vistos = Counter()
-for g in db["grupos"]:
-    sup = U.get(g.get("supervisorId"))
-    if not sup or sup["perfil"] != "supervisor":
-        p(f"grupo {g['id']}: supervisorId não é supervisor")
-    elif g["nome"] not in sup["descricao"]:
-        a(f"grupo {g['id']}: descrição do supervisor não cita {g['nome']}")
-    for s in g["subgrupos"]:
-        if not 2 <= len(s["estagiarios"]) <= 3:
-            a(f"{g['id']}/{s['id']}: {len(s['estagiarios'])} estagiários (esperado dupla ou trio)")
-        for e in s["estagiarios"]:
-            vistos[e] += 1
-            eu = U.get(e)
-            if not eu or eu["perfil"] != "estagiario":
-                p(f"{g['id']}/{s['id']}: {e} não é estagiário")
-            elif g["nome"] not in eu["descricao"] or s["nome"] not in eu["descricao"]:
-                p(f"usuário {e}: descrição ({eu['descricao']!r}) não bate com {g['nome']}, {s['nome']}")
-    nest = sum(len(s["estagiarios"]) for s in g["subgrupos"]) + len(g.get("semDupla", []))
-    if nest > 10:
-        p(f"grupo {g['id']}: {nest} estagiários (Res. CFP 05/2025: até 10 por orientação grupal)")
-for e, n in vistos.items():
-    if n > 1:
-        p(f"estagiário {e} em mais de um subgrupo")
-for e in db["estagiariosSemGrupo"]:
-    if e in vistos:
-        p(f"{e} está sem grupo e também num subgrupo")
-for u in db["usuarios"]:
-    if u["perfil"] == "estagiario" and u["id"] not in vistos and u["id"] not in db["estagiariosSemGrupo"]:
-        p(f"estagiário {u['id']} não está em grupo nem na lista sem grupo")
+# ---------- alocações (vínculo de estágio) ----------
+hoje = date.today().isoformat()
+ativas = defaultdict(list)
+for al in db["alocacoes"]:
+    if U.get(al["estagiarioId"], {}).get("perfil") != "estagiario":
+        p(f"alocação {al['id']}: não é estagiário")
+    if al.get("subgrupoId") and SUB[al["subgrupoId"]]["grupoId"] != al["grupoId"]:
+        p(f"alocação {al['id']}: dupla de outro grupo")
+    if not al.get("fim"):
+        ativas[al["estagiarioId"]].append(al)
+for e, l in ativas.items():
+    if len(l) > 1:
+        p(f"estagiário {e} com mais de um vínculo ativo")
+por_grupo = Counter(al["grupoId"] for l in ativas.values() for al in l)
+for g, n in por_grupo.items():
+    if n > cfg["regras"]["maxEstagiariosPorGrupo"]:
+        a(f"grupo {g}: {n} estagiários (alerta configurável; Res. CFP 05/2025, art. 5º, suspenso pelo STF na ADI 7911)")
 
 
 def estagiarios_do_caso(c):
-    if not c.get("subgrupoId") or c["subgrupoId"] not in SUB:
-        return []
-    return SUB[c["subgrupoId"]][1]["estagiarios"]
+    return [al["estagiarioId"] for l in ativas.values() for al in l if al.get("subgrupoId") == c.get("subgrupoId")]
 
 
 def supervisor_do_caso(c):
     return G[c["grupoId"]]["supervisorId"] if c.get("grupoId") in G else None
 
 
-# pacientes e inscrições
+# ---------- pacientes e inscrições (CPF) ----------
+cpfs = Counter(x["cpf"] for x in db["pacientes"] if x.get("cpf"))
 for x in db["pacientes"]:
-    if not isinstance(x.get("idade"), int):
-        p(f"paciente {x['id']}: idade não numérica")
-    elif x["idade"] < 18 and not x.get("responsavel"):
-        p(f"paciente {x['id']}: menor de idade sem responsável")
-    if "fictício" not in x.get("contato", ""):
-        a(f"paciente {x['id']}: contato sem marca de fictício")
-CAMPOS_INSC = {"id", "nome", "idade", "contato", "responsavel", "resumo", "periodo", "data", "status"}
+    onde = f"paciente {x['id']}"
+    if x.get("cpf") and not cpf_valido(x["cpf"]):
+        p(f"{onde}: CPF inválido")
+    if cpfs.get(x.get("cpf"), 0) > 1:
+        p(f"{onde}: CPF repetido")
+    if not re.fullmatch(r"\d{10,11}", x["telefone"]):
+        p(f"{onde}: telefone inválido")
+    if data_ok(x["dataNascimento"], onde):
+        idade = (date.today() - date.fromisoformat(x["dataNascimento"])).days // 365
+        if idade < 18 and not x.get("responsavelNome"):
+            p(f"{onde}: menor de idade sem responsável")
+    if x["canalLembrete"] not in ("whatsapp", "email", "nenhum"):
+        p(f"{onde}: canal de lembrete inválido")
 for i in db["inscricoes"]:
-    falta = CAMPOS_INSC - set(i)
-    if falta:
-        a(f"inscrição {i['id']}: campos ausentes {sorted(falta)} (o formulário grava todos)")
-    if i.get("idade", 99) < 18 and not i.get("responsavel"):
-        p(f"inscrição {i['id']}: menor de idade sem nome do responsável")
-    if i.get("status") not in ("aguardando", "triada", "encaminhado-externo"):
-        p(f"inscrição {i['id']}: status inválido")
-    d = data_ok(i.get("data"), f"inscrição {i['id']}", "data")
-    if d and d > hoje:
-        p(f"inscrição {i['id']}: data no futuro")
+    onde = f"inscrição {i['id']}"
+    if i.get("cpf") and not cpf_valido(i["cpf"]):
+        p(f"{onde}: CPF inválido")
+    if not i.get("cpf") and not i.get("semCpf"):
+        p(f"{onde}: sem CPF e sem marcar 'não tenho CPF'")
+    dup = i.get("duplicidade")
+    esperado = next((x["id"] for x in db["pacientes"] if i.get("cpf") and x["cpf"] == i["cpf"]), None)
+    if esperado and (not dup or dup.get("id") != esperado):
+        p(f"{onde}: CPF de paciente cadastrado sem a marca de duplicidade")
+    if i["status"] not in ("aguardando", "triada", "encaminhado-externo", "duplicada", "cancelada"):
+        p(f"{onde}: status inválido")
+    if len(i["resumo"]) > 140:
+        p(f"{onde}: resumo com mais de 140 caracteres")
 
-# casos
-STATUS_CASO = {"ativo", "encerrado", "aguardando-alocacao"}
+# ---------- casos, consentimentos, anamnese, encerramento ----------
+FINS = [f["id"] for f in cfg["listas"]["finalidadesConsentimento"]]
+cons = defaultdict(list)
+for c in db["consentimentos"]:
+    if c["finalidade"] not in FINS:
+        p(f"consentimento {c['id']}: finalidade inválida")
+    data_ok(c["em"], f"consentimento {c['id']}", dh=True)
+    cons[(c["casoId"], c["finalidade"])].append(c)
+enc = {e["casoId"]: e for e in db["encerramentos"]}
 for c in db["casos"]:
     onde = f"caso {c['id']}"
-    if c["pacienteId"] not in P:
-        p(f"{onde}: pacienteId inexistente")
-    if c["status"] not in STATUS_CASO:
+    if c["status"] not in ("ativo", "encerrado", "aguardando-alocacao"):
         p(f"{onde}: status inválido")
-    if c["status"] == "aguardando-alocacao":
-        if c.get("grupoId") or c.get("subgrupoId"):
-            p(f"{onde}: aguardando alocação mas tem grupo")
-    else:
-        if c.get("grupoId") not in G:
-            p(f"{onde}: grupoId inválido")
-        if c.get("subgrupoId") and SUB.get(c["subgrupoId"], (None,))[0] != c.get("grupoId"):
-            p(f"{onde}: subgrupo não pertence ao grupo")
-    ini = data_ok(c.get("inicio"), onde, "inicio")
-    if c["status"] == "encerrado":
-        enc = c.get("encerramento")
-        if not enc:
-            p(f"{onde}: encerrado sem dados de encerramento")
-        else:
-            de = data_ok(enc.get("data"), onde, "encerramento.data")
-            if enc.get("tipo") not in ("alta", "abandono", "encaminhamento"):
-                p(f"{onde}: tipo de encerramento inválido")
-            ses = sorted(s["data"] for s in db["sessoes"] if s["casoId"] == c["id"])
-            if de and ses and (de - date.fromisoformat(ses[-1])).days > 35:
-                a(f"{onde}: encerrado em {de} mas a última sessão foi {ses[-1]} ({(de - date.fromisoformat(ses[-1])).days} dias)")
-            if enc.get("tipo") == "abandono" and not [x for x in db["contatos"] if x["casoId"] == c["id"]]:
-                p(f"{onde}: abandono sem tentativa de contato registrada")
-    elif c.get("encerramento"):
-        p(f"{onde}: tem encerramento mas não está encerrado")
-    if ini and c["status"] != "aguardando-alocacao":
-        primeiras = sorted(s["data"] for s in db["sessoes"] if s["casoId"] == c["id"])
-        if primeiras and primeiras[0] != c["inicio"]:
-            a(f"{onde}: início {c['inicio']} difere da 1ª sessão {primeiras[0]}")
-    for k in ("contrato", "supervisaoGrupo", "gravacao", "ensinoAnonimo"):
-        if not isinstance(c.get("consentimentos", {}).get(k), bool):
-            p(f"{onde}: consentimento {k} ausente ou não booleano")
-    if c["status"] == "ativo" and not c["consentimentos"]["contrato"]:
+    for f in FINS:
+        if not cons.get((c["id"], f)):
+            p(f"{onde}: sem registro de consentimento para {f}")
+    atual = {f: sorted(cons.get((c["id"], f), []), key=lambda x: x["em"])[-1:] for f in FINS}
+    if c["status"] == "ativo" and not (atual["contrato"] and atual["contrato"][0]["concedido"]):
         p(f"{onde}: ativo sem contrato terapêutico")
+    if not [x for x in db["anamneses"] if x["casoId"] == c["id"]]:
+        p(f"{onde}: sem anamnese (versão 1)")
+    if (c["status"] == "encerrado") != (c["id"] in enc):
+        p(f"{onde}: status e encerramento não batem")
+    if c["id"] in enc and enc[c["id"]]["tipo"] == "abandono" and not [x for x in db["contatos"] if x["casoId"] == c["id"]]:
+        p(f"{onde}: abandono sem tentativa de contato")
+versoes = Counter((x["casoId"], x["versao"]) for x in db["anamneses"])
+for k, n in versoes.items():
+    if n > 1:
+        p(f"anamnese repetida: caso {k[0]} versão {k[1]}")
 
-# sessões
-PRES = {"presente", "falta", "falta-justificada", "agendada"}
-horarios = Counter()
+# ---------- sessões ----------
+PRES = set(cfg["listas"]["presencas"]) | {"cancelada"}
 for s in db["sessoes"]:
     onde = f"sessão {s['id']}"
-    c = C.get(s["casoId"])
-    if not c:
-        p(f"{onde}: casoId inexistente")
-        continue
     if s["presenca"] not in PRES:
         p(f"{onde}: presença inválida")
-    d = data_ok(s.get("data"), onde, "data")
-    if not RE_HORA.match(s.get("hora", "")):
-        p(f"{onde}: hora inválida")
-    if d:
-        if s["presenca"] == "agendada":
-            if "confirmada" not in s:
-                a(f"{onde}: agendada sem campo confirmada")
-            if d < hoje:
-                a(f"{onde}: agendada para {d}, já passou em {hoje} (some das 'Próximas sessões')")
-        elif d > hoje:
-            p(f"{onde}: presença registrada numa data futura ({d})")
-        if c.get("inicio") and d < date.fromisoformat(c["inicio"]):
-            p(f"{onde}: antes do início do caso")
-        if c["status"] == "encerrado" and c.get("encerramento") and d > date.fromisoformat(c["encerramento"]["data"]):
-            p(f"{onde}: depois do encerramento do caso")
-    # conflito de agenda da mesma dupla/trio
-    if c.get("subgrupoId"):
-        horarios[(c["subgrupoId"], s["data"], s["hora"])] += 1
-for k, n in horarios.items():
-    if n > 1:
-        p(f"conflito de agenda: {k[0]} tem {n} sessões em {k[1]} {k[2]}")
+    data_ok(s["data"], onde)
+    if not ("07:00" <= s["hora"] <= "21:00"):
+        p(f"{onde}: hora fora do funcionamento")
+    if s["presenca"] in ("presente", "falta") and s["data"] > db["_meta"]["dataBase"]:
+        p(f"{onde}: presença registrada depois da dataBase")
 
-# evoluções
-STATUS_EV = {"rascunho", "enviada", "devolvida", "validada"}
+# ---------- evoluções e assinaturas ----------
+assin = defaultdict(list)
+for x in db["assinaturas"]:
+    assin[(x["alvoTipo"], x["alvoId"])].append(x)
+    if x["papel"] not in ("estagiario", "supervisor"):
+        p(f"assinatura {x['id']}: papel inválido")
 for e in db["evolucoes"]:
     onde = f"evolução {e['id']}"
-    c = C.get(e["casoId"])
-    if not c:
-        p(f"{onde}: casoId inexistente")
-        continue
-    if e["status"] not in STATUS_EV:
+    c = C[e["casoId"]]
+    if e["status"] not in cfg["listas"]["statusEvolucao"]:
         p(f"{onde}: status inválido")
     if e["autorId"] not in estagiarios_do_caso(c):
-        p(f"{onde}: autor {e['autorId']} não é estagiário do caso")
-    data_ok(e.get("data"), onde, "data")
-    if e.get("sessaoId"):
-        s = S.get(e["sessaoId"])
-        if not s:
-            p(f"{onde}: sessaoId inexistente")
-        elif s["casoId"] != e["casoId"]:
-            p(f"{onde}: sessão de outro caso")
-        elif s["presenca"] != "presente":
-            p(f"{onde}: sessão sem presença ({s['presenca']})")
-        elif s["data"] != e["data"]:
-            a(f"{onde}: data {e['data']} difere da sessão {s['data']}")
-    assin = [x["usuarioId"] for x in e.get("assinaturas", [])]
-    for x in e.get("assinaturas", []):
-        data_ok(x.get("em"), onde, "assinatura.em", dh=True)
-    sup = supervisor_do_caso(c)
-    if e["status"] == "rascunho" and assin:
-        p(f"{onde}: rascunho com assinatura")
-    if e["status"] == "enviada" and assin != [e["autorId"]]:
-        p(f"{onde}: enviada deveria ter só a assinatura do autor")
-    if e["status"] == "devolvida":
-        if assin:
-            p(f"{onde}: devolvida com assinatura (o código apaga as assinaturas ao devolver)")
-        if not e.get("comentarioSupervisor"):
-            p(f"{onde}: devolvida sem comentário do supervisor")
-    if e["status"] == "validada" and (len(assin) != 2 or assin[0] != e["autorId"] or assin[1] != sup):
-        p(f"{onde}: validada deveria ter assinatura do autor e do supervisor do caso ({sup})")
-    if e["status"] != "validada" and e.get("adendos"):
-        p(f"{onde}: adendo em evolução não validada")
-    for ad in e.get("adendos", []):
-        if ad["autorId"] not in estagiarios_do_caso(c) + [sup]:
-            p(f"{onde}: adendo de quem não é da equipe")
-        data_ok(ad.get("em"), onde, "adendo.em", dh=True)
-# sessões com presença sem evolução
+        p(f"{onde}: autor não é estagiário (com vínculo ativo) do caso")
+    h = hashlib.sha256(e["texto"].encode("utf-8")).hexdigest()
+    vig = [x for x in assin.get(("evolucao", e["id"]), []) if not x.get("hash") or x["hash"] == h]
+    papeis = {x["papel"]: x for x in vig}
+    if e["status"] == "validada" and not ("estagiario" in papeis and papeis.get("supervisor", {}).get("usuarioId") == supervisor_do_caso(c)):
+        p(f"{onde}: validada sem as assinaturas do estagiário e do supervisor do caso")
+    if e["status"] == "enviada" and "estagiario" not in papeis:
+        p(f"{onde}: enviada sem a assinatura do estagiário")
+    if e["status"] == "devolvida" and len(e.get("comentarioSupervisor", "")) < 5:
+        p(f"{onde}: devolvida sem comentário")
+    if e.get("sessaoId") and S[e["sessaoId"]]["presenca"] != "presente":
+        p(f"{onde}: sessão sem presença")
+for ad in db["adendos"]:
+    if E[ad["evolucaoId"]]["status"] != "validada":
+        p(f"adendo {ad['id']}: em evolução não validada")
 com_evo = {e.get("sessaoId") for e in db["evolucoes"]}
 for s in db["sessoes"]:
     if s["presenca"] == "presente" and s["id"] not in com_evo:
-        c = C[s["casoId"]]
-        (a if c["status"] == "ativo" else p)(f"sessão {s['id']} ({c['id']}, {c['status']}) com presença e sem evolução")
-
-# demais coleções
+        (a if C[s["casoId"]]["status"] == "ativo" else p)(f"sessão {s['id']} ({s['casoId']}) com presença e sem evolução")
 for o in db["orientacoes"]:
-    c = C.get(o["casoId"])
-    if not c or supervisor_do_caso(c) != o["supervisorId"]:
+    if supervisor_do_caso(C[o["casoId"]]) != o["supervisorId"]:
         p(f"orientação {o['id']}: supervisor não é o do caso")
 for d in db["documentos"]:
-    c = C.get(d["casoId"])
-    if not c:
-        p(f"documento {d['id']}: casoId inexistente")
-        continue
-    if d["autorId"] not in estagiarios_do_caso(c) or d["autorId"] not in d["assinadoPor"]:
-        p(f"documento {d['id']}: autor não é estagiário do caso ou não assinou")
-    for k in ("finalidade", "destinatario", "emitidoEm"):
-        if not d.get(k):
-            p(f"documento {d['id']}: {k} vazio (Res. CFP 05/2025, art. 12, VI)")
+    if not d.get("finalidade") or not d.get("destinatario"):
+        p(f"documento {d['id']}: sem finalidade ou destinatário (Res. CFP 05/2025, art. 12)")
 for x in db["anexos"]:
-    if x["casoId"] not in C or x["enviadoPor"] not in U:
-        p(f"anexo {x['id']}: referência inválida")
-for x in db["avaliacoes"]:
-    c = C.get(x["casoId"])
-    if not c or x["aplicadoPor"] not in estagiarios_do_caso(c) + [supervisor_do_caso(c)]:
-        p(f"avaliação {x['id']}: aplicador não é da equipe do caso")
-MOTIVOS = {"", "Horário incompatível", "Transporte ou distância", "Melhora percebida",
-           "Não se adaptou ao atendimento", "Trabalho ou questão financeira", "Outro"}
-for x in db["contatos"]:
-    c = C.get(x["casoId"])
-    if not c or x["registradoPor"] not in estagiarios_do_caso(c) + [supervisor_do_caso(c), "u-tec"]:
-        p(f"contato {x['id']}: quem registrou não é da equipe")
-    if x.get("motivo") not in MOTIVOS:
-        p(f"contato {x['id']}: motivo {x['motivo']!r} fora da lista da tela (separa o indicador em duas barras)")
-for c in db["casos"]:
-    enc = c.get("encerramento")
-    if enc and enc["tipo"] == "abandono" and enc["motivo"] not in MOTIVOS:
-        p(f"caso {c['id']}: motivo de abandono {enc['motivo']!r} fora da lista da tela (indicador duplicado)")
-for x in db["solicitacoes"]:
-    if x["pacienteId"] not in P or x["casoId"] not in C:
-        p(f"solicitação {x['id']}: referência inválida")
+    if x["tipo"] not in [t["mime"] for t in cfg["listas"]["tiposArquivo"]] or x["tamanho"] > cfg["regras"]["uploadMaxMB"] * 1048576:
+        p(f"anexo {x['id']}: tipo ou tamanho fora da regra")
 for x in db["auditoria"]:
-    if x["usuarioId"] not in U and x["usuarioId"] != "visitante":
+    data_ok(x["em"], f"auditoria {x['id']}", dh=True)
+    if x["usuarioId"] != "visitante" and x["usuarioId"] not in U:
         p(f"auditoria {x['id']}: usuário inexistente")
-    data_ok(x.get("em"), f"auditoria {x['id']}", "em", dh=True)
 
-# pacientes sem caso / casos sem paciente
-for pid in P:
-    if not any(c["pacienteId"] == pid for c in db["casos"]):
-        a(f"paciente {pid} sem caso")
-for u in db["usuarios"]:
-    if u["perfil"] == "paciente":
-        if not any(c["pacienteId"] == u["pacienteId"] and c["status"] == "ativo" for c in db["casos"]):
-            a(f"usuário paciente {u['id']} sem caso ativo")
-
-# próximos atendimentos por caso ativo
-for c in db["casos"]:
-    if c["status"] == "ativo":
-        fut = [s for s in db["sessoes"] if s["casoId"] == c["id"] and s["presenca"] == "agendada" and date.fromisoformat(s["data"]) >= hoje]
-        if not fut:
-            a(f"caso ativo {c['id']} sem sessão futura em {hoje}")
-
-print(f"Data de referência: {hoje}")
-print(f"\nPROBLEMAS ({len(problemas)}):")
-for x in problemas:
-    print("  -", x)
-print(f"\nAVISOS ({len(avisos)}):")
-for x in avisos:
-    print("  -", x)
+print(f"Arquivo: {caminho}  (versão {db['_meta']['versao']}, dataBase {db['_meta'].get('dataBase')})")
+print("Registros: " + ", ".join(f"{c} {len(db[c])}" for c in COLECOES if db.get(c)))
+for titulo, lista in (("PROBLEMAS", problemas), ("AVISOS", avisos)):
+    print(f"\n{titulo} ({len(lista)})")
+    for m in lista:
+        print("  - " + m)
+if avisos:
+    print("\nAvisos de cenário de propósito: sessão do caso c03 sem evolução (mostra o alerta de 48 h).")
 sys.exit(1 if problemas else 0)

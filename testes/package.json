@@ -1,0 +1,8 @@
+{
+  "name": "vinculo-testes",
+  "private": true,
+  "description": "Testes de interface e acessibilidade do Vínculo (Playwright + axe-core)",
+  "dependencies": {
+    "axe-core": "^4.14.0"
+  }
+}

@@ -4,19 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Título neutro: nunca colocar nome de paciente no título da aba -->
-  <title>Vínculo — Prontuário da Clínica-Escola</title>
+  <title>Vínculo · Prontuário da Clínica-Escola</title>
   <meta name="description" content="Protótipo acadêmico de prontuário eletrônico para clínica-escola de Psicologia. Dados fictícios.">
+  <!-- Não indexar: prontuário não deve aparecer em buscadores -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <!-- Política de segurança: só carrega scripts, estilos e fontes do próprio site
+       (o VLibras, do gov.br, só quando a pessoa pede) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br; style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br; img-src 'self' data: blob: https://vlibras.gov.br https://*.vlibras.gov.br; font-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br; connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br; frame-src blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <!-- Ícone da aba embutido (evita o erro 404 do favicon.ico no console) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='%23432a68' stroke='%23b08d4a' stroke-width='3'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='30' text-anchor='middle' fill='%23e8d9b5'%3EV%3C/text%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
-  <!-- Aviso fixo: protótipo, dados fictícios, permissões simuladas -->
+  <a class="pular" href="#app">Pular para o conteúdo</a>
+
+  <!-- Aviso fixo: protótipo, dados fictícios -->
   <div class="faixa-aviso" role="note">
-    Protótipo acadêmico · dados 100% fictícios · permissões simuladas no navegador
+    Protótipo acadêmico · dados 100% fictícios · pronto para ligar o banco de dados
   </div>
 
   <header class="topo" id="topo"></header>
@@ -28,19 +33,39 @@
     </main>
   </div>
 
+  <footer class="rodape" id="rodape"></footer>
+
+  <!-- Aviso de inatividade (WCAG 2.2, critério 2.2.1: avisar e permitir continuar) -->
+  <div class="aviso-sessao" id="aviso-sessao" role="alertdialog" aria-labelledby="aviso-sessao-titulo" aria-describedby="aviso-sessao-texto" hidden>
+    <strong id="aviso-sessao-titulo">Você ainda está aí?</strong>
+    <span id="aviso-sessao-texto"></span>
+    <button class="botao pequeno" data-acao="continuar-sessao">Continuar conectado</button>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="sr-only" id="anuncio" aria-live="polite"></div>
 
   <!-- Scripts clássicos; os dados ficam em dados/dados-iniciais.json -->
+  <script src="js/config-banco.js"></script>
   <script src="js/dados.js"></script>
+  <script src="js/seguranca.js"></script>
   <script src="js/estado.js"></script>
+  <script src="js/repositorio.js"></script>
+  <script src="js/adaptador-supabase.js"></script>
+  <script src="js/validadores.js"></script>
+  <script src="js/arquivos.js"></script>
   <script src="js/permissoes.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/acessibilidade.js"></script>
   <script src="js/telas-entrada.js"></script>
   <script src="js/telas-painel.js"></script>
   <script src="js/telas-caso.js"></script>
   <script src="js/telas-caso-extra.js"></script>
   <script src="js/telas-gestao.js"></script>
   <script src="js/telas-gestao2.js"></script>
+  <script src="js/telas-agenda.js"></script>
+  <script src="js/telas-conta.js"></script>
+  <script src="js/telas-legal.js"></script>
   <script src="js/acoes.js"></script>
   <script src="js/inicio.js"></script>
 </body>
