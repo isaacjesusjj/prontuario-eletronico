@@ -1,4 +1,4 @@
--- Gerado por banco/migrar_json.py a partir de dados-iniciais.json (versão 2026-11-06.1)
+-- Gerado por banco/migrar_json.py a partir de dados-iniciais.json (versão 2026-11-06.2)
 -- Dados 100% fictícios. Rodar depois de banco/schema.sql.
 set timezone to 'America/Sao_Paulo';
 set app.migracao = 'on';
@@ -102,8 +102,8 @@ insert into consentimentos (id, caso_id, finalidade, concedido, termo_versao, re
 insert into consentimentos (id, caso_id, finalidade, concedido, termo_versao, registrado_por, em) values ('cs35', 'c07', 'lembretes', false, '2026.1', 'u-tec', '2026-11-03T10:00');
 insert into consentimentos (id, caso_id, finalidade, concedido, termo_versao, registrado_por, em) values ('cs36', 'c01', 'ensinoAnonimo', false, '2026.1', 'u-pac1', '2026-10-15T20:12');
 
-insert into encerramentos (id, caso_id, data, tipo, motivo, registro, registrado_por) values ('enc01', 'c05', '2026-08-29', 'abandono', 'Horário incompatível', 'Duas faltas seguidas; contato por telefone confirmou que o horário ficou incompatível. Vaga liberada e orientação sobre nova inscrição.', 'u-est5');
-insert into encerramentos (id, caso_id, data, tipo, motivo, registro, registrado_por) values ('enc02', 'c06', '2026-09-30', 'alta', 'Objetivos alcançados', 'Alta combinada com a paciente após revisão dos objetivos.', 'u-est5');
+insert into encerramentos (id, caso_id, data, tipo, motivo, destino, registro, registrado_por) values ('enc01', 'c05', '2026-08-29', 'abandono', 'Horário incompatível', '', 'Duas faltas seguidas; contato por telefone confirmou que o horário ficou incompatível. Vaga liberada e orientação sobre nova inscrição.', 'u-est5');
+insert into encerramentos (id, caso_id, data, tipo, motivo, destino, registro, registrado_por) values ('enc02', 'c06', '2026-09-30', 'alta', 'Objetivos alcançados', '', 'Alta combinada com a paciente após revisão dos objetivos.', 'u-est5');
 
 insert into sessoes (id, caso_id, data, hora, presenca, confirmada) values ('s01', 'c01', '2026-08-19', '14:00', 'presente', false);
 insert into sessoes (id, caso_id, data, hora, presenca, confirmada) values ('s02', 'c01', '2026-08-26', '14:00', 'presente', false);

@@ -11,6 +11,9 @@
 --      anamneses e auditoria não aceitam UPDATE nem DELETE.
 --   4. Auditoria com cadeia de hash SHA-256 calculada pelo próprio banco,
 --      com a mesma fórmula do navegador (js/estado.js).
+--   5. Regras de transição: ninguém muda o próprio perfil, não há evolução
+--      que nasça validada, caso encerrado não reabre, vínculo encerrado não
+--      volta e a data e a hora dos registros vêm do relógio do servidor.
 -- =====================================================================
 
 create schema if not exists app;
@@ -164,8 +167,10 @@ create table encerramentos (
   data           date not null default current_date,
   tipo           text not null check (tipo in ('alta', 'encaminhamento', 'abandono')),
   motivo         text not null,
+  destino        text not null default '',  -- serviço da rede que recebe o encaminhamento (CAPS, UBS, CRAS...)
   registro       text not null,
-  registrado_por text not null references usuarios (id)
+  registrado_por text not null references usuarios (id),
+  check (tipo <> 'encaminhamento' or length(destino) >= 3)
 );
 
 create table sessoes (
@@ -185,7 +190,7 @@ create table evolucoes (
   autor_id              text not null references usuarios (id),
   data                  date not null default current_date,
   status                text not null check (status in ('rascunho', 'enviada', 'devolvida', 'validada')),
-  texto                 text not null check (length(texto) >= 10),
+  texto                 text not null check (length(texto) between 10 and 5000),  -- prontuário conciso (o paciente pode ler)
   comentario_supervisor text not null default '',
   check (status <> 'devolvida' or length(comentario_supervisor) >= 5)
 );
@@ -375,6 +380,26 @@ language sql stable security definer set search_path = public as $$
   select paciente_id from usuarios where auth_id = auth.uid() and ativo
 $$;
 
+-- Quem chama pela API (site) entra com o papel anon ou authenticated. Fora disso é o administrador
+-- (SQL Editor do Supabase, service_role ou a migração). Vale também dentro de funções security definer.
+create or replace function app.eh_admin() returns boolean
+language sql stable as $$
+  select coalesce(current_setting('role', true), 'none') not in ('anon', 'authenticated')
+$$;
+
+-- Durante a carga de banco/dados-demo.sql (set app.migracao = 'on') os registros antigos entram como estão
+create or replace function app.em_migracao() returns boolean
+language sql stable as $$
+  select app.eh_admin() and coalesce(current_setting('app.migracao', true), '') = 'on'
+$$;
+
+-- Consentimento vigente = o registro mais recente daquela finalidade (revogar é um novo registro)
+create or replace function app.consentiu(p_caso text, p_finalidade text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select concedido from consentimentos where caso_id = p_caso and finalidade = p_finalidade
+                   order by em desc limit 1), false)
+$$;
+
 -- As mesmas regras de js/permissoes.js
 create or replace function app.eh_estagiario_do_caso(p_caso text) returns boolean
 language sql stable security definer set search_path = public as $$
@@ -430,34 +455,191 @@ create trigger sem_exclusao before delete on casos for each row execute function
 create trigger sem_exclusao before delete on pacientes for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on sessoes for each row execute function app.bloquear_alteracao();
 
--- Evolução: rascunho/devolvida → enviada → validada (bloqueada) ou devolvida
+-- Evolução: nasce rascunho ou enviada; rascunho/devolvida → enviada → validada (bloqueada) ou devolvida.
+-- Validar é papel do supervisor: nenhuma evolução nasce validada.
 create or replace function app.evolucao_regras() returns trigger
-language plpgsql as $$
+language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'DELETE' then raise exception 'Evolução não pode ser apagada.'; end if;
+  if tg_op = 'INSERT' then
+    if app.em_migracao() then return new; end if;
+    if new.status not in ('rascunho', 'enviada') then raise exception 'Evolução nova entra como rascunho ou enviada: quem valida é o supervisor.'; end if;
+    if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso ativo recebe evolução.'; end if;
+    if new.sessao_id is not null and not exists (select 1 from sessoes s where s.id = new.sessao_id and s.caso_id = new.caso_id and s.presenca = 'presente') then
+      raise exception 'A sessão da evolução precisa ser do mesmo caso e ter presença registrada.';
+    end if;
+    return new;
+  end if;
   if old.status = 'validada' then raise exception 'Evolução validada é imutável: registre um adendo.'; end if;
-  if new.caso_id <> old.caso_id or new.autor_id <> old.autor_id then raise exception 'Caso e autor da evolução não mudam.'; end if;
+  if (new.caso_id, new.autor_id, new.data) is distinct from (old.caso_id, old.autor_id, old.data)
+     or new.sessao_id is distinct from old.sessao_id then
+    raise exception 'Caso, autor, data e sessão da evolução não mudam.';
+  end if;
   if not ((old.status in ('rascunho', 'devolvida') and new.status in (old.status, 'enviada'))
        or (old.status = 'enviada' and new.status in ('validada', 'devolvida'))) then
     raise exception 'Mudança de status inválida: % → %.', old.status, new.status;
   end if;
+  if new.status = 'enviada' and old.status <> 'enviada' and not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then
+    raise exception 'Caso encerrado não recebe evolução nova.';
+  end if;
   if old.status = 'enviada' and new.texto <> old.texto then raise exception 'Texto enviado à supervisão não pode mudar.'; end if;
   return new;
 end $$;
-create trigger regras before update or delete on evolucoes for each row execute function app.evolucao_regras();
+create trigger regras before insert or update or delete on evolucoes for each row execute function app.evolucao_regras();
 
--- Sessão: presença registrada não muda; paciente só confirma presença
+-- Sessão: nasce agendada, de hoje em diante, num caso ativo. Presença registrada não muda;
+-- o paciente só confirma presença. Quem registrou a presença é gravado pelo banco.
 create or replace function app.sessao_regras() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if app.perfil_atual() = 'paciente' and (new.presenca, new.data, new.hora, new.caso_id) is distinct from (old.presenca, old.data, old.hora, old.caso_id) then
+  if tg_op = 'INSERT' then
+    if app.em_migracao() then return new; end if;
+    if new.presenca <> 'agendada' or new.confirmada then raise exception 'Sessão nova entra como agendada: a presença é registrada a partir do dia da sessão.'; end if;
+    if new.data < current_date then raise exception 'Agendamento só de hoje em diante.'; end if;
+    if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso ativo recebe agendamento.'; end if;
+    new.presenca_registrada_por := null;
+    return new;
+  end if;
+  if new.caso_id <> old.caso_id then raise exception 'A sessão não muda de caso.'; end if;
+  if app.perfil_atual() = 'paciente' and (new.presenca, new.data, new.hora) is distinct from (old.presenca, old.data, old.hora) then
     raise exception 'Paciente só pode confirmar presença.';
   end if;
-  if old.presenca <> 'agendada' and new.presenca <> old.presenca then raise exception 'Presença já registrada não muda.'; end if;
+  if old.presenca <> 'agendada' and (new.presenca, new.data, new.hora) is distinct from (old.presenca, old.data, old.hora) then
+    raise exception 'Presença já registrada não muda.';
+  end if;
   if new.presenca in ('presente', 'falta') and new.data > current_date then raise exception 'Presença e falta só a partir do dia da sessão.'; end if;
+  if new.presenca is distinct from old.presenca then new.presenca_registrada_por := app.usuario_atual(); end if;
   return new;
 end $$;
-create trigger regras before update on sessoes for each row execute function app.sessao_regras();
+create trigger regras before insert or update on sessoes for each row execute function app.sessao_regras();
+
+-- Caso: paciente e início não mudam; encerrado não reabre (quem volta ganha um caso novo na triagem).
+-- Técnico aloca ao grupo (com contrato terapêutico); supervisor define a dupla/trio do próprio grupo;
+-- encerrar exige o registro de encerramento.
+create or replace function app.caso_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare perfil text := coalesce(app.perfil_atual(), '');   -- '' = sem perfil (nunca NULL, que confundiria os IFs)
+begin
+  if (new.paciente_id, new.inicio) is distinct from (old.paciente_id, old.inicio) then raise exception 'Paciente e início do caso não mudam.'; end if;
+  if old.status = 'encerrado' then raise exception 'Caso encerrado não é reaberto: o paciente que volta ganha um caso novo na triagem.'; end if;
+  if new.status = 'aguardando-alocacao' and old.status <> 'aguardando-alocacao' then raise exception 'Caso em andamento não volta para a alocação.'; end if;
+  if new.status = 'encerrado' and not exists (select 1 from encerramentos e where e.caso_id = new.id) then
+    raise exception 'Para encerrar, registre antes o encerramento (tipo, motivo e registro).';
+  end if;
+  if new.grupo_id is distinct from old.grupo_id and not (perfil = 'tecnico' or (perfil = '' and app.eh_admin())) then
+    raise exception 'Só o técnico aloca o caso a um grupo.';
+  end if;
+  if old.status = 'aguardando-alocacao' and new.status = 'ativo' and not app.consentiu(new.id, 'contrato') then
+    raise exception 'Para alocar, o contrato terapêutico precisa estar registrado.';
+  end if;
+  if new.subgrupo_id is distinct from old.subgrupo_id and new.subgrupo_id is not null then
+    if perfil = 'estagiario' then raise exception 'A dupla ou trio do caso é definida pelo supervisor.'; end if;
+    if not exists (select 1 from subgrupos s where s.id = new.subgrupo_id and s.grupo_id = new.grupo_id) then
+      raise exception 'A dupla ou trio precisa ser do grupo do caso.';
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger regras before update on casos for each row execute function app.caso_regras();
+
+-- Vínculo de estágio: estagiário, grupo e início não mudam; o fim é gravado uma vez (encerrar) e não volta.
+-- A direção encerra; o supervisor só muda a dupla/trio, dentro do grupo, enquanto o vínculo vale.
+create or replace function app.alocacao_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare perfil text := coalesce(app.perfil_atual(), '');
+begin
+  if (new.estagiario_id, new.grupo_id, new.inicio) is distinct from (old.estagiario_id, old.grupo_id, old.inicio) then
+    raise exception 'Estagiário, grupo e início do vínculo não mudam: crie um vínculo novo.';
+  end if;
+  if old.fim is not null and new.fim is distinct from old.fim then
+    raise exception 'Vínculo encerrado não é reaberto nem alterado: crie um vínculo novo.';
+  end if;
+  if new.fim is distinct from old.fim and perfil = 'supervisor' then raise exception 'Só a direção encerra o vínculo de estágio.'; end if;
+  if new.subgrupo_id is distinct from old.subgrupo_id then
+    if perfil = 'direcao' then raise exception 'A dupla ou trio é definida pelo supervisor.'; end if;
+    if old.fim is not null and old.fim <= current_date then raise exception 'Vínculo encerrado não muda de dupla.'; end if;
+    if new.subgrupo_id is not null and not exists (select 1 from subgrupos s where s.id = new.subgrupo_id and s.grupo_id = new.grupo_id) then
+      raise exception 'A dupla ou trio precisa ser do mesmo grupo.';
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger regras before update on alocacoes for each row execute function app.alocacao_regras();
+
+-- Encerramento: só de caso ativo e sem evolução esperando a supervisão; abandono só depois de
+-- tentativa de contato (é o que mostra por que o paciente saiu); alta e encaminhamento com registro.
+create or replace function app.encerramento_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso ativo é encerrado.'; end if;
+  if exists (select 1 from evolucoes e where e.caso_id = new.caso_id and e.status in ('enviada', 'devolvida')) then
+    raise exception 'Há evolução aguardando a supervisão ou devolvida: conclua antes de encerrar.';
+  end if;
+  if new.tipo = 'abandono' and not exists (select 1 from contatos ct where ct.caso_id = new.caso_id) then
+    raise exception 'Abandono só depois de registrar a tentativa de contato.';
+  end if;
+  if new.tipo <> 'abandono' and length(new.registro) < 10 then raise exception 'Escreva o registro do encerramento.'; end if;
+  return new;
+end $$;
+create trigger regras before insert on encerramentos for each row execute function app.encerramento_regras();
+
+-- Assinatura de evolução: o hash precisa ser o do texto que está no banco; o estagiário assina a
+-- própria evolução ao enviar e o supervisor assina ao validar (a assinatura não vale para outro texto).
+create or replace function app.assinatura_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare ev record;
+begin
+  if app.em_migracao() or new.alvo_tipo <> 'evolucao' then return new; end if;
+  select status, texto, autor_id into ev from evolucoes where id = new.alvo_id;
+  if not found then raise exception 'Evolução não encontrada.'; end if;
+  if new.hash is distinct from encode(sha256(convert_to(ev.texto, 'UTF8')), 'hex') then
+    raise exception 'O hash da assinatura não confere com o texto da evolução.';
+  end if;
+  if new.papel = 'estagiario' and (ev.status <> 'enviada' or ev.autor_id <> new.usuario_id) then
+    raise exception 'O estagiário assina a própria evolução ao enviá-la à supervisão.';
+  end if;
+  if new.papel = 'supervisor' and ev.status <> 'validada' then raise exception 'O supervisor assina ao validar a evolução.'; end if;
+  return new;
+end $$;
+create trigger regras before insert on assinaturas for each row execute function app.assinatura_regras();
+
+-- Link de leitura do paciente: vale no máximo 72 horas a partir de agora (regras.linkPacienteHoras)
+create or replace function app.link_regras() returns trigger
+language plpgsql as $$
+begin
+  if not app.em_migracao() and new.expira_em > now() + interval '72 hours' then new.expira_em := now() + interval '72 hours'; end if;
+  return new;
+end $$;
+create trigger regras before insert on links_acesso for each row execute function app.link_regras();
+
+-- Carimbo de tempo: a data e a hora de cada registro vêm do relógio do servidor, não do computador
+-- de quem registra (ninguém "volta no tempo" para assinar ou registrar). Argumentos: coluna e tipo.
+create or replace function app.carimbo() returns trigger
+language plpgsql as $$
+begin
+  if app.em_migracao() then return new; end if;
+  return jsonb_populate_record(new, jsonb_build_object(tg_argv[0], case when tg_argv[1] = 'data' then current_date::text else now()::text end));
+end $$;
+create trigger carimbo before insert on pacientes for each row execute function app.carimbo('criado_em', 'data');
+create trigger carimbo before insert on usuarios for each row execute function app.carimbo('criado_em', 'data');
+create trigger carimbo before insert on inscricoes for each row execute function app.carimbo('data', 'data');
+create trigger carimbo before insert on anamneses for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on consentimentos for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on encerramentos for each row execute function app.carimbo('data', 'data');
+create trigger carimbo before insert on evolucoes for each row execute function app.carimbo('data', 'data');
+create trigger carimbo before insert on assinaturas for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on adendos for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on orientacoes for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on documentos for each row execute function app.carimbo('emitido_em', 'data');
+create trigger carimbo before insert on anexos for each row execute function app.carimbo('em', 'data');
+create trigger carimbo before insert on avaliacoes for each row execute function app.carimbo('em', 'data');
+create trigger carimbo before insert on contatos for each row execute function app.carimbo('em', 'data');
+create trigger carimbo before insert on lembretes for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on solicitacoes for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on links_acesso for each row execute function app.carimbo('criado_em', 'hora');
+create trigger carimbo before insert on pedidos_titular for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on aceites for each row execute function app.carimbo('em', 'hora');
 
 -- ---------------------------------------------------------------------
 -- Auditoria encadeada (mesma fórmula de js/estado.js)
@@ -475,6 +657,12 @@ declare anterior text;
 begin
   perform pg_advisory_xact_lock(4242);                      -- um evento por vez: a ordem da cadeia é garantida
   new.seq := nextval('auditoria_seq');
+  -- A hora do evento é a do servidor (só a migração preserva a hora original dos eventos de demonstração).
+  -- A tabela é particionada por ano: uma data de outro ano mandaria o evento para outra partição, então é recusada.
+  if not app.em_migracao() then
+    if date_trunc('year', new.em) <> date_trunc('year', now()) then raise exception 'A hora do evento de auditoria é definida pelo servidor.'; end if;
+    new.em := now();
+  end if;
   new.em := date_trunc('minute', new.em);
   select a.hash into anterior from auditoria a order by a.seq desc limit 1;
   new.hash_anterior := coalesce(anterior, '0');
@@ -488,6 +676,8 @@ create or replace function app.verificar_auditoria() returns bigint
 language plpgsql stable security definer set search_path = public as $$
 declare r record; anterior text := '0';
 begin
+  -- coalesce: sem perfil (visitante), "perfil = 'tecnico'" daria NULL e o IF não dispararia
+  if not (coalesce(app.perfil_atual(), '') = 'tecnico' or app.eh_admin()) then raise exception 'Só a psicóloga técnica verifica a auditoria.'; end if;
   for r in select * from auditoria order by seq loop
     if r.hash_anterior <> anterior or r.hash <> encode(sha256(convert_to(app.conteudo_auditoria(r.id, r.em, r.usuario_id, r.acao, r.alvo, r.hash_anterior), 'UTF8')), 'hex') then
       return r.seq;
@@ -511,7 +701,7 @@ begin
       if i is not null then new.duplicidade := jsonb_build_object('tipo', 'inscricao', 'id', i); end if;
     end if;
   end if;
-  if coalesce(current_setting('app.migracao', true), '') <> 'on' then
+  if not app.em_migracao() then
     insert into auditoria (usuario_id, acao, alvo) values (coalesce(app.usuario_atual(), 'visitante'), 'Nova inscrição na fila de espera', new.id);
   end if;
   return new;
@@ -535,7 +725,8 @@ create or replace function app.indicadores(p_limite_faltas int default 2) return
 language plpgsql stable security definer set search_path = public, app as $$
 declare perfil text := app.perfil_atual(); escopo text[]; resultado jsonb;
 begin
-  if perfil in ('direcao', 'tecnico') or perfil is null then select array_agg(id) into escopo from casos;   -- null = administrador (SQL Editor)
+  -- visitante (anon) ou conta sem perfil não é administrador: só o SQL Editor/service_role entra sem perfil
+  if perfil in ('direcao', 'tecnico') or (perfil is null and app.eh_admin()) then select array_agg(id) into escopo from casos;
   elsif perfil = 'supervisor' then
     select array_agg(c.id) into escopo from casos c join grupos g on g.id = c.grupo_id where g.supervisor_id = app.usuario_atual();
   else raise exception 'Perfil sem acesso aos indicadores.';
@@ -595,9 +786,16 @@ alter table pedidos_titular enable row level security;
 alter table aceites enable row level security;
 alter table auditoria enable row level security;
 
--- Equipe vê a equipe; paciente vê só a própria conta
-create policy ver on usuarios for select to authenticated using (app.perfil_atual() <> 'paciente' or id = app.usuario_atual());
+-- Equipe vê a equipe. Conta de paciente: só o próprio paciente, o técnico e a equipe do caso dele
+-- (a lista de quem tem conta no portal também é dado pessoal: princípio da necessidade).
+create policy ver on usuarios for select to authenticated using (
+  id = app.usuario_atual() or app.perfil_atual() = 'tecnico'
+  or (perfil <> 'paciente' and app.perfil_atual() in ('estagiario', 'supervisor', 'direcao'))
+  or (perfil = 'paciente' and exists (select 1 from casos c where c.paciente_id = usuarios.paciente_id
+                                      and (app.eh_estagiario_do_caso(c.id) or app.eh_supervisor_do_caso(c.id)))));
 create policy direcao_cria_estudante on usuarios for insert to authenticated with check (app.perfil_atual() = 'direcao' and perfil = 'estagiario');
+-- Cada um só atualiza a própria conta, e só a coluna senha_provisoria (ver "Permissões" no fim):
+-- perfil, CRP, matrícula e paciente_id não mudam pela API (senão um estagiário se promoveria a técnico).
 create policy atualizar_propria on usuarios for update to authenticated using (id = app.usuario_atual()) with check (id = app.usuario_atual());
 
 create policy ver on grupos for select to authenticated using (app.perfil_atual() <> 'paciente');
@@ -607,7 +805,8 @@ create policy supervisor_cria on subgrupos for insert to authenticated
 create policy ver on alocacoes for select to authenticated using (app.perfil_atual() <> 'paciente');
 create policy direcao_aloca on alocacoes for insert to authenticated with check (app.perfil_atual() = 'direcao');
 create policy direcao_ou_supervisor on alocacoes for update to authenticated
-  using (app.perfil_atual() = 'direcao' or exists (select 1 from grupos g where g.id = grupo_id and g.supervisor_id = app.usuario_atual()));
+  using (app.perfil_atual() = 'direcao' or exists (select 1 from grupos g where g.id = grupo_id and g.supervisor_id = app.usuario_atual()))
+  with check (app.perfil_atual() = 'direcao' or exists (select 1 from grupos g where g.id = grupo_id and g.supervisor_id = app.usuario_atual()));
 
 create policy ver on pacientes for select to authenticated using (
   app.perfil_atual() = 'tecnico' or id = app.paciente_atual()
@@ -676,7 +875,9 @@ create policy registrar on lembretes for insert to authenticated with check (env
   and app.pode_ver_caso((select caso_id from sessoes s where s.id = sessao_id)));
 
 create policy ver on solicitacoes for select to authenticated using (app.perfil_atual() = 'tecnico' or paciente_id = app.paciente_atual());
-create policy pedir on solicitacoes for insert to authenticated with check (paciente_id = app.paciente_atual() and status = 'recebida');
+-- O paciente só pede a cópia de um caso que é dele (senão receberia o prontuário de outra pessoa)
+create policy pedir on solicitacoes for insert to authenticated with check (paciente_id = app.paciente_atual() and status = 'recebida'
+  and app.eh_paciente_do_caso(caso_id));
 create policy tecnico_atende on solicitacoes for update to authenticated using (app.perfil_atual() = 'tecnico');
 
 -- Links: só o técnico. A leitura pelo paciente passa por uma Edge Function, que confere token e nascimento no servidor.
@@ -691,7 +892,9 @@ create policy tecnico_responde on pedidos_titular for update to authenticated us
 create policy ver on aceites for select to authenticated using (usuario_id = app.usuario_atual() or app.perfil_atual() = 'tecnico');
 create policy aceitar on aceites for insert to authenticated with check (usuario_id = app.usuario_atual());
 
-create policy registrar on auditoria for insert to authenticated with check (usuario_id = app.usuario_atual() or usuario_id = 'visitante');
+-- Cada um registra só os próprios eventos. Eventos de visitante vêm do próprio banco (trigger da
+-- inscrição) e as tentativas de login ficam no registro do Supabase Auth: ninguém grava "em nome" de outro.
+create policy registrar on auditoria for insert to authenticated with check (usuario_id = app.usuario_atual());
 create policy tecnico_le on auditoria for select to authenticated using (app.perfil_atual() = 'tecnico');
 
 -- ---------------------------------------------------------------------
@@ -701,18 +904,44 @@ revoke all on all tables in schema public from anon;
 grant insert on inscricoes to anon;
 grant select, insert, update on all tables in schema public to authenticated;
 revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria from authenticated;
+-- Na própria conta, só "senha provisória já trocada" muda pela API (perfil e CRP ficam com a administração)
+revoke update on usuarios from authenticated;
+grant update (senha_provisoria) on usuarios to authenticated;
 grant usage on schema app to anon, authenticated;
 grant execute on all functions in schema app to anon, authenticated;
+-- Eliminação de inscrições antigas: só o agendador (pg_cron) ou o administrador, nunca pela API
+revoke execute on function app.eliminar_inscricoes_antigas() from public, anon, authenticated;
 grant select on app.faltas_seguidas to authenticated;
 grant usage on sequence auditoria_seq to anon, authenticated;
 
 -- ---------------------------------------------------------------------
--- Supabase Auth: quando a conta é criada (convite por e-mail), liga ao usuário de mesmo e-mail
+-- Arquivos (Supabase Storage, bucket privado "anexos"). O caminho é "<caso>/<arquivo>":
+-- só quem pode ver o caso baixa ou envia; ninguém apaga nem substitui.
+-- ---------------------------------------------------------------------
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'storage' and table_name = 'objects') then
+    execute 'drop policy if exists vinculo_ver_anexo on storage.objects';
+    execute 'drop policy if exists vinculo_enviar_anexo on storage.objects';
+    execute $p$create policy vinculo_ver_anexo on storage.objects for select to authenticated
+      using (bucket_id = 'anexos' and app.pode_ver_caso(split_part(name, '/', 1)))$p$;
+    execute $p$create policy vinculo_enviar_anexo on storage.objects for insert to authenticated
+      with check (bucket_id = 'anexos' and app.pode_ver_caso(split_part(name, '/', 1))
+                  and exists (select 1 from casos c where c.id = split_part(name, '/', 1) and c.status = 'ativo'))$p$;
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Supabase Auth: quando a conta tem o e-mail CONFIRMADO (convite aceito), liga ao usuário de mesmo e-mail.
+-- Ligar antes da confirmação deixaria alguém "tomar" a conta só por saber o e-mail de outra pessoa.
+-- No painel do Supabase, deixe o cadastro público desligado (Authentication → Sign In / Providers).
 -- ---------------------------------------------------------------------
 create or replace function app.ligar_conta() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  update usuarios set auth_id = new.id where lower(email) = lower(new.email) and auth_id is null;
+  if new.email_confirmed_at is not null then
+    update usuarios set auth_id = new.id where lower(email) = lower(new.email) and auth_id is null;
+  end if;
   return new;
 end $$;
 
@@ -720,6 +949,6 @@ do $$
 begin
   if exists (select 1 from information_schema.tables where table_schema = 'auth' and table_name = 'users') then
     execute 'drop trigger if exists vinculo_ligar_conta on auth.users';
-    execute 'create trigger vinculo_ligar_conta after insert on auth.users for each row execute function app.ligar_conta()';
+    execute 'create trigger vinculo_ligar_conta after insert or update of email_confirmed_at on auth.users for each row execute function app.ligar_conta()';
   end if;
 end $$;

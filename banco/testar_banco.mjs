@@ -133,6 +133,73 @@ await como('u-pac1', async () => {
   await erroEsperado('paciente não consegue ver indicadores', 'select app.indicadores()');
 });
 
+// ---------- 6b. Quem chama a API direto não contorna as regras ----------
+const sha = (t) => createHash('sha256').update(t, 'utf8').digest('hex');
+await como('u-est1', async () => {
+  await erroEsperado('estagiária não se promove a técnica pela API (perfil e CRP não mudam)', "update usuarios set perfil = 'tecnico', crp = 'CRP falso' where id = 'u-est1'");
+  const r = await db.query("update usuarios set senha_provisoria = false where id = 'u-est1'");
+  conferir('a única coluna da própria conta que muda pela API é "senha provisória"', r.affectedRows === 1);
+  await erroEsperado('evolução não nasce validada (quem valida é o supervisor)', "insert into evolucoes (caso_id, autor_id, status, texto) values ('c01', 'u-est1', 'validada', 'Tentativa de pular a supervisão.')");
+  await erroEsperado('evolução não se liga a sessão de outro caso', "insert into evolucoes (caso_id, sessao_id, autor_id, status, texto) values ('c01', 's13', 'u-est1', 'rascunho', 'Sessão de outro caso, outra dupla.')");
+  await erroEsperado('estagiária não muda a dupla do caso', "update casos set subgrupo_id = 'd-a2' where id = 'c01'");
+  await erroEsperado('sessão passada não entra já com presença (presença só no dia)', "insert into sessoes (caso_id, data, hora, presenca) values ('c01', '2026-10-01', '10:00', 'presente')");
+  await erroEsperado('abandono só depois de registrar a tentativa de contato', "insert into encerramentos (caso_id, tipo, motivo, registro, registrado_por) values ('c02', 'abandono', 'Não informado', 'Sem contato.', 'u-est1')");
+  await erroEsperado('encaminhamento exige o serviço da rede que vai receber', "insert into encerramentos (caso_id, tipo, motivo, registro, registrado_por) values ('c02', 'encaminhamento', 'Demanda de outro serviço', 'Encaminhada à rede com relatório.', 'u-est1')");
+  await erroEsperado('ninguém grava evento de auditoria em nome de visitante', "insert into auditoria (usuario_id, acao, alvo) values ('visitante', 'Tentativa de login sem sucesso', 'helena')");
+  // Assinatura: o hash precisa ser o do texto e a hora é a do servidor
+  const texto = 'Sessão de teste. Tema, intervenção e plano para a próxima.';
+  await db.query("insert into evolucoes (id, caso_id, autor_id, status, texto) values ('e-teste2', 'c01', 'u-est1', 'rascunho', $1)", [texto]);
+  await db.query("update evolucoes set status = 'enviada' where id = 'e-teste2'");
+  await erroEsperado('assinatura com hash de outro texto é recusada', "insert into assinaturas (alvo_tipo, alvo_id, usuario_id, papel, hash) values ('evolucao', 'e-teste2', 'u-est1', 'estagiario', $1)", [sha('outro texto')]);
+  await db.query("insert into assinaturas (id, alvo_tipo, alvo_id, usuario_id, papel, em, hash) values ('as-teste', 'evolucao', 'e-teste2', 'u-est1', 'estagiario', '2020-01-01 10:00', $1)", [sha(texto)]);
+  await erroEsperado('evento de auditoria com data retroativa é recusado', "insert into auditoria (usuario_id, acao, alvo, em) values ('u-est1', 'Assinou e enviou evolução', 'c01', '2020-01-01 10:00')");
+  await db.query("insert into auditoria (id, usuario_id, acao, alvo) values ('au-teste', 'u-est1', 'Assinou e enviou evolução', 'c01')");
+});
+const [{ hoje_ass, hoje_aud }] = await valores(`select (select em::date = current_date from assinaturas where id = 'as-teste') as hoje_ass,
+  (select em::date = current_date from auditoria where id = 'au-teste') as hoje_aud`);
+conferir('a data da assinatura e da auditoria é a do servidor (data retroativa enviada é ignorada)', hoje_ass && hoje_aud);
+const [{ perfil }] = await valores("select perfil from usuarios where id = 'u-est1'");
+conferir('depois da tentativa, o perfil da Bia continua "estagiario"', perfil === 'estagiario');
+conferir('conta de paciente: Bia (equipe do caso) vê; Duda (outra dupla) não vê', (await como('u-est1', () => ids('usuarios'))).split(',').includes('u-pac1')
+  && !(await como('u-est3', () => ids('usuarios'))).split(',').includes('u-pac1'));
+await como('u-tec', async () => {
+  await erroEsperado('ninguém troca o paciente de um caso', "update casos set paciente_id = 'p02' where id = 'c01'");
+  await erroEsperado('a limpeza da fila não roda pela API (só o agendador do banco)', 'select app.eliminar_inscricoes_antigas()');
+});
+await como('u-est5', async () => {
+  await erroEsperado('caso encerrado não é reaberto (quem volta ganha caso novo na triagem)', "update casos set status = 'ativo' where id = 'c05'");
+});
+await como('u-sup1', async () => {
+  await erroEsperado('supervisora não reativa o vínculo de quem já saiu (Iara)', "update alocacoes set fim = null where id = 'al08'");
+  await erroEsperado('supervisora não encerra vínculo de estágio (é da direção)', "update alocacoes set fim = current_date where id = 'al01'");
+});
+await como('u-pac1', async () => {
+  await erroEsperado('paciente não pede cópia do prontuário de outra pessoa', "insert into solicitacoes (paciente_id, caso_id, status) values ('p01', 'c02', 'recebida')");
+  const r = await db.query("insert into solicitacoes (paciente_id, caso_id, status) values ('p01', 'c01', 'recebida')");
+  conferir('paciente pede cópia do próprio prontuário', r.affectedRows === 1);
+});
+await comoVisitante(async () => {
+  await erroEsperado('visitante não consulta os indicadores (não é tratado como administrador)', 'select app.indicadores()');
+  await erroEsperado('visitante não roda a verificação da auditoria', 'select app.verificar_auditoria()');
+});
+// Storage: o caminho do arquivo começa pelo caso; só quem vê o caso envia e baixa
+await como('u-est1', async () => {
+  await db.query("insert into storage.objects (bucket_id, name) values ('anexos', 'c01/arq-teste')");
+  await erroEsperado('anexo: estagiária não envia arquivo para caso de outra dupla', "insert into storage.objects (bucket_id, name) values ('anexos', 'c04/arq-intruso')");
+});
+const vistosEnzo = await como('u-est5', async () => (await valores("select count(*)::int n from storage.objects where name = 'c01/arq-teste'"))[0].n);
+const vistosBia = await como('u-est1', async () => (await valores("select count(*)::int n from storage.objects where name = 'c01/arq-teste'"))[0].n);
+conferir('anexo: quem não é da equipe do caso não baixa o arquivo', vistosEnzo === 0 && vistosBia === 1);
+// Supabase Auth: a conta só é ligada ao usuário depois que o e-mail é confirmado
+await db.query("insert into usuarios (id, nome, login, email, perfil, cargo) values ('u-teste', 'Conta Teste', 'conta.teste', 'conta.teste@clinica.example.org', 'direcao', 'Direção')");
+await db.query("insert into auth.users (id, email) values ('11111111-1111-4111-8111-111111111111', 'conta.teste@clinica.example.org')");
+const [{ antes }] = await valores("select auth_id is null as antes from usuarios where id = 'u-teste'");
+await db.query("update auth.users set email_confirmed_at = now() where id = '11111111-1111-4111-8111-111111111111'");
+const [{ depois }] = await valores("select auth_id = '11111111-1111-4111-8111-111111111111' as depois from usuarios where id = 'u-teste'");
+conferir('login novo só é ligado à conta depois de o e-mail ser confirmado (ninguém "toma" a conta)', antes && depois);
+const [{ quebra: q4 }] = await valores('select app.verificar_auditoria() as quebra');
+conferir('depois das tentativas, a cadeia da auditoria continua íntegra', q4 === null);
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {

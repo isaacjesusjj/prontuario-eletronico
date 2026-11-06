@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.1",
+    "versao": "2026-11-06.2",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -1214,6 +1214,7 @@
       "data": "2026-08-29",
       "tipo": "abandono",
       "motivo": "Horário incompatível",
+      "destino": "",
       "registro": "Duas faltas seguidas; contato por telefone confirmou que o horário ficou incompatível. Vaga liberada e orientação sobre nova inscrição.",
       "registradoPor": "u-est5"
     },
@@ -1223,6 +1224,7 @@
       "data": "2026-09-30",
       "tipo": "alta",
       "motivo": "Objetivos alcançados",
+      "destino": "",
       "registro": "Alta combinada com a paciente após revisão dos objetivos.",
       "registradoPor": "u-est5"
     }

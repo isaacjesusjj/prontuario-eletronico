@@ -1,17 +1,17 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-06 04:20 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-06 23:12 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**56 de 56 verificações passaram.**
+**83 de 83 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 29 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (2470 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (1869 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
-| ✓ | presença fora da lista é recusada | recusado: new row for relation "sessoes" violates check constraint "sessoes_presenca_check" |
+| ✓ | presença fora da lista é recusada | recusado: Sessão nova entra como agendada: a presença é registrada a partir do dia da sessão. |
 | ✓ | documento sem finalidade é recusado (Res. CFP 05/2025, art. 12) | recusado: new row for relation "documentos" violates check constraint "documentos_finalidade_check" |
 | ✓ | evolução validada não pode ser editada | recusado: Evolução validada é imutável: registre um adendo. |
 | ✓ | evolução não pode ser apagada | recusado: Evolução não pode ser apagada. |
@@ -55,6 +55,33 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-06 04:20 (UTC), num PostgreSQL 18
 | ✓ | paciente revoga um consentimento opcional |  |
 | ✓ | paciente não mexe no contrato terapêutico | recusado: new row violates row-level security policy for table "consentimentos" |
 | ✓ | paciente não consegue ver indicadores | recusado: Perfil sem acesso aos indicadores. |
+| ✓ | estagiária não se promove a técnica pela API (perfil e CRP não mudam) | recusado: permission denied for table usuarios |
+| ✓ | a única coluna da própria conta que muda pela API é "senha provisória" |  |
+| ✓ | evolução não nasce validada (quem valida é o supervisor) | recusado: Evolução nova entra como rascunho ou enviada: quem valida é o supervisor. |
+| ✓ | evolução não se liga a sessão de outro caso | recusado: A sessão da evolução precisa ser do mesmo caso e ter presença registrada. |
+| ✓ | estagiária não muda a dupla do caso | recusado: A dupla ou trio do caso é definida pelo supervisor. |
+| ✓ | sessão passada não entra já com presença (presença só no dia) | recusado: Sessão nova entra como agendada: a presença é registrada a partir do dia da sessão. |
+| ✓ | abandono só depois de registrar a tentativa de contato | recusado: Abandono só depois de registrar a tentativa de contato. |
+| ✓ | encaminhamento exige o serviço da rede que vai receber | recusado: new row for relation "encerramentos" violates check constraint "encerramentos_check" |
+| ✓ | ninguém grava evento de auditoria em nome de visitante | recusado: new row violates row-level security policy for table "auditoria" |
+| ✓ | assinatura com hash de outro texto é recusada | recusado: O hash da assinatura não confere com o texto da evolução. |
+| ✓ | evento de auditoria com data retroativa é recusado | recusado: A hora do evento de auditoria é definida pelo servidor. |
+| ✓ | a data da assinatura e da auditoria é a do servidor (data retroativa enviada é ignorada) |  |
+| ✓ | depois da tentativa, o perfil da Bia continua "estagiario" |  |
+| ✓ | conta de paciente: Bia (equipe do caso) vê; Duda (outra dupla) não vê |  |
+| ✓ | ninguém troca o paciente de um caso | recusado: Paciente e início do caso não mudam. |
+| ✓ | a limpeza da fila não roda pela API (só o agendador do banco) | recusado: permission denied for function eliminar_inscricoes_antigas |
+| ✓ | caso encerrado não é reaberto (quem volta ganha caso novo na triagem) | recusado: Caso encerrado não é reaberto: o paciente que volta ganha um caso novo na triagem. |
+| ✓ | supervisora não reativa o vínculo de quem já saiu (Iara) | recusado: Vínculo encerrado não é reaberto nem alterado: crie um vínculo novo. |
+| ✓ | supervisora não encerra vínculo de estágio (é da direção) | recusado: Só a direção encerra o vínculo de estágio. |
+| ✓ | paciente não pede cópia do prontuário de outra pessoa | recusado: new row violates row-level security policy for table "solicitacoes" |
+| ✓ | paciente pede cópia do próprio prontuário |  |
+| ✓ | visitante não consulta os indicadores (não é tratado como administrador) | recusado: Perfil sem acesso aos indicadores. |
+| ✓ | visitante não roda a verificação da auditoria | recusado: Só a psicóloga técnica verifica a auditoria. |
+| ✓ | anexo: estagiária não envia arquivo para caso de outra dupla | recusado: new row violates row-level security policy for table "objects" |
+| ✓ | anexo: quem não é da equipe do caso não baixa o arquivo |  |
+| ✓ | login novo só é ligado à conta depois de o e-mail ser confirmado (ninguém "toma" a conta) |  |
+| ✓ | depois das tentativas, a cadeia da auditoria continua íntegra |  |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -63,4 +90,4 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-06 04:20 (UTC), num PostgreSQL 18
 | ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, motivos {"Horário incompatível":1} |
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
 
-Tamanho do banco de demonstração: 9.4 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, alocacoes 64 KB, auditoria_2026 64 KB, casos 64 KB.
+Tamanho do banco de demonstração: 9.5 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.

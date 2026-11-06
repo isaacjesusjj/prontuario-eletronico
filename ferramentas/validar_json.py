@@ -210,6 +210,8 @@ for c in db["casos"]:
         p(f"{onde}: status e encerramento não batem")
     if c["id"] in enc and enc[c["id"]]["tipo"] == "abandono" and not [x for x in db["contatos"] if x["casoId"] == c["id"]]:
         p(f"{onde}: abandono sem tentativa de contato")
+    if c["id"] in enc and enc[c["id"]]["tipo"] == "encaminhamento" and len(enc[c["id"]].get("destino", "")) < 3:
+        p(f"{onde}: encaminhamento sem o serviço de destino")
 versoes = Counter((x["casoId"], x["versao"]) for x in db["anamneses"])
 for k, n in versoes.items():
     if n > 1:
