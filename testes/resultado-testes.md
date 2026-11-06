@@ -1,6 +1,6 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 06/11/2026 01:11, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), com axe-core 4.14.0.
 
 **154 de 154 verificações passaram.** Acessibilidade: 45 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 

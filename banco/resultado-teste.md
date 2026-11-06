@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-06 04:01 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-06 04:20 (UTC), num PostgreSQL 18.6 (PGlite).
 
 **56 de 56 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 29 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (2667 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (2470 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
