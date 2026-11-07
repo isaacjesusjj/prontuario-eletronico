@@ -236,6 +236,8 @@ for s in db["sessoes"]:
         p(f"{onde}: hora fora do funcionamento")
     if s["presenca"] in ("presente", "falta") and s["data"] > db["_meta"]["dataBase"]:
         p(f"{onde}: presença registrada depois da dataBase")
+    if s.get("avisoPaciente") and (s["presenca"] != "falta-justificada" or s.get("motivoFalta") not in [m["id"] for m in cfg["listas"]["motivosFaltaPaciente"]]):
+        p(f"{onde}: aviso de falta do paciente precisa ser falta justificada com motivo da lista")
 
 # ---------- evoluções e assinaturas ----------
 assin = defaultdict(list)

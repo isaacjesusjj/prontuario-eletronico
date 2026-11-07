@@ -44,14 +44,16 @@ PEP.telas = PEP.telas || {};
   // ---------- Técnico: fila de espera ----------
   PEP.telas.fila = function (u) {
     if (!PEP.regras.podeGerirFila(u)) return PEP.ui.semPermissao();
+    // Ordem de chegada; quem escreveu algo com sinal de urgência aparece primeiro (contato no mesmo dia)
     var fila = PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando'; })
-      .sort(function (a, b) { return a.data.localeCompare(b.data); });
-    var html = '<h1>Fila de espera</h1><p class="suave">Ordem de chegada. Menores de idade e CPF já cadastrado aparecem sinalizados. Urgência não espera fila: encaminhe na hora.</p>';
+      .sort(function (a, b) { return (b.sinalUrgencia ? 1 : 0) - (a.sinalUrgencia ? 1 : 0) || a.data.localeCompare(b.data); });
+    var html = '<h1>Fila de espera</h1><p class="suave">Ordem de chegada; quem escreveu algo com sinal de urgência vem primeiro. Menores de idade e CPF já cadastrado aparecem sinalizados. Urgência não espera fila: contate no mesmo dia e encaminhe à rede.</p>';
     if (!fila.length) return html + '<p class="vazio">Fila vazia.</p>';
     return html + '<div class="cartao tabela-rolagem"><table><caption class="sr-only">Pessoas aguardando triagem</caption><thead><tr><th scope="col">Inscrição</th><th scope="col">Idade</th><th scope="col">Motivo (resumo)</th><th scope="col">Período</th><th scope="col">Espera</th><th scope="col"></th></tr></thead><tbody>' +
       fila.map(function (i) {
         var idade = PEP.util.idade(i.dataNascimento);
         return '<tr><td>' + esc(PEP.ui.nomeInscricao(i)) + '<br><span class="suave pequeno">desde ' + data(i.data) + '</span>' +
+          (i.sinalUrgencia ? '<br><span class="etiqueta perigo">Sinal de urgência: contatar hoje</span>' : '') +
           (i.duplicidade ? '<br><span class="etiqueta alerta">CPF já cadastrado</span>' : '') + (i.semCpf ? '<br><span class="etiqueta rascunho">sem CPF</span>' : '') + '</td><td>' + esc(idade) +
           (idade < 18 ? ' <span class="etiqueta alerta">menor</span>' : '') + '</td><td>' + esc(i.resumo) + '</td><td>' + esc(i.periodo) + '</td><td>' +
           diasDesde(i.data) + ' dias</td><td><a class="botao pequeno" href="#/triagem/' + i.id + '">Triar</a></td></tr>';

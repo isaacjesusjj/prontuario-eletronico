@@ -188,15 +188,6 @@ PEP.telas = PEP.telas || {};
     return html + '</div>';
   }
 
-  // Sessões com presença e sem evolução há mais tempo que o prazo (padrão 48 h)
-  function sessoesSemEvolucao(caso) {
-    var limite = new Date(Date.now() - PEP.regra('prazoEvolucaoHoras') * 3600 * 1000);
-    return PEP.db.sessoes.filter(function (s) {
-      if (s.casoId !== caso.id || s.presenca !== 'presente') return false;
-      if (new Date(s.data + 'T' + s.hora) > limite) return false;
-      return !PEP.db.evolucoes.some(function (e) { return e.sessaoId === s.id; });
-    });
-  }
 
   function abaEvolucoes(u, caso) {
     var lista = PEP.db.evolucoes.filter(function (e) {
@@ -208,7 +199,7 @@ PEP.telas = PEP.telas || {};
     var html = '<div class="aviso info pequeno"><strong>Lembrete:</strong> o paciente pode pedir cópia do prontuário. Registre tema, intervenção e plano — não o relato detalhado. ' +
       'Depois de validada, a evolução fica bloqueada: correção só por adendo.</div>';
 
-    var atrasadas = sessoesSemEvolucao(caso);
+    var atrasadas = R().sessoesSemEvolucao(caso);
     if (atrasadas.length && caso.status === 'ativo' && R().ehEstagiarioDoCaso(u, caso)) {
       html += '<div class="aviso alerta pequeno">Sessão sem evolução há mais de ' + PEP.regra('prazoEvolucaoHoras') + ' h: ' + atrasadas.map(function (s) { return data(s.data); }).join(', ') + '.</div>';
     }

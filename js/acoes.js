@@ -163,6 +163,14 @@ window.PEP = PEP;
       repo().atualizar('sessoes', s.id, { confirmada: true });
       concluir('Presença confirmada. Obrigado por avisar!', 'Confirmou presença na sessão', s.casoId);
     },
+    'avisar-falta': function (b) {
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id'));
+      if (!s || !R().podeAvisarFalta(u, s)) return negar();
+      var motivo = val('mf-' + s.id);
+      if (!PEP.lista('motivosFaltaPaciente').some(function (m) { return m.id === motivo; })) return PEP.ui.toast('Escolha o motivo.');
+      repo().atualizar('sessoes', s.id, { presenca: 'falta-justificada', avisoPaciente: true, motivoFalta: motivo, avisadoEm: U().agora() });
+      concluir('Aviso enviado. A falta avisada não conta como abandono; a clínica pode oferecer outro horário.', 'Avisou que não vai à sessão', s.casoId);
+    },
     'solicitar-copia': function () {
       var u = usuario();
       var casos = PEP.db.casos.filter(function (c) { return c.pacienteId === u.pacienteId; });
@@ -803,7 +811,7 @@ window.PEP = PEP;
       // Duplicidade: fica sinalizada para a equipe, sem aparecer para quem preenche
       var dup = d.semCpf ? null : V().cpfJaCadastrado(d.cpf);
       var i = repo().inserir('inscricoes', { nome: d.nome, nomeSocial: d.social, dataNascimento: d.nasc, cpf: d.semCpf ? '' : d.cpf, semCpf: d.semCpf,
-        telefone: d.telefone, email: d.email, responsavelNome: d.responsavel, resumo: d.resumo, periodo: f.periodo.value,
+        telefone: d.telefone, email: d.email, responsavelNome: d.responsavel, resumo: d.resumo, sinalUrgencia: R().temSinalDeUrgencia(d.resumo), periodo: f.periodo.value,
         data: U().hoje(), status: 'aguardando', avisoVersao: PEP.config().termos.privacidade, duplicidade: dup, casoId: null, encaminhadoPara: '', riscoTriagem: '' });
       PEP.estado.registrarAuditoria('Nova inscrição na fila de espera', i.id, 'visitante');
       window.location.hash = '#/inscricao-ok';
@@ -891,6 +899,7 @@ window.PEP = PEP;
         if (el(idRevisor)) el(idRevisor).innerHTML = t.value.trim() ? PEP.revisor.html(PEP.revisor.analisar(t.value)) : '';
       }, 500);
     }
+    if (t.id === 'f-resumo' && el('f-urgencia')) el('f-urgencia').hidden = !R().temSinalDeUrgencia(t.value);
     if (t.id === 'f-nasc') {
       var linha = el('linha-resp-ok');
       if (linha) linha.hidden = !(t.value && U().idade(t.value) < 18);

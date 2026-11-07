@@ -78,6 +78,9 @@ PEP.telas = PEP.telas || {};
       '<div class="campo"><label for="f-resumo">Em poucas palavras, o que te traz aqui? *</label>' +
       '<span class="dica" id="f-resumo-dica">Não precisa contar detalhes agora. Isso será conversado com cuidado no acolhimento. Até 140 caracteres.</span>' +
       '<input id="f-resumo" name="resumo" type="text" required maxlength="140" aria-describedby="f-resumo-dica"></div>' +
+      // Aparece se o relato tiver sinal de urgência (_config.listas.sinaisUrgencia): urgência não espera a fila
+      '<div class="aviso perigo" id="f-urgencia" role="alert" hidden><strong>O que você escreveu pode ser urgente.</strong> Não espere a fila: ' +
+      'ligue <strong>188 (CVV, 24 horas)</strong>, <strong>192 (SAMU)</strong> ou vá à UPA mais próxima. Se quiser, termine a inscrição também: a equipe vai procurar você primeiro.</div>' +
       '<div class="campo"><label for="f-periodo">Melhor período</label><select id="f-periodo" name="periodo">' + periodos + '</select></div>' +
       '<div class="aviso info pequeno"><strong>Aviso de privacidade (resumo).</strong> Usamos estes dados só para organizar a fila, evitar inscrição em duplicidade (pelo CPF) e entrar em contato. ' +
       'Quem vê é só a equipe técnica da clínica-escola. Você pode pedir para sair da fila, corrigir ou consultar seus dados a qualquer momento. ' +

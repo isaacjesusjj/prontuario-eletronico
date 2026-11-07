@@ -254,6 +254,27 @@ PEP.regras = (function () {
     return PEP.util.idade(paciente.dataNascimento) < 18 && r.tipo === 'violencia-sofrida';
   }
 
+  // ---------- Faltas avisadas e prazo de registro ----------
+  // O paciente avisa, antes da sessão, que não vai (motivo de lista fechada): vira falta justificada
+  function podeAvisarFalta(u, s) {
+    var c = porId(PEP.db.casos, s.casoId);
+    return !!(u && u.perfil === 'paciente' && c && c.pacienteId === u.pacienteId && s.presenca === 'agendada' && s.data >= PEP.util.hoje());
+  }
+  // Sessões com presença e sem evolução há mais tempo que o prazo da regra (padrão 48 h)
+  function sessoesSemEvolucao(caso) {
+    var limite = new Date(Date.now() - PEP.regra('prazoEvolucaoHoras') * 3600 * 1000);
+    return PEP.db.sessoes.filter(function (s) {
+      if (s.casoId !== caso.id || s.presenca !== 'presente') return false;
+      if (new Date(s.data + 'T' + s.hora) > limite) return false;
+      return !PEP.db.evolucoes.some(function (e) { return e.sessaoId === s.id; });
+    });
+  }
+  // Sinal de urgência no relato do formulário público (termos de _config.listas.sinaisUrgencia, sem acento)
+  function temSinalDeUrgencia(texto) {
+    var n = PEP.revisor.normalizar(texto);
+    return PEP.lista('sinaisUrgencia').some(function (s) { return n.indexOf(PEP.revisor.normalizar(s)) !== -1; });
+  }
+
   // ---------- Encerramento ----------
   // O prontuário precisa estar completo antes de fechar: evolução esperando a supervisão ou
   // devolvida impede (o banco recusa também); rascunho e sessão sem evolução são avisos.
@@ -302,6 +323,8 @@ PEP.regras = (function () {
       encerramentos[e.tipo] = (encerramentos[e.tipo] || 0) + 1;
     });
     var conta = function (p) { return sessoes.filter(function (s) { return s.presenca === p; }).length; };
+    var avisadas = {};
+    sessoes.forEach(function (s) { if (s.avisoPaciente) avisadas[s.motivoFalta] = (avisadas[s.motivoFalta] || 0) + 1; });
     var fila = PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando'; });
     return {
       atendidos: atendidos,
@@ -311,6 +334,7 @@ PEP.regras = (function () {
       motivosAbandono: motivos,
       encerramentos: encerramentos,
       presencas: { presente: conta('presente'), falta: conta('falta'), faltaJustificada: conta('falta-justificada') },
+      motivosFaltaAvisada: avisadas,
       casosAtivos: casos.filter(function (c) { return c.status === 'ativo'; }).length,
       naFila: fila.length,
       esperaMediaDias: fila.length ? Math.round(fila.reduce(function (t, i) { return t + PEP.util.diasEntre(i.data, PEP.util.hoje()); }, 0) / fila.length) : 0
@@ -342,6 +366,7 @@ PEP.regras = (function () {
     podeNotificar: podeNotificar, podeEncerrarRisco: podeEncerrarRisco, podeEditarPlano: podeEditarPlano,
     notificacoesSugeridas: notificacoesSugeridas, riscoProtegidoNaCopia: riscoProtegidoNaCopia,
     justificativaValida: justificativaValida, podeVerConteudoClinico: podeVerConteudoClinico, precisaJustificar: precisaJustificar,
-    categoriaAcesso: categoriaAcesso, acessosAoProntuario: acessosAoProntuario
+    categoriaAcesso: categoriaAcesso, acessosAoProntuario: acessosAoProntuario,
+    podeAvisarFalta: podeAvisarFalta, sessoesSemEvolucao: sessoesSemEvolucao, temSinalDeUrgencia: temSinalDeUrgencia
   };
 })();

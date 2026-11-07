@@ -37,6 +37,9 @@ PEP.telas = PEP.telas || {};
     Object.keys(ind.encerramentos || {}).forEach(function (k) { encerramentos[nomesTipo[k] || k] = ind.encerramentos[k]; });
     var motivos = ind.motivosAbandono || {};
     var faltas = { 'Presenças': ind.presencas.presente, 'Faltas': ind.presencas.falta, 'Faltas justificadas': ind.presencas.faltaJustificada };
+    var nomesFalta = {}, avisadas = {};
+    PEP.lista('motivosFaltaPaciente').forEach(function (m) { nomesFalta[m.id] = m.nome; });
+    Object.keys(ind.motivosFaltaAvisada || {}).forEach(function (k) { avisadas[nomesFalta[k] || k] = ind.motivosFaltaAvisada[k]; });
     var media = Number(ind.mediaSessoes || 0).toFixed(1).replace('.', ',');
 
     return '<h1>Indicadores</h1><div class="aviso info pequeno">Dados agregados, sem identificação de pacientes. São calculados na hora a partir dos registros (nada fica guardado).' + (u.perfil === 'supervisor' ? ' Escopo: seus grupos.' : '') + '</div>' +
@@ -46,6 +49,8 @@ PEP.telas = PEP.telas || {};
       '<div class="grade-2"><div class="cartao"><h2>Motivos de abandono</h2>' + barras(motivos) +
       '<p class="suave pequeno">Vem do fluxo de contato: é o dado que faltava para entender por que o paciente não volta.</p></div>' +
       '<div class="cartao"><h2>Presenças e faltas</h2>' + barras(faltas) + '</div>' +
+      '<div class="cartao"><h2>Por que o paciente avisou que não iria</h2>' + barras(avisadas) +
+      '<p class="suave pequeno">Vem do "Não vou poder ir" do portal: mostra o que atrapalha a frequência antes de virar abandono.</p></div>' +
       '<div class="cartao"><h2>Encerramentos por tipo</h2>' + barras(encerramentos) + '</div></div>';
   };
 

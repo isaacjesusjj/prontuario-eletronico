@@ -14,6 +14,7 @@ PEP.telas = PEP.telas || {};
 
   var CLASSE_PRESENCA = { presente: 'validada', falta: 'perigo', 'falta-justificada': 'alerta', agendada: 'enviada', cancelada: 'rascunho' };
   function nomePresenca(p) { return p === 'cancelada' ? 'Cancelada' : (PEP.lista('presencas')[p] || p); }
+  function nomeMotivoFalta(id) { var m = PEP.lista('motivosFaltaPaciente').filter(function (x) { return x.id === id; })[0]; return m ? m.nome : id; }
 
   // ---------- Aba: sessões e faltas ----------
   function abaSessoes(u, caso) {
@@ -63,6 +64,7 @@ PEP.telas = PEP.telas || {};
         var enviados = PEP.db.lembretes.filter(function (l) { return l.sessaoId === s.id; }).length;
         return '<tr><td>' + data(s.data) + '</td><td>' + esc(s.hora) + '</td><td><span class="etiqueta ' + CLASSE_PRESENCA[s.presenca] + '">' + nomePresenca(s.presenca) + '</span>' +
           (s.presenca === 'agendada' && s.confirmada ? ' <span class="suave pequeno">confirmada pelo paciente</span>' : '') +
+          (s.avisoPaciente ? ' <span class="suave pequeno">avisada pelo paciente em ' + data(s.avisadoEm) + ': ' + esc(nomeMotivoFalta(s.motivoFalta)) + '</span>' : '') +
           (s.presenca === 'agendada' && s.data < hoje ? ' <span class="etiqueta alerta">presença pendente</span>' : '') +
           (enviados ? ' <span class="suave pequeno">· ' + enviados + ' lembrete(s)</span>' : '') + '</td><td><div class="linha">' + acoes + '</div></td></tr>';
       }).join('') + '</tbody></table></div>';

@@ -271,6 +271,20 @@ conferir('"quem acessou" de criança ou adolescente: sem o motivo da técnica e 
   acessosMenor.length === 2 && acessosMenor.every((a) => a.motivo === null && !/risco|notifica/i.test(a.acao))
   && acessosMenor.some((a) => a.quem === 'Rafael' && a.acao === 'Registrou informações no prontuário'), acessosMenor.map((a) => a.quem + ': ' + a.acao).join('; '));
 
+// ---------- 6e. "Não vou poder ir": o paciente avisa a falta ----------
+await como('u-pac1', async () => {
+  await erroEsperado('paciente não avisa falta em sessão que já passou', "update sessoes set presenca = 'falta-justificada', aviso_paciente = true, motivo_falta = 'saude' where id = 's29'");
+  await erroEsperado('paciente não registra falta comum (só o aviso, que vira falta justificada)', "update sessoes set presenca = 'falta' where id = 's32'");
+  await erroEsperado('aviso de falta só com motivo da lista (sem texto livre)', "update sessoes set presenca = 'falta-justificada', aviso_paciente = true, motivo_falta = 'texto livre' where id = 's32'");
+  const r = await db.query("update sessoes set presenca = 'falta-justificada', aviso_paciente = true, motivo_falta = 'trabalho-estudo' where id = 's32'");
+  conferir('paciente avisa, antes da sessão, que não vai (vira falta justificada, com a hora do servidor)', r.affectedRows === 1);
+});
+const [s32] = await valores("select presenca, avisado_em::date = current_date as hoje from sessoes where id = 's32'");
+conferir('o aviso fica registrado com a data do servidor', s32.presenca === 'falta-justificada' && s32.hoje);
+await como('u-est1', async () => {
+  await erroEsperado('a equipe não registra um aviso "em nome" do paciente', "update sessoes set presenca = 'falta-justificada', aviso_paciente = true, motivo_falta = 'saude' where id = 's33'");
+});
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {
@@ -297,6 +311,8 @@ conferir('indicadores do banco = indicadores da tela', ind.atendidos === esperad
   && ind.casosAtivos === esperadoInd.ativos && ind.naFila === esperadoInd.fila,
   `atendidos ${ind.atendidos}, retorno ${ind.taxaRetorno}%, em risco ${ind.emRisco}, ativos ${ind.casosAtivos}, na fila ${ind.naFila}, motivos ${JSON.stringify(ind.motivosAbandono)}`);
 conferir('caso com 2 faltas seguidas aparece em risco de abandono (c02)', ind.emRisco === 1);
+conferir('indicadores trazem os motivos das faltas avisadas pelo paciente', ind.motivosFaltaAvisada.transporte === 1 && ind.motivosFaltaAvisada['trabalho-estudo'] === 1,
+  JSON.stringify(ind.motivosFaltaAvisada));
 
 // ---------- 9. Tamanho ----------
 const tam = await valores(`select relname as tabela, pg_total_relation_size(c.oid)::int as bytes from pg_class c join pg_namespace n on n.oid = c.relnamespace

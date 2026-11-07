@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 01:01, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 01:08, no Chrome (Playwright), com axe-core 4.14.0.
 
-**222 de 222 verificações passaram.** Acessibilidade: 51 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**234 de 234 verificações passaram.** Acessibilidade: 52 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 58 | 0 |
+| Acessibilidade | 59 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -36,6 +36,9 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:01, no Chrome (Playwright), 
 | Risco | 17 | 0 |
 | Revisor | 8 | 0 |
 | Privacidade | 15 | 0 |
+| Urgência | 5 | 0 |
+| Faltas | 5 | 0 |
+| Prazo | 1 | 0 |
 | Banco (simulado) | 9 | 0 |
 | Console | 1 | 0 |
 
@@ -253,15 +256,27 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:01, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Privacidade na tela · Meus dados com acessos: sem violações WCAG A/AA |  |
 | ✓ | Privacidade | o paciente vê quem acessou o prontuário e o motivo registrado pela técnica |  |
 | ✓ | Privacidade | a lista mostra a categoria da ação, não o texto interno da auditoria |  |
+| ✓ | Urgência | relato com sinal de urgência mostra na hora CVV 188 e SAMU 192 (sem bloquear a inscrição) |  |
+| ✓ | Urgência | relato sem sinal de urgência não mostra o alerta |  |
+| ✓ | Urgência | a inscrição guarda o sinal de urgência (calculado do relato) |  |
+| ✓ | Urgência | o painel da técnica avisa a inscrição urgente |  |
+| ✓ | Urgência | na fila, a inscrição com sinal de urgência aparece primeiro, marcada para contato no mesmo dia |  |
+| ✓ | Faltas | indicadores mostram por que o paciente avisou que não iria |  |
+| ✓ | Acessibilidade | Faltas avisadas e urgência · Painel do paciente com aviso de falta: sem violações WCAG A/AA |  |
+| ✓ | Faltas | o paciente avisa que não vai: vira falta justificada, com o motivo |  |
+| ✓ | Faltas | o painel do paciente confirma o aviso |  |
+| ✓ | Faltas | o painel da estagiária mostra a falta avisada, para oferecer outro horário |  |
+| ✓ | Faltas | na aba de sessões, a equipe vê que a falta foi avisada pelo paciente e o motivo |  |
+| ✓ | Prazo | o painel da estagiária mostra a evolução atrasada (mais de 48 h) |  |
 | ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
 | ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:01:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:08:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5p6wkpbn5p |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5pfesttryj |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |

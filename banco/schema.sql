@@ -124,6 +124,7 @@ create table inscricoes (
   email            text not null default '',
   responsavel_nome text not null default '',
   resumo           text not null check (length(resumo) between 3 and 140),
+  sinal_urgencia   boolean not null default false,   -- o relato tem sinal de urgência: a técnica contata primeiro
   periodo          text not null check (periodo in ('Manhã', 'Tarde', 'Noite')),
   data             date not null default current_date,
   status           text not null default 'aguardando' check (status in ('aguardando', 'triada', 'encaminhado-externo', 'duplicada', 'cancelada')),
@@ -186,7 +187,13 @@ create table sessoes (
   hora                    time not null check (hora between '07:00' and '21:00'),
   presenca                text not null default 'agendada' check (presenca in ('agendada', 'presente', 'falta', 'falta-justificada', 'cancelada')),
   confirmada              boolean not null default false,
-  presenca_registrada_por text references usuarios (id)
+  -- "Não vou poder ir": o paciente avisa pelo portal, com motivo de uma lista fechada (sem texto livre:
+  -- o sistema não é canal de crise). Vira falta justificada, que não conta para o abandono.
+  aviso_paciente          boolean not null default false,
+  motivo_falta            text not null default '' check (motivo_falta in ('', 'saude', 'trabalho-estudo', 'transporte', 'familia', 'financeiro', 'nao-dizer')),
+  avisado_em              timestamptz,
+  presenca_registrada_por text references usuarios (id),
+  check (not aviso_paciente or (presenca = 'falta-justificada' and motivo_falta <> ''))
 );
 
 create table evolucoes (
@@ -592,8 +599,17 @@ begin
     return new;
   end if;
   if new.caso_id <> old.caso_id then raise exception 'A sessão não muda de caso.'; end if;
-  if app.perfil_atual() = 'paciente' and (new.presenca, new.data, new.hora) is distinct from (old.presenca, old.data, old.hora) then
-    raise exception 'Paciente só pode confirmar presença.';
+  if app.perfil_atual() = 'paciente' and (new.presenca, new.data, new.hora, new.aviso_paciente, new.motivo_falta)
+     is distinct from (old.presenca, old.data, old.hora, old.aviso_paciente, old.motivo_falta) then
+    -- o paciente só confirma presença ou avisa, antes da sessão, que não vai (com motivo da lista)
+    if not (old.presenca = 'agendada' and new.presenca = 'falta-justificada' and new.aviso_paciente and new.motivo_falta <> ''
+            and old.data >= current_date and (new.data, new.hora) = (old.data, old.hora)) then
+      raise exception 'Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai.';
+    end if;
+    new.avisado_em := now();
+  end if;
+  if new.aviso_paciente and not old.aviso_paciente and app.perfil_atual() <> 'paciente' then
+    raise exception 'O aviso de falta é do próprio paciente.';
   end if;
   if old.presenca <> 'agendada' and (new.presenca, new.data, new.hora) is distinct from (old.presenca, old.data, old.hora) then
     raise exception 'Presença já registrada não muda.';
@@ -902,6 +918,8 @@ begin
       'presente', (select count(*) from sessoes where presenca = 'presente' and caso_id = any (escopo)),
       'falta', (select count(*) from sessoes where presenca = 'falta' and caso_id = any (escopo)),
       'faltaJustificada', (select count(*) from sessoes where presenca = 'falta-justificada' and caso_id = any (escopo))),
+    'motivosFaltaAvisada', coalesce((select jsonb_object_agg(motivo_falta, n) from (select motivo_falta, count(*) n from sessoes
+      where aviso_paciente and caso_id = any (escopo) group by motivo_falta) m), '{}'::jsonb),
     'casosAtivos', (select count(*) from casos where status = 'ativo' and id = any (escopo)),
     'naFila', (select count(*) from inscricoes where status = 'aguardando'),
     'esperaMediaDias', coalesce((select round(avg(current_date - data)) from inscricoes where status = 'aguardando'), 0)

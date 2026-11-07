@@ -818,6 +818,57 @@ def privacidade_na_tela(nav, base):
     s.fechar()
 
 
+def faltas_e_urgencia(nav, base):
+    s = Sessao(nav, base, "Faltas avisadas e urgência")
+    # Visitante: relato com sinal de urgência mostra na hora os contatos de crise
+    s.abrir("#/inscricao")
+    s.p.fill("#f-resumo", "Não aguento mais, preciso de ajuda")
+    conferir("Urgência", "relato com sinal de urgência mostra na hora CVV 188 e SAMU 192 (sem bloquear a inscrição)",
+             s.p.is_visible("#f-urgencia") and "188" in s.p.locator("#f-urgencia").inner_text())
+    s.p.fill("#f-resumo", "Ansiedade no trabalho")
+    conferir("Urgência", "relato sem sinal de urgência não mostra o alerta", not s.p.is_visible("#f-urgencia"))
+    s.p.fill("#f-nome", "Pessoa Urgente Teste")
+    s.p.fill("#f-nasc", "1990-02-02")
+    s.p.fill("#f-cpf", cpf_novo())
+    s.p.fill("#f-tel", "11912345678")
+    s.p.fill("#f-resumo", "Penso em me machucar, não sei o que fazer")
+    s.p.check("#f-ciente")
+    s.clicar('#form-inscricao button[type="submit"]')
+    nova = s.js("PEP.db.inscricoes[PEP.db.inscricoes.length-1]")
+    conferir("Urgência", "a inscrição guarda o sinal de urgência (calculado do relato)", nova.get("sinalUrgencia") is True)
+    # Técnica: a inscrição urgente vem primeiro na fila e no painel
+    s.entrar("ana.tecnica")
+    conferir("Urgência", "o painel da técnica avisa a inscrição urgente", "sinal de urgência no relato" in s.p.locator("#app").inner_text())
+    s.ir("#/fila")
+    primeira = s.p.locator("tbody tr").first.inner_text()
+    conferir("Urgência", "na fila, a inscrição com sinal de urgência aparece primeiro, marcada para contato no mesmo dia",
+             "Pessoa Urgente Teste" in primeira and s.p.locator("tbody tr").first.locator(".etiqueta.perigo").count() == 1)
+    s.ir("#/indicadores")
+    conferir("Faltas", "indicadores mostram por que o paciente avisou que não iria", "Transporte ou distância" in s.p.locator("#app").inner_text())
+    s.sair()
+    # Paciente: "Não vou poder ir"
+    s.entrar("paciente01")
+    s.axe("Painel do paciente com aviso de falta")
+    s.p.locator(".aviso-falta summary").nth(1).click()
+    sid = s.p.locator('[data-acao="avisar-falta"]').nth(1).get_attribute("data-id")
+    s.p.select_option(f"#mf-{sid}", "trabalho-estudo")
+    s.clicar(f'[data-acao="avisar-falta"][data-id="{sid}"]')
+    sessao = s.js(f"PEP.util.porId(PEP.db.sessoes, '{sid}')")
+    conferir("Faltas", "o paciente avisa que não vai: vira falta justificada, com o motivo", sessao["presenca"] == "falta-justificada" and sessao["avisoPaciente"] and sessao["motivoFalta"] == "trabalho-estudo")
+    conferir("Faltas", "o painel do paciente confirma o aviso", "Você avisou que não vai" in s.p.locator("#app").inner_text())
+    s.sair()
+    # Estagiária: vê o aviso no painel e na aba de sessões
+    s.entrar("bia.estagiaria")
+    conferir("Faltas", "o painel da estagiária mostra a falta avisada, para oferecer outro horário", "Falta avisada pelo paciente" in s.p.locator("#app").inner_text())
+    s.ir("#/caso/c01/sessoes")
+    conferir("Faltas", "na aba de sessões, a equipe vê que a falta foi avisada pelo paciente e o motivo", "avisada pelo paciente" in s.p.locator("#app").inner_text())
+    s.sair()
+    # Prazo de registro: a evolução atrasada aparece no painel (sessão s40 do caso c03, de propósito)
+    s.entrar("duda.estagiaria")
+    conferir("Prazo", "o painel da estagiária mostra a evolução atrasada (mais de 48 h)", "Evolução atrasada" in s.p.locator("#app").inner_text())
+    s.fechar()
+
+
 def bloqueio_progressivo(nav, base):
     s = Sessao(nav, base, "Bloqueio progressivo")
     s.p.clock.install(time=datetime(2026, 11, 6, 10, 0))
@@ -941,7 +992,8 @@ def main():
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
-                      risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
+                      risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, bloqueio_progressivo, rascunho_automatico,
+                      adaptador_supabase):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

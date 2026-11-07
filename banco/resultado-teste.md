@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:00 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:06 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**109 de 109 verificações passaram.**
+**116 de 116 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 33 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2704 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2493 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -51,7 +51,7 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:00 (UTC), num PostgreSQL 18
 | ✓ | Helena (supervisora do caso) valida |  |
 | ✓ | depois de validada, nem a autora edita | 0 linhas alteradas; texto original mantido |
 | ✓ | paciente confirma presença na própria sessão |  |
-| ✓ | paciente não altera a presença | recusado: Paciente só pode confirmar presença. |
+| ✓ | paciente não altera a presença | recusado: Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai. |
 | ✓ | paciente revoga um consentimento opcional |  |
 | ✓ | paciente não mexe no contrato terapêutico | recusado: new row violates row-level security policy for table "consentimentos" |
 | ✓ | paciente não consegue ver indicadores | recusado: Perfil sem acesso aos indicadores. |
@@ -108,6 +108,12 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:00 (UTC), num PostgreSQL 18
 | ✓ | "quem acessou meu prontuário": o paciente vê o motivo da técnica e os eventos do próprio caso, e só deles | 4 registros |
 | ✓ | "quem acessou": quem não é o paciente recebe a lista vazia |  |
 | ✓ | "quem acessou" de criança ou adolescente: sem o motivo da técnica e sem menção a risco ou notificação (Código de Ética, art. 13) | Ana Lúcia: Registrou o motivo do acesso ao prontuário; Rafael: Registrou informações no prontuário |
+| ✓ | paciente não avisa falta em sessão que já passou | recusado: Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai. |
+| ✓ | paciente não registra falta comum (só o aviso, que vira falta justificada) | recusado: Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai. |
+| ✓ | aviso de falta só com motivo da lista (sem texto livre) | recusado: new row for relation "sessoes" violates check constraint "sessoes_motivo_falta_check" |
+| ✓ | paciente avisa, antes da sessão, que não vai (vira falta justificada, com a hora do servidor) |  |
+| ✓ | o aviso fica registrado com a data do servidor |  |
+| ✓ | a equipe não registra um aviso "em nome" do paciente | recusado: O aviso de falta é do próprio paciente. |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -115,5 +121,6 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:00 (UTC), num PostgreSQL 18
 | ✓ | a inscrição gerou evento de auditoria e a cadeia continua íntegra |  |
 | ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, ativos 4, na fila 6, motivos {"Horário incompatível":1} |
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
+| ✓ | indicadores trazem os motivos das faltas avisadas pelo paciente | {"transporte":1,"trabalho-estudo":1} |
 
 Tamanho do banco de demonstração: 9.9 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.

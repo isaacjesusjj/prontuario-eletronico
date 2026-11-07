@@ -61,6 +61,24 @@ PEP.telas = PEP.telas || {};
         return '<a href="#/caso/' + c.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a> (' + PEP.regras.faltasSeguidas(c) + ' faltas seguidas)';
       }).join(', ') + '. Registre a tentativa de contato antes de liberar a vaga.</div>';
     }
+    var ids = casos.map(function (c) { return c.id; }), hoje = PEP.util.hoje();
+    var nomesFalta = {};
+    PEP.lista('motivosFaltaPaciente').forEach(function (m) { nomesFalta[m.id] = m.nome; });
+    var avisadas = PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.avisoPaciente && s.data >= hoje; });
+    if (avisadas.length) {
+      html += '<div class="aviso info pequeno"><strong>Falta avisada pelo paciente:</strong> ' + avisadas.map(function (s) {
+        var c = PEP.util.porId(PEP.db.casos, s.casoId);
+        return '<a href="#/caso/' + c.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(s.data) + '</a> (' + esc((nomesFalta[s.motivoFalta] || '').toLowerCase()) + ')';
+      }).join(', ') + '. Se puder, ofereça outro horário.</div>';
+    }
+    var atrasadas = [];
+    casos.forEach(function (c) { PEP.regras.sessoesSemEvolucao(c).forEach(function (s) { atrasadas.push(s); }); });
+    if (atrasadas.length) {
+      html += '<div class="aviso alerta pequeno"><strong>Evolução atrasada (mais de ' + PEP.regra('prazoEvolucaoHoras') + ' h depois da sessão):</strong> ' + atrasadas.map(function (s) {
+        var c = PEP.util.porId(PEP.db.casos, s.casoId);
+        return '<a href="#/caso/' + c.id + '/evolucoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(s.data) + '</a>';
+      }).join(', ') + '. Registro atrasado é risco para o cuidado e para a formação.</div>';
+    }
     var pend = presencasPendentes(casos);
     if (pend.length) {
       html += '<div class="aviso info pequeno"><strong>Presença pendente:</strong> ' + pend.map(function (s) {
@@ -146,6 +164,8 @@ PEP.telas = PEP.telas || {};
       (abertos.length ? '<div class="aviso alerta pequeno">' + abertos.length + ' avaliação(ões) de risco em aberto na clínica, ' +
         abertos.filter(function (r) { return !r.cienciaEm; }).length + ' aguardando a ciência da supervisão.</div>' : '') +
       alertas(ativos) +
+      (fila.some(function (i) { return i.sinalUrgencia; }) ? '<div class="aviso perigo" role="note"><strong>' + fila.filter(function (i) { return i.sinalUrgencia; }).length +
+        ' inscrição(ões) com sinal de urgência no relato.</strong> <a href="#/fila">Contatar hoje</a>: urgência não espera a fila.</div>' : '') +
       (dup.length ? '<div class="aviso alerta pequeno"><strong>' + dup.length + ' inscrição(ões) com CPF já cadastrado.</strong> <a href="#/fila">Conferir na fila</a> antes de triar.</div>' : '') +
       '<div class="grade">' + PEP.ui.numero(fila.length, 'pessoas na fila de espera') +
       PEP.ui.numero(semGrupo.length, 'casos aguardando alocação') +
@@ -161,6 +181,16 @@ PEP.telas = PEP.telas || {};
       '<div class="linha"><a class="botao pequeno" href="#/solicitacoes">Acesso ao prontuário</a><a class="botao secundario pequeno" href="#/pedidos-lgpd">Pedidos LGPD</a></div></div></div>';
   }
 
+  // Paciente: "Não vou poder ir" (motivo de lista fechada; sem texto livre: mensagem pelo sistema
+  // não é acompanhada em tempo real, e uma crise não pode ficar esperando alguém ler)
+  PEP.telas.avisoFaltaPaciente = function (s) {
+    var opcoes = PEP.lista('motivosFaltaPaciente').map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(m.nome) + '</option>'; }).join('');
+    return '<details class="aviso-falta"><summary>Não vou poder ir</summary><div class="linha" style="margin-top:.4rem">' +
+      '<label class="pequeno" for="mf-' + s.id + '">Motivo</label><select id="mf-' + s.id + '" style="width:auto">' + opcoes + '</select>' +
+      '<button class="botao secundario pequeno" data-acao="avisar-falta" data-id="' + s.id + '">Avisar a clínica</button></div>' +
+      '<p class="suave pequeno" style="margin:.3rem 0 0">A falta avisada não conta como abandono. Se for uma crise, não espere a sessão: CVV 188 · SAMU 192.</p></details>';
+  };
+
   function painelPaciente(u) {
     var casos = PEP.db.casos.filter(function (c) { return c.pacienteId === u.pacienteId && c.status === 'ativo'; });
     var sessoes = proximasSessoes(casos);
@@ -169,12 +199,16 @@ PEP.telas = PEP.telas || {};
       '<div class="cartao"><h2>Próximas sessões</h2>';
     if (!sessoes.length) html += '<p class="vazio">Nenhuma sessão agendada.</p>';
     sessoes.forEach(function (s) {
-      html += '<div class="linha entre" style="margin-bottom:.5rem"><span>' + data(s.data) + ' às ' + esc(s.hora) + '</span>' +
+      html += '<div class="sessao-paciente"><div class="linha entre"><span>' + data(s.data) + ' às ' + esc(s.hora) + '</span>' +
         (s.confirmada ? '<span class="etiqueta validada">Presença confirmada</span>' :
-          '<button class="botao pequeno" data-acao="confirmar-sessao" data-id="' + s.id + '">Confirmar presença</button>') + '</div>';
+          '<button class="botao pequeno" data-acao="confirmar-sessao" data-id="' + s.id + '">Confirmar presença</button>') + '</div>' +
+        PEP.telas.avisoFaltaPaciente(s) + '</div>';
     });
+    var ids = casos.map(function (c) { return c.id; });
+    var avisadas = PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.avisoPaciente && s.data >= PEP.util.hoje(); });
     var temPlano = casos.some(function (c) { return PEP.regras.planoAtual(c); });
-    html += '<p class="suave pequeno">Não vai poder vir? Avise a clínica com antecedência: a falta avisada não conta como abandono.</p></div>' +
+    html += (avisadas.length ? '<p class="pequeno"><strong>Você avisou que não vai:</strong> ' + avisadas.map(function (s) { return data(s.data) + ' às ' + esc(s.hora); }).join(', ') + '.</p>' : '') +
+      '<p class="suave pequeno">Não vai poder vir? Use "Não vou poder ir" na sessão: a falta avisada não conta como abandono.</p></div>' +
       (temPlano ? '<div class="cartao"><h2>Meu plano de segurança</h2><p>O plano que você fez com quem te atende, para ler quando sentir que uma crise está começando.</p>' +
         '<a class="botao" href="#/meu-plano">Abrir meu plano</a></div>' : '') +
       '<div class="aviso perigo pequeno" role="note"><strong>Em crise, não espere a sessão:</strong> ' + PEP.telas.contatosUrgencia(true) + '. Mensagens pelo sistema não são acompanhadas em tempo real.</div>' +

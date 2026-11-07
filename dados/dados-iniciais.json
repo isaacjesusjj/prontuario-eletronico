@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.7",
+    "versao": "2026-11-06.8",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -53,6 +53,57 @@
         "Não se adaptou ao atendimento",
         "Trabalho ou questão financeira",
         "Outro"
+      ],
+      "motivosFaltaPaciente": [
+        {
+          "id": "saude",
+          "nome": "Problema de saúde"
+        },
+        {
+          "id": "trabalho-estudo",
+          "nome": "Trabalho ou estudo"
+        },
+        {
+          "id": "transporte",
+          "nome": "Transporte ou distância"
+        },
+        {
+          "id": "familia",
+          "nome": "Compromisso familiar ou com filhos"
+        },
+        {
+          "id": "financeiro",
+          "nome": "Questão financeira"
+        },
+        {
+          "id": "nao-dizer",
+          "nome": "Prefiro não dizer"
+        }
+      ],
+      "sinaisUrgencia": [
+        "suicid",
+        "me matar",
+        "tirar minha vida",
+        "tirar a minha vida",
+        "acabar com tudo",
+        "acabar com a minha vida",
+        "nao quero mais viver",
+        "quero morrer",
+        "me machucar",
+        "me cortar",
+        "me ferir",
+        "autoles",
+        "nao aguento mais",
+        "violencia",
+        "agressao",
+        "agredid",
+        "abuso",
+        "estupro",
+        "ameaca",
+        "socorro",
+        "urgente",
+        "emergencia",
+        "desesper"
       ],
       "canaisContato": [
         "Telefone",
@@ -1053,6 +1104,7 @@
       "email": "",
       "responsavelNome": "",
       "resumo": "Ansiedade antes de provas",
+      "sinalUrgencia": false,
       "periodo": "Tarde",
       "data": "2026-09-02",
       "status": "aguardando",
@@ -1073,6 +1125,7 @@
       "email": "",
       "responsavelNome": "",
       "resumo": "Luto recente na família",
+      "sinalUrgencia": false,
       "periodo": "Manhã",
       "data": "2026-09-15",
       "status": "aguardando",
@@ -1093,6 +1146,7 @@
       "email": "",
       "responsavelNome": "Responsável Exemplo 03",
       "resumo": "Dificuldade de adaptação na escola (inscrito pelo responsável)",
+      "sinalUrgencia": false,
       "periodo": "Tarde",
       "data": "2026-10-07",
       "status": "aguardando",
@@ -1113,6 +1167,7 @@
       "email": "",
       "responsavelNome": "",
       "resumo": "Conflitos no relacionamento",
+      "sinalUrgencia": false,
       "periodo": "Noite",
       "data": "2026-10-21",
       "status": "aguardando",
@@ -1133,6 +1188,7 @@
       "email": "",
       "responsavelNome": "",
       "resumo": "Quer retomar o atendimento",
+      "sinalUrgencia": false,
       "periodo": "Noite",
       "data": "2026-11-04",
       "status": "aguardando",
@@ -1673,7 +1729,10 @@
       "data": "2026-08-19",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s02",
@@ -1681,7 +1740,10 @@
       "data": "2026-08-26",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s03",
@@ -1689,7 +1751,10 @@
       "data": "2026-09-02",
       "hora": "14:00",
       "presenca": "falta-justificada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s04",
@@ -1697,7 +1762,10 @@
       "data": "2026-09-09",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s24",
@@ -1705,7 +1773,10 @@
       "data": "2026-09-23",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s25",
@@ -1713,7 +1784,10 @@
       "data": "2026-10-07",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s26",
@@ -1721,7 +1795,10 @@
       "data": "2026-10-14",
       "hora": "14:00",
       "presenca": "falta-justificada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s27",
@@ -1729,7 +1806,10 @@
       "data": "2026-10-21",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s28",
@@ -1737,7 +1817,10 @@
       "data": "2026-10-28",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s29",
@@ -1745,7 +1828,10 @@
       "data": "2026-11-04",
       "hora": "14:00",
       "presenca": "presente",
-      "confirmada": true
+      "confirmada": true,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s30",
@@ -1753,7 +1839,10 @@
       "data": "2026-11-06",
       "hora": "14:00",
       "presenca": "agendada",
-      "confirmada": true
+      "confirmada": true,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s31",
@@ -1761,7 +1850,10 @@
       "data": "2026-11-11",
       "hora": "14:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s32",
@@ -1769,7 +1861,10 @@
       "data": "2026-11-18",
       "hora": "14:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s33",
@@ -1777,7 +1872,10 @@
       "data": "2026-11-25",
       "hora": "14:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s34",
@@ -1785,7 +1883,10 @@
       "data": "2026-12-02",
       "hora": "14:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s35",
@@ -1793,7 +1894,10 @@
       "data": "2026-12-09",
       "hora": "14:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s06",
@@ -1801,7 +1905,10 @@
       "data": "2026-09-09",
       "hora": "10:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s07",
@@ -1809,7 +1916,10 @@
       "data": "2026-09-23",
       "hora": "10:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s36",
@@ -1817,7 +1927,10 @@
       "data": "2026-10-07",
       "hora": "10:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s08",
@@ -1825,7 +1938,10 @@
       "data": "2026-10-21",
       "hora": "10:00",
       "presenca": "falta",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s37",
@@ -1833,7 +1949,10 @@
       "data": "2026-10-28",
       "hora": "10:00",
       "presenca": "falta",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s09",
@@ -1841,7 +1960,10 @@
       "data": "2026-08-26",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s10",
@@ -1849,7 +1971,10 @@
       "data": "2026-09-02",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s11",
@@ -1857,7 +1982,10 @@
       "data": "2026-09-16",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s38",
@@ -1865,7 +1993,10 @@
       "data": "2026-09-30",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s39",
@@ -1873,7 +2004,10 @@
       "data": "2026-10-14",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s40",
@@ -1881,7 +2015,10 @@
       "data": "2026-10-21",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s41",
@@ -1889,7 +2026,10 @@
       "data": "2026-10-28",
       "hora": "16:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s42",
@@ -1897,7 +2037,10 @@
       "data": "2026-11-04",
       "hora": "16:00",
       "presenca": "falta-justificada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s12",
@@ -1905,7 +2048,10 @@
       "data": "2026-11-11",
       "hora": "16:00",
       "presenca": "agendada",
-      "confirmada": true
+      "confirmada": true,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s43",
@@ -1913,7 +2059,10 @@
       "data": "2026-11-18",
       "hora": "16:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s44",
@@ -1921,7 +2070,10 @@
       "data": "2026-11-25",
       "hora": "16:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s45",
@@ -1929,7 +2081,10 @@
       "data": "2026-12-02",
       "hora": "16:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s13",
@@ -1937,7 +2092,10 @@
       "data": "2026-09-02",
       "hora": "09:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s14",
@@ -1945,7 +2103,10 @@
       "data": "2026-09-16",
       "hora": "09:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s46",
@@ -1953,7 +2114,10 @@
       "data": "2026-09-30",
       "hora": "09:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s47",
@@ -1961,7 +2125,10 @@
       "data": "2026-10-14",
       "hora": "09:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s48",
@@ -1969,15 +2136,21 @@
       "data": "2026-10-28",
       "hora": "09:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s15",
       "casoId": "c04",
       "data": "2026-11-11",
       "hora": "09:00",
-      "presenca": "agendada",
-      "confirmada": false
+      "presenca": "falta-justificada",
+      "confirmada": false,
+      "avisoPaciente": true,
+      "motivoFalta": "transporte",
+      "avisadoEm": "2026-11-05T20:15"
     },
     {
       "id": "s49",
@@ -1985,7 +2158,10 @@
       "data": "2026-11-25",
       "hora": "09:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s50",
@@ -1993,7 +2169,10 @@
       "data": "2026-12-09",
       "hora": "09:00",
       "presenca": "agendada",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s16",
@@ -2001,7 +2180,10 @@
       "data": "2026-08-12",
       "hora": "11:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s17",
@@ -2009,7 +2191,10 @@
       "data": "2026-08-19",
       "hora": "11:00",
       "presenca": "falta",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s18",
@@ -2017,7 +2202,10 @@
       "data": "2026-08-26",
       "hora": "11:00",
       "presenca": "falta",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s19",
@@ -2025,7 +2213,10 @@
       "data": "2026-09-02",
       "hora": "15:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s20",
@@ -2033,7 +2224,10 @@
       "data": "2026-09-09",
       "hora": "15:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s21",
@@ -2041,7 +2235,10 @@
       "data": "2026-09-16",
       "hora": "15:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     },
     {
       "id": "s22",
@@ -2049,7 +2246,10 @@
       "data": "2026-09-23",
       "hora": "15:00",
       "presenca": "presente",
-      "confirmada": false
+      "confirmada": false,
+      "avisoPaciente": false,
+      "motivoFalta": "",
+      "avisadoEm": null
     }
   ],
   "evolucoes": [

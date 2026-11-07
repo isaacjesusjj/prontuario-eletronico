@@ -431,6 +431,10 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .previa-paciente .cartao { margin: 0; box-shadow: none; }
 .previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
 
+/* ---------- Portal do paciente: sessões ---------- */
+.sessao-paciente { border-bottom: 1px dashed var(--borda); padding: .4rem 0 .6rem; margin-bottom: .4rem; }
+.aviso-falta summary { font-size: .85rem; color: var(--lilas-700); cursor: pointer; margin-top: .3rem; }
+
 /* ---------- Privacidade na tela: cortina ---------- */
 .cortina { position: fixed; inset: 0; z-index: 200; background: #1f1430; color: #fff; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 1rem; text-align: center; padding: 2rem; }

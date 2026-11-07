@@ -34,11 +34,12 @@ PEP.telas = PEP.telas || {};
     var c = PEP.util.porId(PEP.db.casos, s.casoId);
     var nome = esc(rotulo(u, s));
     var link = u.perfil === 'paciente' ? nome : '<a href="#/caso/' + c.id + '/sessoes">' + nome + '</a>';
-    var status = PEP.lista('presencas')[s.presenca] || s.presenca;
+    var status = s.avisoPaciente ? 'Falta avisada' : (PEP.lista('presencas')[s.presenca] || s.presenca);
     var extra = '';
     if (completo && s.presenca === 'agendada') {
       if (u.perfil === 'paciente' && !s.confirmada && s.data >= U().hoje()) extra = ' <button class="botao pequeno" data-acao="confirmar-sessao" data-id="' + s.id + '">Confirmar presença</button>';
       else extra = s.confirmada ? ' <span class="etiqueta validada">confirmada</span>' : ' <span class="etiqueta rascunho">a confirmar</span>';
+      if (PEP.regras.podeAvisarFalta(u, s)) extra += PEP.telas.avisoFaltaPaciente(s);
     }
     return '<li class="sessao-item"><span class="hora">' + esc(s.hora) + '</span> ' + link + ' <span class="etiqueta ' + CLASSE[s.presenca] + '">' + esc(status) + '</span>' + extra + '</li>';
   }
