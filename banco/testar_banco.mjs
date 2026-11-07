@@ -285,6 +285,29 @@ await como('u-est1', async () => {
   await erroEsperado('a equipe não registra um aviso "em nome" do paciente', "update sessoes set presenca = 'falta-justificada', aviso_paciente = true, motivo_falta = 'saude' where id = 's33'");
 });
 
+// ---------- 6f. Contas da equipe e acesso do paciente ao portal ----------
+await como('u-dir', async () => {
+  const r = await db.query("update usuarios set ativo = false where id = 'u-est8'");
+  conferir('direção desativa a conta de um estagiário (o histórico continua)', r.affectedRows === 1);
+  await erroEsperado('direção não muda o perfil de ninguém pela API', "update usuarios set perfil = 'tecnico' where id = 'u-est7'");
+  await erroEsperado('ninguém desativa a própria conta', "update usuarios set ativo = false where id = 'u-dir'");
+  const r2 = await db.query("update usuarios set ativo = false where id = 'u-pac1'");
+  conferir('direção não mexe no acesso de paciente ao portal (é da técnica)', r2.affectedRows === 0);
+});
+await como('u-est1', async () => {
+  const r = await db.query("update usuarios set ativo = false where id = 'u-est2'");
+  conferir('estagiária não desativa a conta de outra pessoa', r.affectedRows === 0);
+});
+await como('u-tec', async () => {
+  await db.query("insert into usuarios (id, login, email, perfil, paciente_id, senha_provisoria) values ('u-pac3', 'paciente03', 'paciente03@example.org', 'paciente', 'p03', true)");
+  conferir('técnica cria o acesso de um paciente ao portal', true);
+  await erroEsperado('técnica não cria conta de equipe', "insert into usuarios (login, email, perfil, crp) values ('falso.supervisor', 'falso@clinica.example.org', 'supervisor', 'CRP 00/0')");
+  await db.query("update usuarios set ativo = false where id = 'u-pac1'");
+});
+conferir('conta desativada não vê mais nada (nem os próprios dados)', (await como('u-pac1', () => ids('pacientes'))) === '');
+await como('u-tec', () => db.query("update usuarios set ativo = true where id = 'u-pac1'"));
+conferir('conta reativada volta a ver o que é dela', (await como('u-pac1', () => ids('pacientes'))) === 'p01');
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {

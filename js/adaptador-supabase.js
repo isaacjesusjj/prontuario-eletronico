@@ -155,6 +155,15 @@ PEP.adaptadores.supabase = (function () {
     });
   }
 
+  // Esqueci a senha: o Supabase Auth manda um link de redefinição. A resposta é tratada igual, exista
+  // ou não o e-mail (o site não revela quem tem conta).
+  function recuperarSenha(email) {
+    var ok = function () { return { ok: true }; };
+    return fetch(cfg().supabaseUrl + '/auth/v1/recover', {
+      method: 'POST', headers: { apikey: cfg().supabaseChaveAnon, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email })
+    }).then(ok, ok);
+  }
+
   // ---------- Dados ----------
   // Lê todas as coleções que o usuário pode ver (RLS decide no servidor)
   function carregar() {
@@ -219,7 +228,7 @@ PEP.adaptadores.supabase = (function () {
     }).then(function (r) { return r.ok ? r.blob() : null; });
   }
 
-  return { nome: 'Supabase (PostgreSQL, São Paulo)', remoto: true, autenticar: autenticar, trocarSenha: trocarSenha, carregar: carregar, salvar: salvar,
+  return { nome: 'Supabase (PostgreSQL, São Paulo)', remoto: true, autenticar: autenticar, trocarSenha: trocarSenha, recuperarSenha: recuperarSenha, carregar: carregar, salvar: salvar,
     estruturaVazia: estruturaVazia, sair: sair, temSessao: function () { return !!token(); }, verificarAuditoria: verificarAuditoria,
     indicadores: indicadores, acessosAoMeuProntuario: acessosAoMeuProntuario, guardarArquivo: guardarArquivo, obterArquivo: obterArquivo,
     // expostos só para o teste automático do adaptador (testes/testar_site.py)

@@ -192,6 +192,14 @@ PEP.regras = (function () {
   function podeEditarCadastro(u) { return u && u.perfil === 'tecnico'; }
   function podeAtenderTitular(u) { return u && u.perfil === 'tecnico'; } // canal do encarregado no protótipo
   function podeGerirEstudantes(u) { return u && u.perfil === 'direcao'; }
+  // Contas: a direção cuida das contas da equipe (nunca da própria); a técnica, do acesso dos pacientes ao portal
+  function podeGerirConta(u, alvo) {
+    if (!u || !alvo || alvo.id === u.id) return false;
+    if (u.perfil === 'direcao') return alvo.perfil !== 'paciente';
+    if (u.perfil === 'tecnico') return alvo.perfil === 'paciente';
+    return false;
+  }
+  function contaDoPaciente(p) { return PEP.db.usuarios.filter(function (x) { return x.perfil === 'paciente' && x.pacienteId === p.id; })[0] || null; }
 
   // ---------- Faltas e abandono ----------
   // Conta as faltas sem justificativa no fim da sequência de sessões passadas.
@@ -358,7 +366,7 @@ PEP.regras = (function () {
     podeVerAreaRestrita: podeVerAreaRestrita, podeRegistrarPresenca: podeRegistrarPresenca,
     podeEncerrar: podeEncerrar, podeVerIndicadores: podeVerIndicadores,
     podeGerirFila: podeGerirFila, podeVerAuditoria: podeVerAuditoria, podeEditarCadastro: podeEditarCadastro,
-    podeAtenderTitular: podeAtenderTitular, podeGerirEstudantes: podeGerirEstudantes,
+    podeAtenderTitular: podeAtenderTitular, podeGerirEstudantes: podeGerirEstudantes, podeGerirConta: podeGerirConta, contaDoPaciente: contaDoPaciente,
     faltasSeguidas: faltasSeguidas, emRiscoDeAbandono: emRiscoDeAbandono,
     pendenciasParaEncerrar: pendenciasParaEncerrar, guardaAte: guardaAte, indicadores: indicadores,
     riscosDoCaso: riscosDoCaso, situacaoRisco: situacaoRisco, riscosAbertos: riscosAbertos, notificacoesDoRisco: notificacoesDoRisco,

@@ -25,7 +25,7 @@ PEP.app = (function () {
     caso: 'Prontuário', imprimir: 'Cópia do prontuário', supervisao: 'Validação de evoluções', fila: 'Fila de espera', triagem: 'Triagem', alocacao: 'Alocação',
     agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Acesso do paciente', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
     'meu-plano': 'Meu plano de segurança',
-    auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes', paciente: 'Editar cadastro',
+    auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes e contas', paciente: 'Editar cadastro',
     'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade'
   };
 
@@ -172,6 +172,7 @@ PEP.app = (function () {
     if (rota.nome !== 'auditoria') PEP.telas._verificacao = null;
     if (rota.nome !== 'acesso') PEP.telas._linkLiberado = null;
     if (rota.nome !== 'estudantes') PEP.telas._importacao = null;
+    PEP.telas._senhaGerada = null;   // senha provisória: mostrada uma vez, some ao trocar de tela
     if (rota.nome !== 'indicadores' && rota.nome !== 'painel') PEP.telas._indicadoresRemotos = null; // ao voltar, busca números novos
     if (rota.nome !== 'meus-dados') PEP.telas._acessosRemotos = null;
     renderizar();

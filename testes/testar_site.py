@@ -869,6 +869,43 @@ def faltas_e_urgencia(nav, base):
     s.fechar()
 
 
+def contas(nav, base):
+    s = Sessao(nav, base, "Contas")
+    s.entrar("marta.direcao")
+    s.ir("#/estudantes")
+    s.axe("Estudantes e contas")
+    s.clicar('[data-acao="gerar-senha-provisoria"][data-id="u-est8"]')
+    s.p.wait_for_selector("#senha-gerada", timeout=20000)
+    provisoria = s.p.locator("#senha-gerada").inner_text()
+    conferir("Contas", "direção gera senha provisória (aparece uma vez; nos dados fica só o hash)", len(provisoria) == 19 and provisoria not in json.dumps(s.js("PEP.db")))
+    s.clicar('[data-acao="alternar-conta"][data-id="u-est2"]')
+    conferir("Contas", "direção desativa uma conta (o histórico continua)", s.js("PEP.util.porId(PEP.db.usuarios,'u-est2').ativo") is False)
+    conferir("Contas", "a direção não tem botões para a própria conta", s.p.locator('[data-id="u-dir"]').count() == 0)
+    s.sair()
+    s.entrar("hugo.estagiario", provisoria, aceitar=False)
+    conferir("Contas", "com a senha provisória, o primeiro acesso obriga a trocar", s.js("location.hash") == "#/trocar-senha")
+    s.sair()
+    s.abrir("#/entrar")
+    s.p.fill("#lg-usuario", "caio.estagiario")
+    s.p.fill("#lg-senha", SENHA)
+    s.p.click("#lg-entrar")
+    s.p.wait_for_function("() => !document.getElementById('login-erro').hidden", timeout=15000)
+    conferir("Contas", "conta desativada não entra (mesma mensagem genérica de senha errada)", s.p.locator("#login-erro").inner_text() == "Usuário ou senha incorretos.")
+    # Técnica: acesso do paciente 03 ao portal
+    s.entrar("ana.tecnica")
+    s.justificar("c03")
+    s.ir("#/caso/c03")
+    s.clicar('[data-acao="criar-acesso-portal"]')
+    s.p.wait_for_selector("#senha-gerada", timeout=20000)
+    senha3 = s.p.locator("#senha-gerada").inner_text()
+    conta = s.js("PEP.db.usuarios.filter(u => u.pacienteId === 'p03')[0]") or {}
+    conferir("Contas", "técnica cria o acesso do paciente ao portal (usuário a partir do e-mail, senha provisória)", conta.get("login") == "paciente03" and conta.get("senhaProvisoria") is True)
+    s.sair()
+    s.entrar("paciente03", senha3, aceitar=False)
+    conferir("Contas", "o paciente entra com a senha provisória e precisa trocá-la", s.js("location.hash") == "#/trocar-senha")
+    s.fechar()
+
+
 def bloqueio_progressivo(nav, base):
     s = Sessao(nav, base, "Bloqueio progressivo")
     s.p.clock.install(time=datetime(2026, 11, 6, 10, 0))
@@ -992,7 +1029,7 @@ def main():
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
-                      risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, bloqueio_progressivo, rascunho_automatico,
+                      risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
                       adaptador_supabase):
             try:
                 etapa(nav, base)

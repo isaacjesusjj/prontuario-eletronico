@@ -35,7 +35,10 @@ PEP.telas = PEP.telas || {};
       '<button type="button" class="botao secundario pequeno" data-acao="mostrar-senha" data-alvo="lg-senha" aria-pressed="false">Mostrar</button></div>' +
       '<span class="dica">Pode colar a senha ou usar o gerenciador de senhas do navegador.</span></div>' +
       '<button class="botao" type="submit" id="lg-entrar">Entrar</button>' +
-      '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? A secretaria gera uma senha provisória, que você troca no primeiro acesso.</p></form>' +
+      (PEP.repo.adaptador().remoto ?
+        '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? Digite seu e-mail acima e <button type="button" class="botao secundario pequeno" data-acao="recuperar-senha">receba um link</button> para criar outra.</p>' :
+        '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? A coordenação (equipe) ou a psicóloga técnica (pacientes) gera uma senha provisória, que você troca no primeiro acesso.</p>') +
+      '</form>' +
       '<h2 style="margin-top:1.6rem">Contas de demonstração</h2>' +
       '<p class="suave">Contas fictícias para a apresentação. Clique numa conta para preencher o login e depois em <strong>Entrar</strong>. ' +
       'Senha de todas: <strong>' + esc(meta.senhaDemonstracao || '') + '</strong> (no banco, só fica o hash).</p>' +

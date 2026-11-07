@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 01:08, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 01:14, no Chrome (Playwright), com axe-core 4.14.0.
 
-**234 de 234 verificações passaram.** Acessibilidade: 52 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**242 de 242 verificações passaram.** Acessibilidade: 53 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 59 | 0 |
+| Acessibilidade | 60 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -39,6 +39,7 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:08, no Chrome (Playwright), 
 | Urgência | 5 | 0 |
 | Faltas | 5 | 0 |
 | Prazo | 1 | 0 |
+| Contas | 7 | 0 |
 | Banco (simulado) | 9 | 0 |
 | Console | 1 | 0 |
 
@@ -268,15 +269,23 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:08, no Chrome (Playwright), 
 | ✓ | Faltas | o painel da estagiária mostra a falta avisada, para oferecer outro horário |  |
 | ✓ | Faltas | na aba de sessões, a equipe vê que a falta foi avisada pelo paciente e o motivo |  |
 | ✓ | Prazo | o painel da estagiária mostra a evolução atrasada (mais de 48 h) |  |
+| ✓ | Acessibilidade | Contas · Estudantes e contas: sem violações WCAG A/AA |  |
+| ✓ | Contas | direção gera senha provisória (aparece uma vez; nos dados fica só o hash) |  |
+| ✓ | Contas | direção desativa uma conta (o histórico continua) |  |
+| ✓ | Contas | a direção não tem botões para a própria conta |  |
+| ✓ | Contas | com a senha provisória, o primeiro acesso obriga a trocar |  |
+| ✓ | Contas | conta desativada não entra (mesma mensagem genérica de senha errada) |  |
+| ✓ | Contas | técnica cria o acesso do paciente ao portal (usuário a partir do e-mail, senha provisória) |  |
+| ✓ | Contas | o paciente entra com a senha provisória e precisa trocá-la |  |
 | ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
 | ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:08:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:14:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5pfesttryj |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5pnentqy7b |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |

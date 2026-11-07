@@ -17,7 +17,7 @@ PEP.ui = (function () {
       ['#/solicitacoes', 'Acesso do paciente'], ['#/pedidos-lgpd', 'Pedidos LGPD'], ['#/indicadores', 'Indicadores'], ['#/auditoria', 'Auditoria'], ['#/conta', 'Minha conta']],
     paciente: [['#/painel', 'Início'], ['#/agenda', 'Minhas sessões'], ['#/meu-plano', 'Meu plano de segurança'], ['#/meu-prontuario', 'Meu prontuário'],
       ['#/meus-dados', 'Meus dados (LGPD)'], ['#/conta', 'Minha conta']],
-    direcao: [['#/painel', 'Painel'], ['#/indicadores', 'Indicadores'], ['#/alocacao', 'Grupos de estágio'], ['#/estudantes', 'Estudantes'], ['#/conta', 'Minha conta']]
+    direcao: [['#/painel', 'Painel'], ['#/indicadores', 'Indicadores'], ['#/alocacao', 'Grupos de estágio'], ['#/estudantes', 'Estudantes e contas'], ['#/conta', 'Minha conta']]
   };
 
   // Nome do paciente nas telas: no modo discreto (js/privacidade.js), só as iniciais e um código

@@ -198,6 +198,21 @@ PEP.telas = PEP.telas || {};
     return PEP.ui.semPermissao();
   };
 
+  // ---------- Contas: senha provisória mostrada uma vez e botões de gestão ----------
+  PEP.telas._senhaGerada = null; // { nome, login, senha } — só na memória da página, até sair da tela
+  PEP.telas.senhaGeradaAgora = function () {
+    var g = PEP.telas._senhaGerada;
+    if (!g) return '';
+    return '<div class="cartao destaque-sucesso" role="status"><h2>Senha provisória de ' + esc(g.nome) + '</h2>' +
+      '<p>Usuário <strong>' + esc(g.login) + '</strong> · senha provisória <span class="codigo" id="senha-gerada">' + esc(g.senha) + '</span></p>' +
+      '<p class="suave pequeno">Aparece só agora: o sistema guarda só o hash. Entregue pessoalmente ou por canal institucional, nunca por mensagem pessoal. A pessoa troca no primeiro acesso.</p>' +
+      '<button class="botao secundario pequeno" data-acao="fechar-senha-gerada">Fechar</button></div>';
+  };
+  PEP.telas.botoesConta = function (x) {
+    return '<button class="botao secundario pequeno" data-acao="gerar-senha-provisoria" data-id="' + x.id + '"' + (x.ativo ? '' : ' disabled') + '>Gerar senha provisória</button>' +
+      '<button class="botao secundario pequeno" data-acao="alternar-conta" data-id="' + x.id + '">' + (x.ativo ? 'Desativar' : 'Reativar') + '</button>';
+  };
+
   // ---------- Direção: estudantes (lista e importação) ----------
   PEP.telas._importacao = null; // { linhas: [...], resultado: [...] }
 
@@ -205,7 +220,7 @@ PEP.telas = PEP.telas || {};
     if (!PEP.regras.podeGerirEstudantes(u)) return PEP.ui.semPermissao();
     var imp = PEP.telas._importacao;
     var lista = PEP.db.usuarios.filter(function (x) { return x.perfil === 'estagiario'; });
-    var html = '<h1>Estudantes</h1><p class="suave">Contas de estudantes de Psicologia. Importe a lista da universidade (CSV) para criar as contas; cada estudante recebe uma senha provisória e troca no primeiro acesso.</p>';
+    var html = '<h1>Estudantes e contas</h1><p class="suave">Contas de estudantes de Psicologia. Importe a lista da universidade (CSV) para criar as contas; cada estudante recebe uma senha provisória e troca no primeiro acesso.</p>';
 
     if (imp && imp.resultado) {
       html += '<div class="cartao destaque-sucesso" role="status"><h2>' + imp.resultado.length + ' conta(s) criada(s)</h2>' +
@@ -233,10 +248,18 @@ PEP.telas = PEP.telas || {};
     }
     html += '</div>';
 
-    html += '<div class="cartao"><h2>Contas de estudantes (' + lista.length + ')</h2><div class="tabela-rolagem"><table><thead><tr><th scope="col">Nome</th><th scope="col">Matrícula</th><th scope="col">Usuário</th><th scope="col">Situação</th></tr></thead><tbody>' +
-      lista.map(function (x) {
-        return '<tr><td>' + esc(x.nome) + '</td><td>' + esc(x.matricula || '—') + '</td><td>' + esc(x.login) + '</td><td>' + esc(PEP.regras.descricaoUsuario(x).replace(x.cargo + ' · ', '')) +
-          (x.senhaProvisoria ? ' <span class="etiqueta alerta">senha provisória</span>' : '') + '</td></tr>';
+    // Contas da equipe: senha provisória (esqueceu a senha) e desativar/reativar (nada é apagado)
+    var equipe = PEP.db.usuarios.filter(function (x) { return x.perfil !== 'paciente' && x.id !== u.id; });
+    html += PEP.telas.senhaGeradaAgora() +
+      '<div class="cartao"><h2>Contas da equipe (' + equipe.length + ')</h2>' +
+      '<p class="suave pequeno">Esqueceu a senha: gere uma senha provisória, entregue pessoalmente ou pelo e-mail institucional; a pessoa troca no primeiro acesso. ' +
+      'Conta desativada não entra no sistema, mas o histórico dela continua.</p><div class="tabela-rolagem"><table>' +
+      '<thead><tr><th scope="col">Nome</th><th scope="col">Perfil</th><th scope="col">Usuário</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead><tbody>' +
+      equipe.map(function (x) {
+        return '<tr><td>' + esc(x.nome) + (x.matricula ? '<br><span class="suave pequeno">matrícula ' + esc(x.matricula) + '</span>' : '') + '</td><td>' + esc(PEP.regras.nomePerfil(x.perfil)) + '</td>' +
+          '<td>' + esc(x.login) + '</td><td>' + (x.ativo ? esc(PEP.regras.descricaoUsuario(x).replace(x.cargo + ' · ', '').replace(x.cargo, '') || 'ativa') : '<span class="etiqueta perigo">desativada</span>') +
+          (x.senhaProvisoria ? ' <span class="etiqueta alerta">senha provisória</span>' : '') + '</td>' +
+          '<td><div class="linha">' + PEP.telas.botoesConta(x) + '</div></td></tr>';
       }).join('') + '</tbody></table></div></div>';
     return html;
   };

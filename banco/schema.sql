@@ -773,6 +773,22 @@ begin
 end $$;
 create trigger regras before insert on planos_seguranca for each row execute function app.plano_regras();
 
+-- Contas: ninguém desativa ou reativa a própria conta; senha provisória é gerada por outra pessoa
+-- (coordenação ou técnica) e só a própria pessoa a troca.
+create or replace function app.usuario_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.eh_admin() then return new; end if;
+  if new.id = app.usuario_atual() then
+    if new.ativo is distinct from old.ativo then raise exception 'Ninguém desativa ou reativa a própria conta.'; end if;
+    if new.senha_provisoria and not old.senha_provisoria then raise exception 'Senha provisória é gerada pela coordenação ou pela técnica.'; end if;
+  elsif old.senha_provisoria and not new.senha_provisoria then
+    raise exception 'Só a própria pessoa troca a senha provisória.';
+  end if;
+  return new;
+end $$;
+create trigger regras before update on usuarios for each row execute function app.usuario_regras();
+
 -- Link de leitura do paciente: vale no máximo 72 horas a partir de agora (regras.linkPacienteHoras)
 create or replace function app.link_regras() returns trigger
 language plpgsql as $$
@@ -1014,6 +1030,13 @@ create policy direcao_cria_estudante on usuarios for insert to authenticated wit
 -- Cada um só atualiza a própria conta, e só a coluna senha_provisoria (ver "Permissões" no fim):
 -- perfil, CRP, matrícula e paciente_id não mudam pela API (senão um estagiário se promoveria a técnico).
 create policy atualizar_propria on usuarios for update to authenticated using (id = app.usuario_atual()) with check (id = app.usuario_atual());
+-- Contas: a direção desativa/reativa e marca senha provisória nas contas da equipe (nunca na própria);
+-- a técnica faz o mesmo no acesso dos pacientes ao portal e cria esse acesso. A senha fica no Supabase Auth.
+create policy gerir_equipe on usuarios for update to authenticated
+  using (app.perfil_atual() = 'direcao' and perfil <> 'paciente' and id <> app.usuario_atual()) with check (perfil <> 'paciente');
+create policy gerir_portal on usuarios for update to authenticated
+  using (app.perfil_atual() = 'tecnico' and perfil = 'paciente') with check (perfil = 'paciente');
+create policy tecnico_cria_acesso on usuarios for insert to authenticated with check (app.perfil_atual() = 'tecnico' and perfil = 'paciente');
 
 create policy ver on grupos for select to authenticated using (app.perfil_atual() <> 'paciente');
 create policy ver on subgrupos for select to authenticated using (app.perfil_atual() <> 'paciente');
@@ -1139,9 +1162,9 @@ grant insert on inscricoes to anon;
 grant select, insert, update on all tables in schema public to authenticated;
 revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria,
   notificacoes, planos_seguranca, acessos_justificados from authenticated;
--- Na própria conta, só "senha provisória já trocada" muda pela API (perfil e CRP ficam com a administração)
+-- Em usuarios, pela API só mudam "senha provisória" e "ativa" (perfil, CRP e vínculo com paciente ficam com a administração)
 revoke update on usuarios from authenticated;
-grant update (senha_provisoria) on usuarios to authenticated;
+grant update (senha_provisoria, ativo) on usuarios to authenticated;
 grant usage on schema app to anon, authenticated;
 grant execute on all functions in schema app to anon, authenticated;
 -- Eliminação de inscrições antigas: só o agendador (pg_cron) ou o administrador, nunca pela API

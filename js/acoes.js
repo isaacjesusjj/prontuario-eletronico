@@ -676,6 +676,61 @@ window.PEP = PEP;
     },
     'fechar-importacao': function () { PEP.telas._importacao = null; PEP.app.renderizar(); },
 
+    // ----- Contas: senha provisória, desativar/reativar e acesso do paciente ao portal -----
+    'gerar-senha-provisoria': function (b) {
+      var u = usuario(), alvo = repo().porId('usuarios', b.getAttribute('data-id'));
+      if (!R().podeGerirConta(u, alvo) || !alvo.ativo) return negar();
+      var ad = repo().adaptador(), alvoAuditoria = alvo.pacienteId || alvo.id;
+      if (ad.remoto) {
+        // Banco ligado: a senha não passa pelo navegador de outra pessoa; o Supabase Auth manda o link de redefinição
+        return ad.recuperarSenha(alvo.email).then(function () { concluir('Link para criar nova senha enviado ao e-mail da pessoa.', 'Enviou link de redefinição de senha', alvoAuditoria); });
+      }
+      b.disabled = true;
+      var senha = PEP.seguranca.senhaProvisoria();
+      PEP.seguranca.hashSenha(senha).then(function (hash) {
+        repo().atualizar('usuarios', alvo.id, { senhaHash: hash, senhaProvisoria: true });
+        PEP.telas._senhaGerada = { nome: PEP.ui.nomeUsuario(alvo.id), login: alvo.login, senha: senha };
+        concluir('Senha provisória gerada.', 'Gerou senha provisória para a conta', alvoAuditoria);
+      });
+    },
+    'alternar-conta': function (b) {
+      var u = usuario(), alvo = repo().porId('usuarios', b.getAttribute('data-id'));
+      if (!R().podeGerirConta(u, alvo)) return negar();
+      var ativar = !alvo.ativo;
+      if (!ativar && typeof window.confirm === 'function' &&
+          !window.confirm('Desativar a conta de ' + PEP.ui.nomeUsuario(alvo.id) + '? A pessoa não entra mais no sistema; o histórico continua.')) return;
+      repo().atualizar('usuarios', alvo.id, { ativo: ativar });
+      concluir(ativar ? 'Conta reativada.' : 'Conta desativada: a pessoa não entra mais; o histórico continua.', (ativar ? 'Reativou' : 'Desativou') + ' a conta', alvo.pacienteId || alvo.id);
+    },
+    'criar-acesso-portal': function (b) {
+      var u = usuario(), p = repo().porId('pacientes', b.getAttribute('data-id'));
+      if (!u || u.perfil !== 'tecnico' || !p || R().contaDoPaciente(p)) return negar();
+      if (!V().email(p.email)) return PEP.ui.toast('Cadastre um e-mail válido do paciente para criar o acesso ao portal.');
+      if (PEP.db.usuarios.some(function (x) { return String(x.email).toLowerCase() === p.email.toLowerCase(); })) return PEP.ui.toast('Este e-mail já é usado por outra conta.');
+      if (repo().adaptador().remoto) return PEP.ui.toast('Com o banco ligado, o acesso é criado por convite de e-mail, numa função do servidor (veja banco/README.md).');
+      // Usuário a partir do e-mail (sem repetir); a senha provisória aparece uma vez
+      var base = p.email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 50);
+      if (base.length < 3) base = 'paciente' + base;
+      var login = base, n = 2;
+      while (PEP.db.usuarios.some(function (x) { return x.login === login; })) login = base + n++;
+      var senha = PEP.seguranca.senhaProvisoria();
+      b.disabled = true;
+      PEP.seguranca.hashSenha(senha).then(function (hash) {
+        repo().inserir('usuarios', { nome: null, login: login, email: p.email.toLowerCase(), perfil: 'paciente', cargo: 'Paciente', crp: null, matricula: null,
+          pacienteId: p.id, senhaHash: hash, senhaProvisoria: true, ativo: true, criadoEm: U().hoje() });
+        PEP.telas._senhaGerada = { nome: PEP.ui.nomePaciente(p, p.id), login: login, senha: senha };
+        concluir('Acesso ao portal criado.', 'Criou acesso do paciente ao portal', p.id);
+      });
+    },
+    'fechar-senha-gerada': function () { PEP.telas._senhaGerada = null; PEP.app.renderizar(); },
+    // Esqueci a senha (banco ligado): a resposta é a mesma exista ou não o e-mail (não revela quem tem conta)
+    'recuperar-senha': function () {
+      var email = val('lg-usuario'), ad = repo().adaptador();
+      if (!ad.recuperarSenha) return;
+      if (!V().email(email)) { PEP.form.aplicar(document, [['lg-usuario', 'Digite o seu e-mail para receber o link.']]); return; }
+      ad.recuperarSenha(email).then(function () { PEP.ui.toast('Se o e-mail estiver cadastrado, você vai receber um link para criar outra senha.'); });
+    },
+
     // ----- Acesso do paciente ao prontuário -----
     'conferir-identidade': function (b) {
       var u = usuario();

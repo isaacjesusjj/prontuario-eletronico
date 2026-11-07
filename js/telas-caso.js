@@ -113,6 +113,18 @@ PEP.telas = PEP.telas || {};
       'Revogar é um direito do paciente (LGPD, art. 8º, § 5º) e vira um novo registro: o histórico não se apaga.</p></div>';
   }
 
+  // Acesso do paciente ao portal (técnica): confirmar sessões, avisar falta, plano de segurança, cópia, LGPD
+  function blocoPortal(p) {
+    var conta = R().contaDoPaciente(p);
+    var html = PEP.telas.senhaGeradaAgora() + '<div class="caixa-campos"><strong>Acesso ao portal do paciente:</strong> ';
+    if (!conta) {
+      return html + 'ainda não tem. <button class="botao secundario pequeno" data-acao="criar-acesso-portal" data-id="' + p.id + '">Criar acesso ao portal</button>' +
+        '<span class="suave pequeno"> Usa o e-mail do cadastro; a senha provisória aparece uma vez.</span></div>';
+    }
+    return html + 'usuário <strong>' + esc(conta.login) + '</strong> · ' + (conta.ativo ? 'ativo' : '<span class="etiqueta perigo">desativado</span>') +
+      (conta.senhaProvisoria ? ' <span class="etiqueta alerta">senha provisória</span>' : '') + ' <span class="linha" style="display:inline-flex">' + PEP.telas.botoesConta(conta) + '</span></div>';
+  }
+
   function abaResumo(u, caso) {
     var p = PEP.ui.pacienteDoCaso(caso);
     var canal = PEP.lista('canaisLembrete').filter(function (c) { return c.valor === p.canalLembrete; })[0];
@@ -126,7 +138,8 @@ PEP.telas = PEP.telas || {};
       '<p><strong>Telefone:</strong> ' + (disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) + '<br><strong>E-mail:</strong> ' + (disc ? oculto : esc(p.email || '—')) +
       (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + (disc ? esc(PEP.privacidade.iniciais(p.responsavelNome)) : esc(p.responsavelNome)) : '') +
       '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') + '</p></div>' +
-      (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') + '</div>' +
+      (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') +
+      (u.perfil === 'tecnico' ? blocoPortal(p) : '') + '</div>' +
       blocoAnamnese(u, caso) + blocoConsentimentos(u, caso);
   }
 

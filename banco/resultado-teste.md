@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:06 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:12 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**116 de 116 verificações passaram.**
+**125 de 125 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 33 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2493 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2429 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -114,6 +114,15 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:06 (UTC), num PostgreSQL 18
 | ✓ | paciente avisa, antes da sessão, que não vai (vira falta justificada, com a hora do servidor) |  |
 | ✓ | o aviso fica registrado com a data do servidor |  |
 | ✓ | a equipe não registra um aviso "em nome" do paciente | recusado: O aviso de falta é do próprio paciente. |
+| ✓ | direção desativa a conta de um estagiário (o histórico continua) |  |
+| ✓ | direção não muda o perfil de ninguém pela API | recusado: permission denied for table usuarios |
+| ✓ | ninguém desativa a própria conta | recusado: Ninguém desativa ou reativa a própria conta. |
+| ✓ | direção não mexe no acesso de paciente ao portal (é da técnica) |  |
+| ✓ | estagiária não desativa a conta de outra pessoa |  |
+| ✓ | técnica cria o acesso de um paciente ao portal |  |
+| ✓ | técnica não cria conta de equipe | recusado: new row violates row-level security policy for table "usuarios" |
+| ✓ | conta desativada não vê mais nada (nem os próprios dados) |  |
+| ✓ | conta reativada volta a ver o que é dela |  |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
