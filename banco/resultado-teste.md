@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:23 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:40 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**83 de 83 verificações passaram.**
+**99 de 99 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
-| ✓ | schema.sql roda sem erro | 29 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (3144 ms) |
+| ✓ | schema.sql roda sem erro | 32 tabelas |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2906 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -82,6 +82,22 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:23 (UTC), num PostgreSQL 18
 | ✓ | anexo: quem não é da equipe do caso não baixa o arquivo |  |
 | ✓ | login novo só é ligado à conta depois de o e-mail ser confirmado (ninguém "toma" a conta) |  |
 | ✓ | depois das tentativas, a cadeia da auditoria continua íntegra |  |
+| ✓ | risco: Duda (do caso) vê a avaliação; Bia (outra dupla) não vê; o paciente não lê a tabela |  |
+| ✓ | risco: a avaliação registrada não muda (nova avaliação, nunca edição) | recusado: A avaliação de risco registrada não muda: registre uma nova avaliação. |
+| ✓ | risco: estagiária não registra notificação compulsória (é do supervisor) | recusado: new row violates row-level security policy for table "notificacoes" |
+| ✓ | risco: estagiária não dá a ciência da supervisão | recusado: Quem dá ciência é o supervisor do caso. |
+| ✓ | risco: encerrar o acompanhamento antes da ciência da supervisão é recusado | recusado: A supervisão precisa dar ciência antes de encerrar o acompanhamento. |
+| ✓ | risco: a ciência não vem preenchida por quem registra (o banco limpa) |  |
+| ✓ | risco: notificação ligada a risco de outro caso é recusada | recusado: A notificação precisa estar ligada a uma avaliação de risco do mesmo caso. |
+| ✓ | risco: encerrar o acompanhamento exige o motivo | recusado: Escreva por que o acompanhamento do risco foi encerrado. |
+| ✓ | risco: a supervisora dá ciência e o banco grava quem e quando (não o que foi enviado) |  |
+| ✓ | risco: a supervisora registra a notificação do próprio caso |  |
+| ✓ | risco: caso encerrado não recebe avaliação nova | recusado: Só caso ativo recebe avaliação de risco. |
+| ✓ | plano de segurança só existe construído com o paciente | recusado: new row for relation "planos_seguranca" violates check constraint "planos_seguranca_revisa |
+| ✓ | plano de segurança: a versão é sempre a seguinte da última | recusado: A versão do plano precisa ser a seguinte da última. |
+| ✓ | plano de segurança não é editado (nova versão, nunca edição) | recusado: permission denied for table planos_seguranca |
+| ✓ | plano de segurança: o paciente do caso lê o próprio plano; estagiária de outra dupla não |  |
+| ✓ | depois do módulo de risco, a cadeia da auditoria continua íntegra |  |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -90,4 +106,4 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:23 (UTC), num PostgreSQL 18
 | ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, ativos 4, na fila 6, motivos {"Horário incompatível":1} |
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
 
-Tamanho do banco de demonstração: 9.5 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.
+Tamanho do banco de demonstração: 9.8 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.

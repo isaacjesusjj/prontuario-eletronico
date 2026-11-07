@@ -13,7 +13,7 @@ PEP.telas = PEP.telas || {};
 
   // Abas visíveis conforme o perfil (as restritas só aparecem para quem pode ver)
   function abasDoCaso(u, caso) {
-    var abas = [['resumo', 'Resumo e anamnese'], ['evolucoes', 'Evoluções'], ['sessoes', 'Sessões e faltas'], ['documentos', 'Documentos e anexos']];
+    var abas = [['resumo', 'Resumo e anamnese'], ['evolucoes', 'Evoluções'], ['risco', 'Risco e segurança'], ['sessoes', 'Sessões e faltas'], ['documentos', 'Documentos e anexos']];
     if (R().podeVerAreaRestrita(u, caso)) abas.push(['restrita', 'Avaliação psicológica']);
     if (R().podeVerOrientacoes(u, caso)) abas.push(['supervisao', 'Supervisão']);
     abas.push(['encerramento', 'Encerramento']);
@@ -30,10 +30,18 @@ PEP.telas = PEP.telas || {};
       '<div class="cartao" style="margin-top:.5rem"><div class="linha entre"><div>' +
       '<h1 style="margin:0">' + esc(p.nomeSocial || p.nome) + '</h1>' +
       '<p class="suave" style="margin:0">' + esc(PEP.ui.idade(p)) + ' anos · caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + '</p></div>' +
-      '<div class="linha">' + PEP.ui.etiquetaCaso(caso) +
+      '<div class="linha">' + PEP.ui.etiquetaCaso(caso) + seloRisco(caso) +
       (podePdf ? '<a class="botao secundario pequeno" href="#/imprimir/' + caso.id + '">Cópia em PDF</a>' : '') + '</div></div>' +
       '<p class="pequeno" style="margin:.6rem 0 0"><strong>Equipe:</strong> ' + (g ? esc(g.nome) + (sg ? ' · ' + esc(sg.nome) : '') : 'sem grupo') +
       ' — estagiários: ' + esc(equipe) + ' — supervisão: ' + esc(PEP.ui.nomeUsuario(R().supervisorDoCaso(caso)) || '—') + '</p></div>';
+  }
+
+  // Selo no cabeçalho: risco em aberto aparece em toda aba do caso (sem detalhes, com link para a aba)
+  function seloRisco(caso) {
+    var abertos = R().riscosAbertos(caso);
+    if (!abertos.length) return '';
+    var semCiencia = abertos.some(function (r) { return !r.cienciaEm; });
+    return '<a class="etiqueta perigo" href="#/caso/' + caso.id + '/risco">' + (semCiencia ? 'Risco · aguardando ciência' : 'Risco em acompanhamento') + '</a>';
   }
 
   function abas(u, caso, atual) {
@@ -225,6 +233,7 @@ PEP.telas = PEP.telas || {};
     var corpo;
     if (aba === 'evolucoes') corpo = abaEvolucoes(u, caso);
     else if (aba === 'resumo') corpo = abaResumo(u, caso);
+    else if (aba === 'risco') corpo = PEP.telas.abaRisco(u, caso);
     else corpo = PEP.telas.casoAbaExtra(u, caso, aba);
 
     return cabecalho(u, caso) + abas(u, caso, aba) + corpo;

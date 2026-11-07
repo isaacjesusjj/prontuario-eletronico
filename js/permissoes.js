@@ -170,6 +170,48 @@ PEP.regras = (function () {
     return caso.status === 'ativo' && faltasSeguidas(caso) >= PEP.regra('faltasSeguidasLimite');
   }
 
+  // ---------- Risco e segurança ----------
+  // Avaliação de risco: a equipe do caso registra; o supervisor dá ciência (uma vez) e só ele
+  // registra a notificação compulsória (Res. CFP 05/2025, art. 7º, III). O técnico registra o
+  // risco identificado na triagem, quando o caso ainda nem tem grupo.
+  function riscosDoCaso(caso) {
+    return PEP.db.riscos.filter(function (r) { return r.casoId === caso.id; }).sort(function (a, b) { return b.em.localeCompare(a.em); });
+  }
+  function situacaoRisco(r) { return r.encerradoEm ? 'encerrado' : (r.cienciaEm ? 'acompanhamento' : 'aguardando-ciencia'); }
+  function riscosAbertos(caso) { return riscosDoCaso(caso).filter(function (r) { return !r.encerradoEm; }); }
+  function notificacoesDoRisco(r) { return PEP.db.notificacoes.filter(function (n) { return n.riscoId === r.id; }); }
+  function planosDoCaso(caso) {
+    return PEP.db.planosSeguranca.filter(function (p) { return p.casoId === caso.id; }).sort(function (a, b) { return a.versao - b.versao; });
+  }
+  function planoAtual(caso) { var l = planosDoCaso(caso); return l[l.length - 1] || null; }
+
+  function podeRegistrarRisco(u, caso) {
+    return (caso.status === 'ativo' && (ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso))) ||
+      (u.perfil === 'tecnico' && (caso.status === 'ativo' || caso.status === 'aguardando-alocacao'));
+  }
+  function podeDarCiencia(u, caso) { return ehSupervisorDoCaso(u, caso); }
+  function podeNotificar(u, caso) { return ehSupervisorDoCaso(u, caso); }
+  function podeEncerrarRisco(u, caso) { return ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso); }
+  function podeEditarPlano(u, caso) { return caso.status === 'ativo' && (ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso)); }
+
+  // Notificações que podem se aplicar, pelo tipo de risco e pela idade (gênero não é presumido:
+  // a supervisão confere a lista inteira). O sistema sugere; quem decide e notifica é o supervisor.
+  function notificacoesSugeridas(r, paciente) {
+    var idade = paciente ? PEP.util.idade(paciente.dataNascimento) : null;
+    var s = [];
+    if (['tentativa-suicidio', 'autolesao', 'violencia-sofrida'].indexOf(r.tipo) !== -1) s.push('vigilancia');
+    if (r.tipo === 'violencia-sofrida' && idade !== null && idade < 18) s.push('conselho-tutelar');
+    if (r.tipo === 'violencia-sofrida' && idade !== null && idade >= 60) s.push('pessoa-idosa');
+    return s;
+  }
+
+  // Na cópia entregue ao responsável de criança ou adolescente vai o estritamente essencial
+  // (Código de Ética, art. 13): relato de violência e notificação ficam de fora, porque quem
+  // pede a cópia pode ser justamente a pessoa apontada no relato.
+  function riscoProtegidoNaCopia(r, paciente) {
+    return PEP.util.idade(paciente.dataNascimento) < 18 && r.tipo === 'violencia-sofrida';
+  }
+
   // ---------- Encerramento ----------
   // O prontuário precisa estar completo antes de fechar: evolução esperando a supervisão ou
   // devolvida impede (o banco recusa também); rascunho e sessão sem evolução são avisos.
@@ -252,6 +294,10 @@ PEP.regras = (function () {
     podeGerirFila: podeGerirFila, podeVerAuditoria: podeVerAuditoria, podeEditarCadastro: podeEditarCadastro,
     podeAtenderTitular: podeAtenderTitular, podeGerirEstudantes: podeGerirEstudantes,
     faltasSeguidas: faltasSeguidas, emRiscoDeAbandono: emRiscoDeAbandono,
-    pendenciasParaEncerrar: pendenciasParaEncerrar, guardaAte: guardaAte, indicadores: indicadores
+    pendenciasParaEncerrar: pendenciasParaEncerrar, guardaAte: guardaAte, indicadores: indicadores,
+    riscosDoCaso: riscosDoCaso, situacaoRisco: situacaoRisco, riscosAbertos: riscosAbertos, notificacoesDoRisco: notificacoesDoRisco,
+    planosDoCaso: planosDoCaso, planoAtual: planoAtual, podeRegistrarRisco: podeRegistrarRisco, podeDarCiencia: podeDarCiencia,
+    podeNotificar: podeNotificar, podeEncerrarRisco: podeEncerrarRisco, podeEditarPlano: podeEditarPlano,
+    notificacoesSugeridas: notificacoesSugeridas, riscoProtegidoNaCopia: riscoProtegidoNaCopia
   };
 })();

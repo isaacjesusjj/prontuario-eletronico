@@ -24,6 +24,7 @@ PEP.app = (function () {
     termos: 'Termos de uso', acessibilidade: 'Acessibilidade', regras: 'Regras e leis', acesso: 'Leitura do prontuário', painel: 'Painel', casos: 'Casos',
     caso: 'Prontuário', imprimir: 'Cópia do prontuário', supervisao: 'Validação de evoluções', fila: 'Fila de espera', triagem: 'Triagem', alocacao: 'Alocação',
     agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Acesso do paciente', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
+    'meu-plano': 'Meu plano de segurança',
     auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes', paciente: 'Editar cadastro',
     'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade'
   };
@@ -73,6 +74,7 @@ PEP.app = (function () {
       case 'pedidos-lgpd': return T.pedidosLgpd(u);
       case 'meu-prontuario': return T.meuProntuario(u);
       case 'meus-dados': return T.meusDados(u);
+      case 'meu-plano': return T.meuPlano(u);
       case 'auditoria': return T.auditoria(u);
       case 'conta': return T.conta(u);
       default: return '<h1>Página não encontrada</h1><a href="#/painel">Voltar ao painel</a>';

@@ -15,7 +15,8 @@ PEP.ui = (function () {
       ['#/agenda', 'Agenda'], ['#/indicadores', 'Indicadores'], ['#/conta', 'Minha conta']],
     tecnico: [['#/painel', 'Painel'], ['#/fila', 'Fila de espera'], ['#/casos', 'Casos'], ['#/alocacao', 'Alocação'], ['#/agenda', 'Agenda'],
       ['#/solicitacoes', 'Acesso do paciente'], ['#/pedidos-lgpd', 'Pedidos LGPD'], ['#/indicadores', 'Indicadores'], ['#/auditoria', 'Auditoria'], ['#/conta', 'Minha conta']],
-    paciente: [['#/painel', 'Início'], ['#/agenda', 'Minhas sessões'], ['#/meu-prontuario', 'Meu prontuário'], ['#/meus-dados', 'Meus dados (LGPD)'], ['#/conta', 'Minha conta']],
+    paciente: [['#/painel', 'Início'], ['#/agenda', 'Minhas sessões'], ['#/meu-plano', 'Meu plano de segurança'], ['#/meu-prontuario', 'Meu prontuário'],
+      ['#/meus-dados', 'Meus dados (LGPD)'], ['#/conta', 'Minha conta']],
     direcao: [['#/painel', 'Painel'], ['#/indicadores', 'Indicadores'], ['#/alocacao', 'Grupos de estágio'], ['#/estudantes', 'Estudantes'], ['#/conta', 'Minha conta']]
   };
 

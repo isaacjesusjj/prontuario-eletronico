@@ -413,6 +413,15 @@ table.mes td.hoje { outline: 2px solid var(--lilas-700); outline-offset: -2px; }
 .mini.alerta { background: var(--alerta-fundo); color: var(--alerta); }
 @media (max-width: 820px) { .semana { grid-template-columns: 1fr; } .dia-semana { min-height: 0; } .topo-direita { width: 100%; justify-content: space-between; } }
 
+/* ---------- Risco e segurança ---------- */
+.lista-urgencia { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+.lista-urgencia li { display: flex; gap: .8rem; align-items: center; }
+.numero-urgencia { font-family: var(--serifa); font-size: 1.5rem; font-weight: 700; color: var(--perigo); min-width: 3.2rem; text-decoration: none; }
+dl.plano { margin: .6rem 0 0; }
+dl.plano dt { font-weight: 700; color: var(--lilas-900); margin-top: .6rem; }
+dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
+.plano-paciente dd { font-family: var(--serifa); font-size: 1.05rem; }
+
 /* ---------- Alto contraste ---------- */
 html.contraste { --fundo: #000; --superficie: #000; --texto: #fff; --texto-suave: #f0f0f0; --borda: #fff; --borda-forte: #fff;
   --lilas-950: #fff; --lilas-900: #fff; --lilas-800: #ffeb3b; --lilas-700: #ffeb3b; --lilas-500: #ffeb3b; --lilas-300: #fff; --lilas-200: #fff; --lilas-100: #1a1a1a;

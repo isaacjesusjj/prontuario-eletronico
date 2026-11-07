@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 00:22, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 00:41, no Chrome (Playwright), com axe-core 4.14.0.
 
-**176 de 176 verificações passaram.** Acessibilidade: 45 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**195 de 195 verificações passaram.** Acessibilidade: 47 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 52 | 0 |
+| Acessibilidade | 54 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -33,6 +33,7 @@ Gerado por `testes/testar_site.py` em 07/11/2026 00:22, no Chrome (Playwright), 
 | Sessão | 4 | 0 |
 | Demonstração | 2 | 0 |
 | Celular | 4 | 0 |
+| Risco | 17 | 0 |
 | Banco (simulado) | 9 | 0 |
 | Console | 1 | 0 |
 
@@ -204,15 +205,34 @@ Gerado por `testes/testar_site.py` em 07/11/2026 00:22, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Alto contraste · contraste #/caso/c01: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Alto contraste · contraste #/agenda: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | texto em 150% sem rolagem lateral |  |
+| ✓ | Acessibilidade | Risco e segurança · Caso · risco e segurança: sem violações WCAG A/AA |  |
+| ✓ | Risco | a aba mostra os números de urgência (SAMU 192, CVV 188) |  |
+| ✓ | Risco | avaliação sem descrição é recusada |  |
+| ✓ | Risco | avaliação registrada aguardando a ciência da supervisão, com selo no cabeçalho do caso |  |
+| ✓ | Risco | estagiária não vê o registro de notificação compulsória (é do supervisor) |  |
+| ✓ | Risco | plano sem os campos essenciais e sem confirmar que foi feito com o paciente é recusado |  |
+| ✓ | Risco | plano de segurança salvo como versão 1 |  |
+| ✓ | Risco | o painel da supervisora avisa a avaliação aguardando a ciência dela |  |
+| ✓ | Risco | supervisora dá ciência (quem e quando ficam registrados) |  |
+| ✓ | Risco | supervisora registra a notificação compulsória, com o fundamento legal à vista |  |
+| ✓ | Risco | supervisora assina o plano de segurança |  |
+| ✓ | Acessibilidade | Risco e segurança · Meu plano de segurança: sem violações WCAG A/AA |  |
+| ✓ | Risco | paciente lê o próprio plano de segurança no portal, com os números de urgência |  |
+| ✓ | Risco | na triagem, 'risco identificado' abre os campos da avaliação |  |
+| ✓ | Risco | triagem com risco exige descrever o que foi observado |  |
+| ✓ | Risco | o caso já nasce com a avaliação de risco da triagem, aguardando a supervisão |  |
+| ✓ | Risco | o painel da técnica destaca o caso com risco que ainda não tem grupo |  |
+| ✓ | Risco | cópia de adolescente omite o relato de violência e a notificação (Código de Ética, art. 13); só a equipe é avisada |  |
+| ✓ | Risco | cópia de adulto traz a avaliação de risco e o plano de segurança |  |
 | ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
 | ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T00:22:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T00:41:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5nt0b8sca6 |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5oh59r1s2f |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |

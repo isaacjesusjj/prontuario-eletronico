@@ -200,6 +200,42 @@ conferir('login novo só é ligado à conta depois de o e-mail ser confirmado (n
 const [{ quebra: q4 }] = await valores('select app.verificar_auditoria() as quebra');
 conferir('depois das tentativas, a cadeia da auditoria continua íntegra', q4 === null);
 
+// ---------- 6c. Risco e segurança ----------
+conferir('risco: Duda (do caso) vê a avaliação; Bia (outra dupla) não vê; o paciente não lê a tabela',
+  (await como('u-est3', () => ids('riscos'))) === 'r01' && (await como('u-est1', () => ids('riscos'))) === '' && (await como('u-pac1', () => ids('riscos'))) === '');
+await como('u-est3', async () => {
+  await erroEsperado('risco: a avaliação registrada não muda (nova avaliação, nunca edição)', "update riscos set descricao = 'Texto trocado depois.' where id = 'r01'");
+  await erroEsperado('risco: estagiária não registra notificação compulsória (é do supervisor)', "insert into notificacoes (risco_id, caso_id, orgao, registrado_por) values ('r01', 'c03', 'vigilancia', 'u-est3')");
+  await db.query("insert into riscos (id, caso_id, registrado_por, tipo, nivel, descricao, condutas, ciencia_em, ciencia_por) values ('r-teste', 'c03', 'u-est3', 'autolesao', 'moderado', 'Relata cortes superficiais na semana; sem intenção suicida.', '[\"plano-seguranca\"]', now(), 'u-est3')");
+  await erroEsperado('risco: estagiária não dá a ciência da supervisão', "update riscos set ciencia_em = now(), ciencia_por = 'u-est3' where id = 'r-teste'");
+  await erroEsperado('risco: encerrar o acompanhamento antes da ciência da supervisão é recusado', "update riscos set encerrado_em = now(), encerramento_nota = 'Melhorou bastante.' where id = 'r-teste'");
+});
+const [rTeste] = await valores("select ciencia_em is null as sem_ciencia from riscos where id = 'r-teste'");
+conferir('risco: a ciência não vem preenchida por quem registra (o banco limpa)', rTeste.sem_ciencia);
+await como('u-sup1', async () => {
+  await db.query("update riscos set ciencia_em = '2020-01-01', ciencia_por = 'u-est1' where id = 'r-teste'");
+  await erroEsperado('risco: notificação ligada a risco de outro caso é recusada', "insert into notificacoes (risco_id, caso_id, orgao, registrado_por) values ('r02', 'c03', 'vigilancia', 'u-sup1')");
+  await db.query("insert into notificacoes (risco_id, caso_id, orgao, registrado_por) values ('r-teste', 'c03', 'vigilancia', 'u-sup1')");
+  await erroEsperado('risco: encerrar o acompanhamento exige o motivo', "update riscos set encerrado_em = now(), encerramento_nota = '' where id = 'r-teste'");
+});
+const [rCiencia] = await valores("select ciencia_por, ciencia_em::date = current_date as hoje from riscos where id = 'r-teste'");
+conferir('risco: a supervisora dá ciência e o banco grava quem e quando (não o que foi enviado)', rCiencia.ciencia_por === 'u-sup1' && rCiencia.hoje);
+conferir('risco: a supervisora registra a notificação do próprio caso', (await valores("select count(*)::int n from notificacoes where risco_id = 'r-teste'"))[0].n === 1);
+await como('u-est5', async () => {
+  await erroEsperado('risco: caso encerrado não recebe avaliação nova', "insert into riscos (caso_id, registrado_por, tipo, nivel, descricao) values ('c05', 'u-est5', 'crise-aguda', 'alto', 'Tentativa de registro em caso encerrado.')");
+});
+await como('u-est1', async () => {
+  const campos = "caso_id, versao, autor_id, sinais_alerta, estrategias_proprias, servicos, revisado_com_paciente";
+  await erroEsperado('plano de segurança só existe construído com o paciente', `insert into planos_seguranca (${campos}) values ('c01', 1, 'u-est1', 'Insônia', 'Caminhar', 'CVV 188', false)`);
+  await erroEsperado('plano de segurança: a versão é sempre a seguinte da última', `insert into planos_seguranca (${campos}) values ('c01', 3, 'u-est1', 'Insônia', 'Caminhar', 'CVV 188', true)`);
+  await db.query(`insert into planos_seguranca (id, ${campos}) values ('ps-teste', 'c01', 1, 'u-est1', 'Insônia por duas noites', 'Caminhar; respiração', 'CVV 188; SAMU 192', true)`);
+  await erroEsperado('plano de segurança não é editado (nova versão, nunca edição)', "update planos_seguranca set servicos = 'outro' where id = 'ps-teste'");
+});
+conferir('plano de segurança: o paciente do caso lê o próprio plano; estagiária de outra dupla não',
+  (await como('u-pac1', () => ids('planos_seguranca'))) === 'ps-teste' && !(await como('u-est3', () => ids('planos_seguranca'))).split(',').includes('ps-teste'));
+const [{ q5 }] = await valores('select app.verificar_auditoria() as q5');
+conferir('depois do módulo de risco, a cadeia da auditoria continua íntegra', q5 === null);
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {

@@ -425,15 +425,86 @@ window.PEP = PEP;
       concluir('Orientação registrada.', 'Registrou orientação de supervisão', c.id);
     },
 
+    // ----- Risco e segurança -----
+    'registrar-risco': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeRegistrarRisco(u, c)) return negar();
+      var nivel = document.querySelector('input[name="rk-nivel"]:checked');
+      var desc = val('rk-desc'), max = PEP.regra('riscoDescricaoMaxCaracteres'), erros = [];
+      if (desc.length < 10) erros.push(['rk-desc', 'Descreva o que motivou a avaliação (pelo menos 10 caracteres).']);
+      if (desc.length > max) erros.push(['rk-desc', 'Use no máximo ' + max + ' caracteres.']);
+      if (!nivel) erros.push(['rk-nivel-moderado', 'Escolha o nível do risco.']);
+      if (!PEP.form.aplicar(el('form-risco'), erros)) return;
+      var condutas = PEP.lista('condutasRisco').filter(function (x) { return marcado('rk-c-' + x.id); }).map(function (x) { return x.id; });
+      repo().inserir('riscos', { casoId: c.id, registradoPor: u.id, em: U().agora(), tipo: val('rk-tipo'), nivel: nivel.value, descricao: desc, condutas: condutas,
+        cienciaEm: null, cienciaPor: null, encerradoEm: null, encerradoPor: null, encerramentoNota: '' });
+      concluir(nivel.value === 'alto' ? 'Risco alto registrado. Não deixe a pessoa sozinha e acione a supervisão agora.' : 'Avaliação registrada. A supervisão vê o aviso no painel.',
+        'Registrou avaliação de risco (' + nivel.value + ')', c.id);
+    },
+    'dar-ciencia-risco': function (b) {
+      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r.casoId);
+      if (!R().podeDarCiencia(u, c) || r.cienciaEm) return negar();
+      repo().atualizar('riscos', r.id, { cienciaEm: U().agora(), cienciaPor: u.id });
+      concluir('Ciência da supervisão registrada.', 'Deu ciência à avaliação de risco', c.id);
+    },
+    'registrar-notificacao': function (b) {
+      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r.casoId);
+      if (!R().podeNotificar(u, c)) return negar();
+      var orgao = val('nt-orgao-' + r.id);
+      if (!PEP.lista('notificacoes').some(function (n) { return n.id === orgao; })) return PEP.ui.toast('Escolha o órgão notificado.');
+      repo().inserir('notificacoes', { riscoId: r.id, casoId: c.id, orgao: orgao, em: U().agora(), registradoPor: u.id,
+        protocolo: val('nt-prot-' + r.id), observacao: val('nt-obs-' + r.id) });
+      concluir('Notificação registrada.', 'Registrou notificação compulsória (' + orgao + ')', c.id);
+    },
+    'encerrar-risco': function (b) {
+      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r.casoId);
+      if (!R().podeEncerrarRisco(u, c) || !r.cienciaEm || r.encerradoEm) return negar();
+      var nota = val('rk-nota-' + r.id);
+      if (nota.length < 5) { PEP.form.aplicar(document, [['rk-nota-' + r.id, 'Escreva por que o acompanhamento deste risco pode ser encerrado.']]); return; }
+      repo().atualizar('riscos', r.id, { encerradoEm: U().agora(), encerradoPor: u.id, encerramentoNota: nota });
+      concluir('Acompanhamento do risco encerrado.', 'Encerrou acompanhamento de risco', c.id);
+    },
+    'salvar-plano': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!R().podeEditarPlano(u, c)) return negar();
+      var campos = PEP.lista('camposPlanoSeguranca'), max = PEP.regra('planoCampoMaxCaracteres'), erros = [];
+      // O essencial de um plano: sinais de alerta, o que a pessoa pode fazer, a quem pedir ajuda e os serviços
+      ['sinaisAlerta', 'estrategiasProprias', 'pessoasAjuda', 'servicos'].forEach(function (k) {
+        if (val('pl-' + k).length < 3) erros.push(['pl-' + k, 'Campo essencial do plano.']);
+      });
+      campos.forEach(function (x) { if (val('pl-' + x.id).length > max) erros.push(['pl-' + x.id, 'Use no máximo ' + max + ' caracteres.']); });
+      if (!marcado('pl-revisado')) erros.push(['pl-revisado', 'O plano é construído junto com o paciente: confirme que foi feito com ele.']);
+      if (!PEP.form.aplicar(el('form-plano'), erros)) return;
+      var atual = R().planoAtual(c);
+      var novo = { casoId: c.id, versao: (atual ? atual.versao : 0) + 1, autorId: u.id, em: U().agora(), revisadoComPaciente: true };
+      campos.forEach(function (x) { novo[x.id] = val('pl-' + x.id); });
+      repo().inserir('planosSeguranca', novo);
+      concluir('Plano de segurança salvo (versão ' + novo.versao + '). O paciente vê no portal.', 'Registrou plano de segurança (versão ' + novo.versao + ')', c.id);
+    },
+    'assinar-plano': function (b) {
+      var u = usuario(), p = repo().porId('planosSeguranca', b.getAttribute('data-id')), c = caso(p.casoId);
+      if (!R().ehSupervisorDoCaso(u, c)) return negar();
+      if (!R().assinadoPeloSupervisor('plano', p.id)) assinar('plano', p.id, u, 'supervisor', null);
+      concluir('Plano assinado pela supervisão.', 'Assinou plano de segurança (versão ' + p.versao + ')', c.id);
+    },
+    'imprimir-plano': function () {
+      PEP.estado.registrarAuditoria('Imprimiu o próprio plano de segurança', (usuario() && usuario().pacienteId) || '—');
+      if (typeof window.print === 'function') window.print();
+    },
+
     // ----- Fila, triagem, cadastro e alocação -----
     'concluir-triagem': function (b) {
       var u = usuario();
       if (!R().podeGerirFila(u)) return negar();
       var i = repo().porId('inscricoes', b.getAttribute('data-id'));
+      var risco = val('tr-risco') === 'risco';
+      if (risco && val('tr-rk-desc').length < 10) { PEP.form.aplicar(el('form-triagem'), [['tr-rk-desc', 'Descreva o que foi observado ou dito (pelo menos 10 caracteres).']]); return; }
       if (val('tr-destino') === 'externo') {
-        repo().atualizar('inscricoes', i.id, { status: 'encaminhado-externo' });
+        // Encaminhamento externo: registra para onde a pessoa foi e se havia risco (sem abrir caso)
+        if (val('tr-encaminhado').length < 3) { PEP.form.aplicar(el('form-triagem'), [['tr-encaminhado', 'Informe o serviço para onde a pessoa foi encaminhada.']]); return; }
+        repo().atualizar('inscricoes', i.id, { status: 'encaminhado-externo', encaminhadoPara: val('tr-encaminhado'), riscoTriagem: risco ? val('tr-rk-nivel') : '' });
         window.location.hash = '#/fila';
-        return concluir('Encaminhamento externo registrado.', 'Triagem: encaminhamento externo', i.id);
+        return concluir('Encaminhamento externo registrado.', 'Triagem: encaminhamento externo' + (risco ? ' (risco sinalizado)' : ''), i.id);
       }
       var d = lerIdentificacao('tr');
       var existente = d.cpf ? PEP.db.pacientes.filter(function (p) { return p.cpf === d.cpf; })[0] : null;
@@ -454,8 +525,12 @@ window.PEP = PEP;
       PEP.lista('finalidadesConsentimento').forEach(function (f) {
         repo().inserir('consentimentos', { casoId: novo.id, finalidade: f.id, concedido: marcado('tr-c-' + f.id), termoVersao: PEP.config().termos.consentimento, registradoPor: u.id, em: U().agora() });
       });
-      repo().atualizar('inscricoes', i.id, { status: 'triada', casoId: novo.id });
-      var risco = val('tr-risco') === 'risco';
+      repo().atualizar('inscricoes', i.id, { status: 'triada', casoId: novo.id, riscoTriagem: risco ? val('tr-rk-nivel') : '' });
+      if (risco) {
+        // O caso já nasce com a avaliação de risco da triagem, aguardando a ciência da supervisão
+        repo().inserir('riscos', { casoId: novo.id, registradoPor: u.id, em: U().agora(), tipo: val('tr-rk-tipo'), nivel: val('tr-rk-nivel'), descricao: val('tr-rk-desc'),
+          condutas: [], cienciaEm: null, cienciaPor: null, encerradoEm: null, encerradoPor: null, encerramentoNota: '' });
+      }
       window.location.hash = '#/fila';
       concluir(risco ? 'Triagem salva com risco: acione o supervisor e a rede agora.' : (existente ? 'Triagem concluída: novo caso ligado ao cadastro existente.' : 'Triagem concluída e caso criado.'),
         'Concluiu triagem' + (risco ? ' (risco sinalizado)' : '') + (existente ? ' (paciente já cadastrado)' : ''), novo.id);
@@ -696,7 +771,7 @@ window.PEP = PEP;
       var dup = d.semCpf ? null : V().cpfJaCadastrado(d.cpf);
       var i = repo().inserir('inscricoes', { nome: d.nome, nomeSocial: d.social, dataNascimento: d.nasc, cpf: d.semCpf ? '' : d.cpf, semCpf: d.semCpf,
         telefone: d.telefone, email: d.email, responsavelNome: d.responsavel, resumo: d.resumo, periodo: f.periodo.value,
-        data: U().hoje(), status: 'aguardando', avisoVersao: PEP.config().termos.privacidade, duplicidade: dup });
+        data: U().hoje(), status: 'aguardando', avisoVersao: PEP.config().termos.privacidade, duplicidade: dup, casoId: null, encaminhadoPara: '', riscoTriagem: '' });
       PEP.estado.registrarAuditoria('Nova inscrição na fila de espera', i.id, 'visitante');
       window.location.hash = '#/inscricao-ok';
       PEP.app.renderizar();
@@ -790,5 +865,8 @@ window.PEP = PEP;
   });
   document.addEventListener('change', function (ev) {
     if (ev.target.id === 'f-semcpf') { var cpf = el('f-cpf'); cpf.disabled = ev.target.checked; if (ev.target.checked) cpf.value = ''; }
+    // Triagem: os campos de risco e de encaminhamento aparecem só quando se aplicam
+    if (ev.target.id === 'tr-risco' && el('tr-risco-detalhes')) el('tr-risco-detalhes').hidden = ev.target.value !== 'risco';
+    if (ev.target.id === 'tr-destino' && el('tr-encaminhado-linha')) el('tr-encaminhado-linha').hidden = ev.target.value !== 'externo';
   });
 })();

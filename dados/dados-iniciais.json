@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.3",
+    "versao": "2026-11-06.5",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -40,7 +40,9 @@
       "guardaProntuarioAnos": 20,
       "guardaMinimaCfpAnos": 5,
       "prazoRespostaTitularDias": 15,
-      "maxEstagiariosPorGrupo": 10
+      "maxEstagiariosPorGrupo": 10,
+      "riscoDescricaoMaxCaracteres": 1000,
+      "planoCampoMaxCaracteres": 1000
     },
     "listas": {
       "motivosAbandono": [
@@ -86,6 +88,197 @@
         "Conselho Tutelar",
         "Defensoria Pública",
         "Serviço de saúde suplementar (convênio)"
+      ],
+      "tiposRisco": [
+        {
+          "id": "ideacao-suicida",
+          "nome": "Ideação suicida"
+        },
+        {
+          "id": "tentativa-suicidio",
+          "nome": "Tentativa de suicídio"
+        },
+        {
+          "id": "autolesao",
+          "nome": "Autolesão sem intenção suicida"
+        },
+        {
+          "id": "violencia-sofrida",
+          "nome": "Violência sofrida (física, sexual, psicológica ou negligência)"
+        },
+        {
+          "id": "risco-terceiros",
+          "nome": "Risco a outras pessoas"
+        },
+        {
+          "id": "uso-substancias",
+          "nome": "Uso de álcool ou outras drogas com risco agudo"
+        },
+        {
+          "id": "crise-aguda",
+          "nome": "Crise aguda (desorganização, surto)"
+        },
+        {
+          "id": "vulnerabilidade-social",
+          "nome": "Vulnerabilidade social grave (fome, situação de rua, abandono)"
+        }
+      ],
+      "niveisRisco": [
+        {
+          "id": "baixo",
+          "nome": "Baixo",
+          "orientacao": "Acompanhar nas próximas sessões e combinar com o paciente o que fazer se piorar."
+        },
+        {
+          "id": "moderado",
+          "nome": "Moderado",
+          "orientacao": "Fazer ou revisar o plano de segurança na própria sessão e levar o caso à supervisão no mesmo dia."
+        },
+        {
+          "id": "alto",
+          "nome": "Alto ou iminente",
+          "orientacao": "Não deixar a pessoa sozinha, acionar a supervisão agora e, se houver risco de vida, SAMU 192 ou UPA."
+        }
+      ],
+      "condutasRisco": [
+        {
+          "id": "plano-seguranca",
+          "nome": "Plano de segurança feito ou revisado com o paciente"
+        },
+        {
+          "id": "supervisao-imediata",
+          "nome": "Supervisão acionada no mesmo dia"
+        },
+        {
+          "id": "rede-apoio",
+          "nome": "Pessoa da rede de apoio contatada (com a concordância do paciente, ou sem ela diante de risco iminente)"
+        },
+        {
+          "id": "responsavel",
+          "nome": "Responsável legal comunicado, só o essencial (Código de Ética, art. 13)"
+        },
+        {
+          "id": "encaminhamento-urgencia",
+          "nome": "Encaminhado à urgência (SAMU 192, UPA, pronto-socorro)"
+        },
+        {
+          "id": "encaminhamento-rede",
+          "nome": "Encaminhado à rede (CAPS, UBS, CREAS)"
+        },
+        {
+          "id": "restricao-meios",
+          "nome": "Orientação para afastar meios de risco (medicamentos, armas, objetos)"
+        },
+        {
+          "id": "notificacao",
+          "nome": "Notificação compulsória avaliada com a supervisão"
+        }
+      ],
+      "notificacoes": [
+        {
+          "id": "vigilancia",
+          "orgao": "Vigilância em saúde do município (ficha de notificação do SINAN)",
+          "quando": "Violência interpessoal ou autoprovocada, inclusive tentativa de suicídio e autolesão",
+          "fundamento": "Lei 13.819/2019, art. 6º; Lista Nacional de Notificação Compulsória",
+          "prazo": "Tentativa de suicídio e violência sexual: em até 24 horas (desde a Portaria GM/MS 1.271/2014). Demais casos: conforme a lista vigente, a confirmar com a Secretaria Municipal de Saúde."
+        },
+        {
+          "id": "conselho-tutelar",
+          "orgao": "Conselho Tutelar",
+          "quando": "Suspeita ou confirmação de maus-tratos, castigo físico ou tratamento cruel contra criança ou adolescente",
+          "fundamento": "ECA (Lei 8.069/1990), arts. 13 e 245",
+          "prazo": "Comunicação obrigatória; deixar de comunicar é infração administrativa (art. 245)."
+        },
+        {
+          "id": "policia-mulher",
+          "orgao": "Autoridade policial",
+          "quando": "Indícios ou confirmação de violência contra a mulher atendida",
+          "fundamento": "Lei 10.778/2003, com a redação da Lei 13.931/2019",
+          "prazo": "Em até 24 horas."
+        },
+        {
+          "id": "pessoa-idosa",
+          "orgao": "Autoridade sanitária e, também, autoridade policial, Ministério Público ou Conselho da Pessoa Idosa",
+          "quando": "Suspeita ou confirmação de violência contra pessoa idosa (60 anos ou mais)",
+          "fundamento": "Estatuto da Pessoa Idosa (Lei 10.741/2003), art. 19",
+          "prazo": "Comunicação obrigatória."
+        },
+        {
+          "id": "pessoa-deficiencia",
+          "orgao": "Autoridade policial, Ministério Público e Conselho dos Direitos da Pessoa com Deficiência",
+          "quando": "Suspeita ou confirmação de violência contra pessoa com deficiência",
+          "fundamento": "Lei Brasileira de Inclusão (Lei 13.146/2015), art. 26",
+          "prazo": "Comunicação obrigatória."
+        }
+      ],
+      "contatosUrgencia": [
+        {
+          "nome": "SAMU",
+          "numero": "192",
+          "curto": "SAMU",
+          "quando": "Risco de vida agora (tentativa, intoxicação, ferimento)"
+        },
+        {
+          "nome": "CVV — Centro de Valorização da Vida",
+          "numero": "188",
+          "curto": "CVV",
+          "quando": "Apoio emocional 24 horas, ligação gratuita (também por chat no site do CVV)"
+        },
+        {
+          "nome": "Polícia Militar",
+          "numero": "190",
+          "curto": "Polícia",
+          "quando": "Violência acontecendo agora"
+        },
+        {
+          "nome": "Disque 100 — Direitos Humanos",
+          "numero": "100",
+          "curto": "Direitos Humanos",
+          "quando": "Violência contra criança, adolescente, pessoa idosa ou pessoa com deficiência"
+        },
+        {
+          "nome": "Ligue 180 — Central de Atendimento à Mulher",
+          "numero": "180",
+          "curto": "Atendimento à Mulher",
+          "quando": "Violência contra a mulher"
+        }
+      ],
+      "camposPlanoSeguranca": [
+        {
+          "id": "sinaisAlerta",
+          "nome": "1. Sinais de alerta",
+          "pergunta": "Que pensamentos, sentimentos ou situações mostram que uma crise pode estar começando?"
+        },
+        {
+          "id": "estrategiasProprias",
+          "nome": "2. O que eu mesmo(a) posso fazer",
+          "pergunta": "O que ajuda a atravessar o momento sem precisar de outra pessoa?"
+        },
+        {
+          "id": "pessoasLugares",
+          "nome": "3. Pessoas e lugares que distraem",
+          "pergunta": "Onde ou com quem dá para ficar e mudar o foco?"
+        },
+        {
+          "id": "pessoasAjuda",
+          "nome": "4. Pessoas a quem posso pedir ajuda",
+          "pergunta": "Quem pode ser chamado? (O telefone pode ficar só com o paciente: o sistema não precisa dele.)"
+        },
+        {
+          "id": "servicos",
+          "nome": "5. Serviços e profissionais",
+          "pergunta": "Clínica-escola, CVV 188, SAMU 192, UPA ou CAPS mais perto."
+        },
+        {
+          "id": "ambienteSeguro",
+          "nome": "6. Deixar o ambiente mais seguro",
+          "pergunta": "O que foi combinado para afastar meios de risco (medicamentos, objetos)?"
+        },
+        {
+          "id": "razoesViver",
+          "nome": "7. O que me importa e me mantém aqui",
+          "pergunta": "Pessoas, planos e motivos que o paciente quis registrar."
+        }
       ],
       "motivosAdendo": [
         "Correção de informação",
@@ -648,7 +841,9 @@
       "status": "aguardando",
       "avisoVersao": "2026.1",
       "duplicidade": null,
-      "casoId": null
+      "casoId": null,
+      "encaminhadoPara": "",
+      "riscoTriagem": ""
     },
     {
       "id": "i02",
@@ -666,7 +861,9 @@
       "status": "aguardando",
       "avisoVersao": "2026.1",
       "duplicidade": null,
-      "casoId": null
+      "casoId": null,
+      "encaminhadoPara": "",
+      "riscoTriagem": ""
     },
     {
       "id": "i03",
@@ -684,7 +881,9 @@
       "status": "aguardando",
       "avisoVersao": "2026.1",
       "duplicidade": null,
-      "casoId": null
+      "casoId": null,
+      "encaminhadoPara": "",
+      "riscoTriagem": ""
     },
     {
       "id": "i04",
@@ -702,7 +901,9 @@
       "status": "aguardando",
       "avisoVersao": "2026.1",
       "duplicidade": null,
-      "casoId": null
+      "casoId": null,
+      "encaminhadoPara": "",
+      "riscoTriagem": ""
     },
     {
       "id": "i05",
@@ -723,7 +924,9 @@
         "tipo": "paciente",
         "id": "p05"
       },
-      "casoId": null
+      "casoId": null,
+      "encaminhadoPara": "",
+      "riscoTriagem": ""
     }
   ],
   "casos": [
@@ -2508,6 +2711,15 @@
       "papel": "supervisor",
       "em": "2026-09-11T09:35",
       "hash": null
+    },
+    {
+      "id": "as-ps01",
+      "alvoTipo": "plano",
+      "alvoId": "ps01",
+      "usuarioId": "u-sup1",
+      "papel": "supervisor",
+      "em": "2026-10-29T09:00",
+      "hash": null
     }
   ],
   "adendos": [
@@ -2577,6 +2789,75 @@
       "aplicadoPor": "u-est3",
       "em": "2026-09-30",
       "observacao": "Protocolo arquivado na área restrita. Resultado discutido em supervisão."
+    }
+  ],
+  "riscos": [
+    {
+      "id": "r01",
+      "casoId": "c03",
+      "registradoPor": "u-est3",
+      "em": "2026-10-28T15:10",
+      "tipo": "ideacao-suicida",
+      "nivel": "moderado",
+      "descricao": "Relata pensamentos de que seria melhor não acordar, sem plano nem intenção. Nega tentativas anteriores. Fatores de proteção: o vínculo com a irmã e o trabalho.",
+      "condutas": [
+        "plano-seguranca",
+        "supervisao-imediata",
+        "restricao-meios"
+      ],
+      "cienciaEm": "2026-10-28T18:30",
+      "cienciaPor": "u-sup1",
+      "encerradoEm": null,
+      "encerradoPor": null,
+      "encerramentoNota": ""
+    },
+    {
+      "id": "r02",
+      "casoId": "c04",
+      "registradoPor": "u-est6",
+      "em": "2026-10-28T16:20",
+      "tipo": "violencia-sofrida",
+      "nivel": "alto",
+      "descricao": "Relata agressão física por adulto do convívio. A fala foi acolhida sem perguntas de detalhe; paciente em segurança ao fim da sessão. Supervisão acionada na hora.",
+      "condutas": [
+        "supervisao-imediata",
+        "notificacao",
+        "encaminhamento-rede"
+      ],
+      "cienciaEm": "2026-10-28T16:40",
+      "cienciaPor": "u-sup2",
+      "encerradoEm": null,
+      "encerradoPor": null,
+      "encerramentoNota": ""
+    }
+  ],
+  "notificacoes": [
+    {
+      "id": "nt01",
+      "riscoId": "r02",
+      "casoId": "c04",
+      "orgao": "conselho-tutelar",
+      "em": "2026-10-28T17:10",
+      "registradoPor": "u-sup2",
+      "protocolo": "CT-0000/2026 (fictício)",
+      "observacao": "Comunicação feita pela supervisão, só com o necessário."
+    }
+  ],
+  "planosSeguranca": [
+    {
+      "id": "ps01",
+      "casoId": "c03",
+      "versao": 1,
+      "autorId": "u-est3",
+      "em": "2026-10-28T15:30",
+      "sinaisAlerta": "Passar mais de duas noites sem dormir; vontade de se isolar; pensar que é um peso para a família.",
+      "estrategiasProprias": "Caminhar no bairro; ouvir a lista de músicas que acalma; escrever no caderno o que está sentindo.",
+      "pessoasLugares": "Ir à casa da irmã; ficar na praça perto de casa, onde há movimento.",
+      "pessoasAjuda": "A irmã e uma colega de trabalho de confiança (os telefones ficam no celular da paciente).",
+      "servicos": "Clínica-escola, no horário de funcionamento; CVV 188 (24 horas); SAMU 192; UPA mais próxima.",
+      "ambienteSeguro": "Combinou deixar os medicamentos com a irmã e ficar só com os da semana.",
+      "razoesViver": "A sobrinha; o curso que quer começar no ano que vem.",
+      "revisadoComPaciente": true
     }
   ],
   "contatos": [

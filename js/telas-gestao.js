@@ -98,7 +98,19 @@ PEP.telas = PEP.telas || {};
       '<option value="sem">Sem risco aparente</option><option value="risco">Risco identificado — encaminhar agora</option></select></div>' +
       '<div class="campo"><label for="tr-destino">Encaminhamento</label><select id="tr-destino">' +
       '<option value="clinica">Atendimento na clínica-escola</option><option value="externo">Encaminhamento externo (CAPS, UBS, CRAS)</option></select></div></div>' +
-      '<div class="aviso alerta pequeno">Com risco identificado: acione o supervisor, encaminhe à rede (CAPS, UPA, SAMU 192) e registre a notificação compulsória quando a lei exigir.</div>' +
+      // Risco visto na triagem vira uma avaliação de risco no caso (a supervisão vê no painel)
+      '<div id="tr-risco-detalhes" hidden><fieldset class="caixa-campos"><legend class="pequeno"><strong>Avaliação de risco da triagem</strong></legend>' +
+      '<div class="grade-2"><div class="campo"><label for="tr-rk-tipo">Tipo de risco</label><select id="tr-rk-tipo">' +
+      PEP.ui.opcoes(PEP.lista('tiposRisco').map(function (t) { return { valor: t.id, nome: t.nome }; })) + '</select></div>' +
+      '<div class="campo"><label for="tr-rk-nivel">Nível</label><select id="tr-rk-nivel">' +
+      PEP.ui.opcoes(PEP.lista('niveisRisco').map(function (n) { return { valor: n.id, nome: n.nome }; }), 'moderado') + '</select></div></div>' +
+      '<div class="campo"><label for="tr-rk-desc">O que foi observado ou dito *</label><textarea id="tr-rk-desc" style="min-height:70px" maxlength="' + PEP.regra('riscoDescricaoMaxCaracteres') + '"></textarea></div>' +
+      '</fieldset></div>' +
+      '<div class="campo" id="tr-encaminhado-linha" hidden><label for="tr-encaminhado">Serviço para onde a pessoa foi encaminhada *</label>' +
+      '<input id="tr-encaminhado" type="text" maxlength="120" list="tr-lista-servicos" autocomplete="off"><datalist id="tr-lista-servicos">' +
+      PEP.lista('servicosRede').map(function (s) { return '<option value="' + esc(s) + '"></option>'; }).join('') + '</datalist></div>' +
+      '<div class="aviso alerta pequeno">Com risco identificado: acione o supervisor, encaminhe à rede (CAPS, UPA, SAMU 192) e registre a notificação compulsória quando a lei exigir. ' +
+      'Urgência: ' + PEP.telas.contatosUrgencia(true) + '.</div>' +
       '<div class="campo"><label for="tr-grupo">Alocar ao grupo (o supervisor define a dupla ou trio)</label><select id="tr-grupo"><option value="">Alocar depois</option>' + grupos + '</select></div>' +
       '<fieldset class="caixa-campos"><legend class="pequeno"><strong>Consentimentos informados na triagem (um por finalidade, termo ' + esc(PEP.config().termos.consentimento) + ')</strong></legend>' + consent + '</fieldset>' +
       '<div class="linha"><button class="botao" data-acao="concluir-triagem" data-id="' + i.id + '">Concluir triagem</button>' +

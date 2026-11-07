@@ -216,6 +216,7 @@ PEP.telas = PEP.telas || {};
           '<div class="assinaturas">Assinado por: ' + assin('evolucao', e.id) + '</div>' +
           R().adendosDe(e.id).map(function (ad) { return '<div class="adendo">Adendo (' + esc(ad.motivo) + ', ' + data(ad.em) + '): ' + esc(ad.texto) + '</div>'; }).join('') + '</div>';
       }).join('') : '<p class="vazio">Sem evoluções validadas.</p>') +
+      PEP.telas.riscoNaCopia(caso).html +
       '<h2>Documentos emitidos</h2>' + (docs.length ? '<ul>' + docs.map(function (d) {
         return '<li>' + esc(d.titulo) + ' — ' + esc(d.finalidade) + ' — para ' + esc(d.destinatario) + ' (' + data(d.emitidoEm) + ')</li>';
       }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
@@ -229,8 +230,11 @@ PEP.telas = PEP.telas || {};
     if (!caso) return '<h1>Caso não encontrado</h1>';
     var autorizado = u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, caso);
     if (!autorizado) return PEP.ui.semPermissao('A cópia é gerada pela psicóloga técnica ou pelo supervisor do caso.');
+    var omitidos = PEP.telas.riscoNaCopia(caso).omitidos;
     return '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a href="#/caso/' + caso.id + '">← Voltar ao caso</a>' +
       '<button class="botao" data-acao="imprimir" data-caso="' + caso.id + '">Imprimir / salvar em PDF</button></div>' +
+      (omitidos ? '<div class="aviso restrito pequeno nao-imprimir" role="note"><strong>Só para a equipe (não sai na impressão):</strong> esta cópia de criança ou adolescente omite ' +
+        omitidos + ' registro(s) de violência ou notificação. Ao responsável, o estritamente essencial (Código de Ética, art. 13); a supervisão orienta o que comunicar.</div>' : '') +
       PEP.telas.copiaProntuario(caso, 'por ' + PEP.ui.nomeUsuario(u.id));
   };
 })();

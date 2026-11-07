@@ -32,7 +32,7 @@ PEP.adaptadores.supabase = (function () {
   var CHAVE_SESSAO = 'vinculo-sessao-supabase';
   var COLECOES = ['usuarios', 'grupos', 'subgrupos', 'alocacoes', 'pacientes', 'inscricoes', 'casos', 'anamneses', 'consentimentos',
     'encerramentos', 'sessoes', 'evolucoes', 'assinaturas', 'adendos', 'orientacoes', 'documentos', 'anexos', 'avaliacoes',
-    'contatos', 'lembretes', 'solicitacoes', 'linksAcesso', 'pedidosTitular', 'aceites', 'auditoria'];
+    'riscos', 'notificacoes', 'planosSeguranca', 'contatos', 'lembretes', 'solicitacoes', 'linksAcesso', 'pedidosTitular', 'aceites', 'auditoria'];
   // Campos que o banco calcula ou guarda em outro lugar: a senha fica no Supabase Auth; o hash e a
   // hora da auditoria são do trigger (a tabela é particionada pela hora, que precisa ser a do servidor)
   var NAO_ENVIAR = { usuarios: ['senhaHash'], auditoria: ['hash', 'hashAnterior', 'em'] };

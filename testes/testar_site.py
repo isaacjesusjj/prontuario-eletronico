@@ -639,6 +639,83 @@ def celular_e_preferencias(nav, base):
     s.fechar()
 
 
+def risco_e_seguranca(nav, base):
+    s = Sessao(nav, base, "Risco e segurança")
+    # Estagiária: avaliação de risco e plano de segurança feito com o paciente
+    s.entrar("bia.estagiaria")
+    s.ir("#/caso/c01/risco")
+    s.axe("Caso · risco e segurança")
+    conferir("Risco", "a aba mostra os números de urgência (SAMU 192, CVV 188)", "192" in s.p.locator("#app").inner_text() and "188" in s.p.locator("#app").inner_text())
+    s.clicar("#form-risco summary")
+    s.clicar('[data-acao="registrar-risco"]')
+    conferir("Risco", "avaliação sem descrição é recusada", s.p.locator("#rk-desc-erro").count() == 1)
+    s.p.select_option("#rk-tipo", "ideacao-suicida")
+    s.p.check("#rk-nivel-moderado")
+    s.p.fill("#rk-desc", "Relata pensamentos de morte nas últimas semanas, sem plano. Rede de apoio presente.")
+    s.p.check("#rk-c-plano-seguranca")
+    s.clicar('[data-acao="registrar-risco"]')
+    r = s.js("PEP.db.riscos[PEP.db.riscos.length-1]")
+    selo = s.p.locator('a.etiqueta.perigo[href="#/caso/c01/risco"]')
+    conferir("Risco", "avaliação registrada aguardando a ciência da supervisão, com selo no cabeçalho do caso",
+             r["casoId"] == "c01" and not r.get("cienciaEm") and selo.count() == 1 and "aguardando ciência" in (selo.text_content() or ""))
+    conferir("Risco", "estagiária não vê o registro de notificação compulsória (é do supervisor)", s.p.locator('[data-acao="registrar-notificacao"]').count() == 0)
+    s.clicar("#plano summary")
+    s.clicar('[data-acao="salvar-plano"]')
+    conferir("Risco", "plano sem os campos essenciais e sem confirmar que foi feito com o paciente é recusado",
+             s.p.locator("#pl-sinaisAlerta-erro").count() == 1 and s.p.locator("#pl-revisado-erro").count() == 1)
+    s.p.fill("#pl-sinaisAlerta", "Insônia por duas noites seguidas; vontade de ficar sozinha.")
+    s.p.fill("#pl-estrategiasProprias", "Respiração lenta; caminhar; escrever no caderno.")
+    s.p.fill("#pl-pessoasAjuda", "A amiga de infância (o telefone fica com a paciente).")
+    s.p.check("#pl-revisado")
+    s.clicar('[data-acao="salvar-plano"]')
+    conferir("Risco", "plano de segurança salvo como versão 1", s.js("PEP.regras.planoAtual(PEP.util.porId(PEP.db.casos,'c01')).versao") == 1)
+    s.sair()
+    # Supervisora: aviso no painel, ciência, notificação e assinatura do plano
+    s.entrar("helena.supervisora")
+    conferir("Risco", "o painel da supervisora avisa a avaliação aguardando a ciência dela", "aguardando a sua ciência" in s.p.locator("#app").inner_text())
+    s.ir("#/caso/c01/risco")
+    s.clicar(f'[data-acao="dar-ciencia-risco"][data-id="{r["id"]}"]')
+    conferir("Risco", "supervisora dá ciência (quem e quando ficam registrados)", s.js(f"PEP.util.porId(PEP.db.riscos,'{r['id']}').cienciaPor") == "u-sup1")
+    s.clicar(f'details:has([data-acao="registrar-notificacao"][data-id="{r["id"]}"]) summary')
+    s.p.select_option(f"#nt-orgao-{r['id']}", "vigilancia")
+    s.clicar(f'[data-acao="registrar-notificacao"][data-id="{r["id"]}"]')
+    conferir("Risco", "supervisora registra a notificação compulsória, com o fundamento legal à vista",
+             s.js("PEP.db.notificacoes.length") == len(DADOS["notificacoes"]) + 1 and "Lei 13.819/2019" in s.p.locator("#app").inner_text())
+    s.clicar('[data-acao="assinar-plano"]')
+    conferir("Risco", "supervisora assina o plano de segurança", "Assinado por" in s.p.locator("#plano").inner_text())
+    s.sair()
+    # Paciente: o plano no portal
+    s.entrar("paciente01")
+    s.ir("#/meu-plano")
+    s.axe("Meu plano de segurança")
+    texto = s.p.locator("#app").inner_text()
+    conferir("Risco", "paciente lê o próprio plano de segurança no portal, com os números de urgência", "Insônia por duas noites" in texto and "188" in texto)
+    s.sair()
+    # Técnica: triagem com risco e cópia de adolescente
+    s.entrar("ana.tecnica")
+    s.ir("#/triagem/i02")
+    s.p.select_option("#tr-risco", "risco")
+    conferir("Risco", "na triagem, 'risco identificado' abre os campos da avaliação", s.p.is_visible("#tr-rk-desc"))
+    s.clicar('[data-acao="concluir-triagem"]')
+    conferir("Risco", "triagem com risco exige descrever o que foi observado", s.p.locator("#tr-rk-desc-erro").count() == 1)
+    s.p.fill("#tr-rk-desc", "Relata ideação suicida passiva desde o luto; nega plano. Orientada sobre o CVV.")
+    s.clicar('[data-acao="concluir-triagem"]')
+    novo = s.js("PEP.db.casos[PEP.db.casos.length-1]")
+    conferir("Risco", "o caso já nasce com a avaliação de risco da triagem, aguardando a supervisão",
+             s.js(f"PEP.db.riscos.some(r => r.casoId === '{novo['id']}' && r.registradoPor === 'u-tec' && !r.cienciaEm)"))
+    s.ir("#/painel")
+    conferir("Risco", "o painel da técnica destaca o caso com risco que ainda não tem grupo", "Risco visto na triagem" in s.p.locator("#app").inner_text())
+    s.ir("#/imprimir/c04")
+    tela = s.p.locator("#app").inner_text()
+    copia = tela.split("Prontuário psicológico — cópia")[-1]
+    conferir("Risco", "cópia de adolescente omite o relato de violência e a notificação (Código de Ética, art. 13); só a equipe é avisada",
+             "Relata agressão física" not in copia and "Conselho Tutelar" not in copia and "omite 2 registro(s)" in tela)
+    s.ir("#/imprimir/c03")
+    copia3 = s.p.locator("#app").inner_text()
+    conferir("Risco", "cópia de adulto traz a avaliação de risco e o plano de segurança", "Avaliações de risco" in copia3 and "Plano de segurança (versão 1" in copia3)
+    s.fechar()
+
+
 def bloqueio_progressivo(nav, base):
     s = Sessao(nav, base, "Bloqueio progressivo")
     s.p.clock.install(time=datetime(2026, 11, 6, 10, 0))
@@ -762,7 +839,7 @@ def main():
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
-                      bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
+                      risco_e_seguranca, bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

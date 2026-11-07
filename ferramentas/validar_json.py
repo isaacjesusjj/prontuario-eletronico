@@ -27,7 +27,7 @@ except json.JSONDecodeError as e:
 
 COLECOES = ["usuarios", "grupos", "subgrupos", "alocacoes", "pacientes", "inscricoes", "casos", "anamneses", "consentimentos",
             "encerramentos", "sessoes", "evolucoes", "assinaturas", "adendos", "orientacoes", "documentos", "anexos", "avaliacoes",
-            "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "auditoria"]
+            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "auditoria"]
 for c in COLECOES:
     if c not in db:
         p(f"coleção ausente: {c}")
@@ -99,7 +99,10 @@ for col, campo, dest, nulo in [
     ("orientacoes", "casoId", "casos", False), ("documentos", "casoId", "casos", False), ("anexos", "casoId", "casos", False),
     ("avaliacoes", "casoId", "casos", False), ("contatos", "casoId", "casos", False), ("lembretes", "sessaoId", "sessoes", False),
     ("solicitacoes", "pacienteId", "pacientes", False), ("solicitacoes", "casoId", "casos", False), ("linksAcesso", "casoId", "casos", False),
-    ("aceites", "usuarioId", "usuarios", False)]:
+    ("aceites", "usuarioId", "usuarios", False), ("riscos", "casoId", "casos", False), ("riscos", "registradoPor", "usuarios", False),
+    ("riscos", "cienciaPor", "usuarios", True), ("riscos", "encerradoPor", "usuarios", True), ("notificacoes", "riscoId", "riscos", False),
+    ("notificacoes", "casoId", "casos", False), ("notificacoes", "registradoPor", "usuarios", False),
+    ("planosSeguranca", "casoId", "casos", False), ("planosSeguranca", "autorId", "usuarios", False)]:
     fk(col, campo, dest, nulo)
 
 # ---------- usuários e senhas ----------
@@ -184,6 +187,10 @@ for i in db["inscricoes"]:
         p(f"{onde}: status inválido")
     if len(i["resumo"]) > 140:
         p(f"{onde}: resumo com mais de 140 caracteres")
+    if i.get("riscoTriagem", "") not in ("", "baixo", "moderado", "alto"):
+        p(f"{onde}: risco da triagem fora da lista")
+    if i["status"] == "encaminhado-externo" and len(i.get("encaminhadoPara", "")) < 3:
+        p(f"{onde}: encaminhada para fora sem o serviço de destino")
 
 # ---------- casos, consentimentos, anamnese, encerramento ----------
 FINS = [f["id"] for f in cfg["listas"]["finalidadesConsentimento"]]
@@ -269,6 +276,41 @@ for d in db["documentos"]:
 for x in db["anexos"]:
     if x["tipo"] not in [t["mime"] for t in cfg["listas"]["tiposArquivo"]] or x["tamanho"] > cfg["regras"]["uploadMaxMB"] * 1048576:
         p(f"anexo {x['id']}: tipo ou tamanho fora da regra")
+
+# ---------- risco e segurança ----------
+TIPOS_RISCO = {x["id"] for x in cfg["listas"]["tiposRisco"]}
+NIVEIS_RISCO = {x["id"] for x in cfg["listas"]["niveisRisco"]}
+CONDUTAS = {x["id"] for x in cfg["listas"]["condutasRisco"]}
+ORGAOS = {x["id"] for x in cfg["listas"]["notificacoes"]}
+for r in db["riscos"]:
+    onde = f"risco {r['id']}"
+    if r["tipo"] not in TIPOS_RISCO:
+        p(f"{onde}: tipo fora da lista")
+    if r["nivel"] not in NIVEIS_RISCO:
+        p(f"{onde}: nível fora da lista")
+    if not set(r.get("condutas", [])) <= CONDUTAS:
+        p(f"{onde}: conduta fora da lista")
+    if not 10 <= len(r["descricao"]) <= cfg["regras"]["riscoDescricaoMaxCaracteres"]:
+        p(f"{onde}: descrição fora do tamanho")
+    data_ok(r["em"], onde, dh=True)
+    if r.get("cienciaPor") and r["cienciaPor"] != supervisor_do_caso(C[r["casoId"]]):
+        p(f"{onde}: ciência dada por quem não é o supervisor do caso")
+    if r.get("encerradoEm") and not r.get("cienciaEm"):
+        p(f"{onde}: acompanhamento encerrado sem a ciência da supervisão")
+for n in db["notificacoes"]:
+    onde = f"notificação {n['id']}"
+    if n["orgao"] not in ORGAOS:
+        p(f"{onde}: órgão fora da lista")
+    if IDX["riscos"].get(n["riscoId"], {}).get("casoId") != n["casoId"]:
+        p(f"{onde}: ligada a risco de outro caso")
+    if n["registradoPor"] != supervisor_do_caso(C[n["casoId"]]):
+        p(f"{onde}: só o supervisor do caso registra notificação (Res. CFP 05/2025, art. 7º, III)")
+for k, n in Counter((x["casoId"], x["versao"]) for x in db["planosSeguranca"]).items():
+    if n > 1:
+        p(f"plano de segurança repetido: caso {k[0]} versão {k[1]}")
+for x in db["planosSeguranca"]:
+    if not x.get("revisadoComPaciente"):
+        p(f"plano {x['id']}: o plano de segurança é construído com o paciente")
 for x in db["auditoria"]:
     data_ok(x["em"], f"auditoria {x['id']}", dh=True)
     if x["usuarioId"] != "visitante" and x["usuarioId"] not in U:

@@ -130,7 +130,10 @@ create table inscricoes (
   aviso_versao     text not null,
   duplicidade      jsonb,                    -- calculada pelo banco (trigger), nunca pelo formulário
   caso_id          text references casos (id),
-  check (sem_cpf or cpf <> '')
+  encaminhado_para text not null default '', -- serviço da rede, quando a triagem encaminha para fora
+  risco_triagem    text not null default '' check (risco_triagem in ('', 'baixo', 'moderado', 'alto')),
+  check (sem_cpf or cpf <> ''),
+  check (status <> 'encaminhado-externo' or length(encaminhado_para) >= 3)
 );
 
 -- Anamnese, demanda e objetivos: cada edição é uma nova versão
@@ -201,7 +204,7 @@ create table evolucoes (
 -- Assinatura eletrônica simples (login). hash = SHA-256 do conteúdo assinado.
 create table assinaturas (
   id         text primary key default gen_random_uuid()::text,
-  alvo_tipo  text not null check (alvo_tipo in ('evolucao', 'documento', 'anamnese')),
+  alvo_tipo  text not null check (alvo_tipo in ('evolucao', 'documento', 'anamnese', 'plano')),
   alvo_id    text not null,
   usuario_id text not null references usuarios (id),
   papel      text not null check (papel in ('estagiario', 'supervisor')),
@@ -260,6 +263,58 @@ create table avaliacoes (
   aplicado_por text not null references usuarios (id),
   em           date not null default current_date,
   observacao   text not null default '—'
+);
+
+-- Avaliação de risco (evento de risco): faz parte do prontuário. Tipo, nível, descrição e condutas não
+-- mudam depois de registrados; a supervisão dá ciência uma vez e o acompanhamento é encerrado uma vez.
+create table riscos (
+  id                text primary key default gen_random_uuid()::text,
+  caso_id           text not null references casos (id),
+  registrado_por    text not null references usuarios (id),
+  em                timestamptz not null default now(),
+  tipo              text not null check (tipo in ('ideacao-suicida', 'tentativa-suicidio', 'autolesao', 'violencia-sofrida', 'risco-terceiros',
+                                                  'uso-substancias', 'crise-aguda', 'vulnerabilidade-social')),
+  nivel             text not null check (nivel in ('baixo', 'moderado', 'alto')),
+  descricao         text not null check (length(descricao) between 10 and 1000),
+  condutas          jsonb not null default '[]'::jsonb check (jsonb_typeof(condutas) = 'array'),
+  ciencia_em        timestamptz,
+  ciencia_por       text references usuarios (id),
+  encerrado_em      timestamptz,
+  encerrado_por     text references usuarios (id),
+  encerramento_nota text not null default ''
+);
+
+-- Notificação compulsória: feita e registrada pelo supervisor (Res. CFP 05/2025, art. 7º, III). Só inserção.
+create table notificacoes (
+  id             text primary key default gen_random_uuid()::text,
+  risco_id       text not null references riscos (id),
+  caso_id        text not null references casos (id),
+  orgao          text not null check (orgao in ('vigilancia', 'conselho-tutelar', 'policia-mulher', 'pessoa-idosa', 'pessoa-deficiencia')),
+  em             timestamptz not null default now(),
+  registrado_por text not null references usuarios (id),
+  protocolo      text not null default '',
+  observacao     text not null default ''
+);
+
+-- Plano de segurança (Safety Planning Intervention, Stanley e Brown): feito com o paciente, que pode
+-- consultá-lo no portal. Cada mudança é uma nova versão; as anteriores ficam guardadas.
+create table planos_seguranca (
+  id                    text primary key default gen_random_uuid()::text,
+  caso_id               text not null references casos (id),
+  versao                int not null check (versao >= 1),
+  autor_id              text not null references usuarios (id),
+  em                    timestamptz not null default now(),
+  sinais_alerta         text not null default '',
+  estrategias_proprias  text not null default '',
+  pessoas_lugares       text not null default '',
+  pessoas_ajuda         text not null default '',
+  servicos              text not null default '',
+  ambiente_seguro       text not null default '',
+  razoes_viver          text not null default '',
+  revisado_com_paciente boolean not null check (revisado_com_paciente),   -- o plano é construído junto com o paciente
+  unique (caso_id, versao),
+  check (greatest(length(sinais_alerta), length(estrategias_proprias), length(pessoas_lugares), length(pessoas_ajuda),
+                  length(servicos), length(ambiente_seguro), length(razoes_viver)) <= 1000)
 );
 
 create table contatos (
@@ -362,6 +417,9 @@ create index on evolucoes (caso_id, status);
 create index on assinaturas (alvo_tipo, alvo_id);
 create index on adendos (evolucao_id);
 create index on orientacoes (caso_id);
+create index on riscos (caso_id) where encerrado_em is null;
+create index on notificacoes (risco_id);
+create index on planos_seguranca (caso_id, versao desc);
 create index on auditoria (seq);
 create index on auditoria (alvo);
 
@@ -431,7 +489,8 @@ language sql stable security definer set search_path = public as $$
   select case p_tipo
     when 'evolucao' then (select caso_id from evolucoes where id = p_id)
     when 'documento' then (select caso_id from documentos where id = p_id)
-    when 'anamnese' then (select caso_id from anamneses where id = p_id) end
+    when 'anamnese' then (select caso_id from anamneses where id = p_id)
+    when 'plano' then (select caso_id from planos_seguranca where id = p_id) end
 $$;
 
 -- ---------------------------------------------------------------------
@@ -454,6 +513,9 @@ create trigger so_insercao before update or delete on anexos for each row execut
 create trigger so_insercao before update or delete on aceites for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on lembretes for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on auditoria for each row execute function app.bloquear_alteracao();
+create trigger so_insercao before update or delete on notificacoes for each row execute function app.bloquear_alteracao();
+create trigger so_insercao before update or delete on planos_seguranca for each row execute function app.bloquear_alteracao();
+create trigger sem_exclusao before delete on riscos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on casos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on pacientes for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on sessoes for each row execute function app.bloquear_alteracao();
@@ -607,6 +669,68 @@ begin
 end $$;
 create trigger regras before insert on assinaturas for each row execute function app.assinatura_regras();
 
+-- Avaliação de risco: nasce num caso ativo, com condutas da lista; o que foi avaliado não muda.
+-- Depois, só duas coisas acontecem, uma vez cada: o supervisor do caso dá ciência e alguém da equipe
+-- encerra o acompanhamento (com o motivo). Quem e quando, quem grava é o banco.
+create or replace function app.risco_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    if app.em_migracao() then return new; end if;
+    -- caso ativo, ou recém-triado esperando alocação (o risco visto na triagem não espera o grupo)
+    if not exists (select 1 from casos c where c.id = new.caso_id and (c.status = 'ativo' or (c.status = 'aguardando-alocacao' and app.perfil_atual() = 'tecnico'))) then
+      raise exception 'Só caso ativo recebe avaliação de risco.';
+    end if;
+    if exists (select 1 from jsonb_array_elements_text(new.condutas) x where x not in ('plano-seguranca', 'supervisao-imediata', 'rede-apoio',
+               'responsavel', 'encaminhamento-urgencia', 'encaminhamento-rede', 'restricao-meios', 'notificacao')) then
+      raise exception 'Conduta fora da lista.';
+    end if;
+    new.ciencia_em := null; new.ciencia_por := null; new.encerrado_em := null; new.encerrado_por := null; new.encerramento_nota := '';
+    return new;
+  end if;
+  if (new.caso_id, new.registrado_por, new.em, new.tipo, new.nivel, new.descricao, new.condutas)
+     is distinct from (old.caso_id, old.registrado_por, old.em, old.tipo, old.nivel, old.descricao, old.condutas) then
+    raise exception 'A avaliação de risco registrada não muda: registre uma nova avaliação.';
+  end if;
+  if (new.ciencia_em, new.ciencia_por) is distinct from (old.ciencia_em, old.ciencia_por) then
+    if old.ciencia_em is not null then raise exception 'A ciência da supervisão já foi registrada.'; end if;
+    if not app.eh_supervisor_do_caso(new.caso_id) then raise exception 'Quem dá ciência é o supervisor do caso.'; end if;
+    new.ciencia_em := now(); new.ciencia_por := app.usuario_atual();
+  end if;
+  if (new.encerrado_em, new.encerrado_por, new.encerramento_nota) is distinct from (old.encerrado_em, old.encerrado_por, old.encerramento_nota) then
+    if old.encerrado_em is not null then raise exception 'Acompanhamento já encerrado: se o risco voltar, registre uma nova avaliação.'; end if;
+    if new.ciencia_em is null then raise exception 'A supervisão precisa dar ciência antes de encerrar o acompanhamento.'; end if;
+    if length(new.encerramento_nota) < 5 then raise exception 'Escreva por que o acompanhamento do risco foi encerrado.'; end if;
+    new.encerrado_em := now(); new.encerrado_por := app.usuario_atual();
+  end if;
+  return new;
+end $$;
+create trigger regras before insert or update on riscos for each row execute function app.risco_regras();
+
+-- Notificação: o risco precisa ser do mesmo caso
+create or replace function app.notificacao_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from riscos r where r.id = new.risco_id and r.caso_id = new.caso_id) then
+    raise exception 'A notificação precisa estar ligada a uma avaliação de risco do mesmo caso.';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on notificacoes for each row execute function app.notificacao_regras();
+
+-- Plano de segurança: nova versão só em caso ativo, sempre a seguinte da última
+create or replace function app.plano_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso ativo recebe plano de segurança.'; end if;
+  if new.versao <> coalesce((select max(versao) from planos_seguranca p where p.caso_id = new.caso_id), 0) + 1 then
+    raise exception 'A versão do plano precisa ser a seguinte da última.';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on planos_seguranca for each row execute function app.plano_regras();
+
 -- Link de leitura do paciente: vale no máximo 72 horas a partir de agora (regras.linkPacienteHoras)
 create or replace function app.link_regras() returns trigger
 language plpgsql as $$
@@ -637,6 +761,9 @@ create trigger carimbo before insert on orientacoes for each row execute functio
 create trigger carimbo before insert on documentos for each row execute function app.carimbo('emitido_em', 'data');
 create trigger carimbo before insert on anexos for each row execute function app.carimbo('em', 'data');
 create trigger carimbo before insert on avaliacoes for each row execute function app.carimbo('em', 'data');
+create trigger carimbo before insert on riscos for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on notificacoes for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on planos_seguranca for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on contatos for each row execute function app.carimbo('em', 'data');
 create trigger carimbo before insert on lembretes for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on solicitacoes for each row execute function app.carimbo('em', 'hora');
@@ -784,6 +911,9 @@ alter table orientacoes enable row level security;
 alter table documentos enable row level security;
 alter table anexos enable row level security;
 alter table avaliacoes enable row level security;
+alter table riscos enable row level security;
+alter table notificacoes enable row level security;
+alter table planos_seguranca enable row level security;
 alter table contatos enable row level security;
 alter table lembretes enable row level security;
 alter table solicitacoes enable row level security;
@@ -825,7 +955,8 @@ create policy tecnico_cria on casos for insert to authenticated with check (app.
 create policy equipe_atualiza on casos for update to authenticated using (app.pode_ver_caso(id));
 
 -- Fila: qualquer pessoa (anon) se inscreve; só o técnico lê
-create policy inscrever on inscricoes for insert to anon, authenticated with check (status = 'aguardando' and caso_id is null);
+create policy inscrever on inscricoes for insert to anon, authenticated with check (status = 'aguardando' and caso_id is null
+  and encaminhado_para = '' and risco_triagem = '');   -- o que a triagem decide não vem do formulário público
 create policy tecnico_le on inscricoes for select to authenticated using (app.perfil_atual() = 'tecnico');
 create policy tecnico_atualiza on inscricoes for update to authenticated using (app.perfil_atual() = 'tecnico');
 
@@ -874,6 +1005,18 @@ create policy ver on avaliacoes for select to authenticated using (app.pode_ver_
 create policy registrar on avaliacoes for insert to authenticated with check (aplicado_por = app.usuario_atual()
   and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id)));
 
+-- Risco e segurança: a equipe do caso registra; ciência e notificação são do supervisor (o trigger confere);
+-- o paciente lê o próprio plano de segurança no portal (os riscos chegam a ele pela cópia do prontuário)
+create policy ver on riscos for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy registrar on riscos for insert to authenticated with check (registrado_por = app.usuario_atual()
+  and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id) or app.perfil_atual() = 'tecnico'));   -- técnico: risco visto na triagem
+create policy acompanhar on riscos for update to authenticated using (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id));
+create policy ver on notificacoes for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy registrar on notificacoes for insert to authenticated with check (registrado_por = app.usuario_atual() and app.eh_supervisor_do_caso(caso_id));
+create policy ver on planos_seguranca for select to authenticated using (app.pode_ver_caso(caso_id) or app.eh_paciente_do_caso(caso_id));
+create policy registrar on planos_seguranca for insert to authenticated with check (autor_id = app.usuario_atual()
+  and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id)));
+
 create policy ver on contatos for select to authenticated using (app.pode_ver_caso(caso_id));
 create policy registrar on contatos for insert to authenticated with check (registrado_por = app.usuario_atual() and app.pode_ver_caso(caso_id));
 create policy ver on lembretes for select to authenticated using (app.pode_ver_caso((select caso_id from sessoes s where s.id = sessao_id)));
@@ -909,7 +1052,8 @@ create policy tecnico_le on auditoria for select to authenticated using (app.per
 revoke all on all tables in schema public from anon;
 grant insert on inscricoes to anon;
 grant select, insert, update on all tables in schema public to authenticated;
-revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria from authenticated;
+revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria,
+  notificacoes, planos_seguranca from authenticated;
 -- Na própria conta, só "senha provisória já trocada" muda pela API (perfil e CRP ficam com a administração)
 revoke update on usuarios from authenticated;
 grant update (senha_provisoria) on usuarios to authenticated;
