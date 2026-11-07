@@ -92,6 +92,7 @@ PEP.app = (function () {
 
     if (rota.nome === 'caso') auditarAbertura(u, rota);
     else if (navegou) ultimaRotaAuditada = '';
+    if (navegou) carregarDoServidor(u, rota);
 
     PEP.ui.desenharTopo(u);
     PEP.ui.desenharMenu(u, window.location.hash);
@@ -115,23 +116,39 @@ PEP.app = (function () {
   }
 
   // ---------- Inatividade: aviso 1 minuto antes de encerrar (WCAG 2.2, critério 2.2.1) ----------
+  // No aviso, o texto que estava sendo escrito numa evolução é guardado como rascunho (só o autor vê).
+  var rascunhosGuardados = null;
   function verificarInatividade() {
     var aviso = document.getElementById('aviso-sessao');
     var inativo = PEP.estado.tempoInativo();
-    if (inativo === null) { aviso.hidden = true; return; }
+    if (inativo === null) { aviso.hidden = true; rascunhosGuardados = null; return; }
     var limite = PEP.regra('inatividadeMinutos') * 60000;
-    if (inativo >= limite) { aviso.hidden = true; renderizar(); return; }
+    if (inativo >= limite) { aviso.hidden = true; rascunhosGuardados = null; renderizar(); return; }
     var faltam = Math.ceil((limite - inativo) / 1000);
     if (faltam <= 60) {
+      if (rascunhosGuardados === null) rascunhosGuardados = PEP.acoes._guardarRascunhosAbertos();
       aviso.hidden = false;
-      document.getElementById('aviso-sessao-texto').textContent = 'Por segurança, sua sessão vai encerrar em ' + faltam + ' segundos por falta de uso.';
-    } else aviso.hidden = true;
+      document.getElementById('aviso-sessao-texto').textContent = 'Por segurança, sua sessão vai encerrar em ' + faltam + ' segundos por falta de uso.' +
+        (rascunhosGuardados ? ' O texto que você estava escrevendo foi guardado como rascunho.' : '');
+    } else { aviso.hidden = true; rascunhosGuardados = null; }
   }
 
   function continuarSessao() {
     PEP.estado.marcarAtividade(true);
     document.getElementById('aviso-sessao').hidden = true;
+    rascunhosGuardados = null;
     PEP.ui.toast('Sessão mantida.');
+  }
+
+  // Banco ligado: os indicadores vêm prontos do servidor (app.indicadores). Busca ao abrir a tela
+  // de indicadores ou o painel da direção; a tela mostra "Carregando…" até chegar.
+  function carregarDoServidor(u, rota) {
+    var ad = PEP.repo.adaptador();
+    if (!ad.remoto || !u || !ad.indicadores) return;
+    var precisa = rota.nome === 'indicadores' || (rota.nome === 'painel' && u.perfil === 'direcao');
+    if (!precisa || PEP.telas._indicadoresRemotos) return;
+    ad.indicadores().then(function (ind) { PEP.telas._indicadoresRemotos = ind; renderizar(); },
+      function () { PEP.ui.toast('Não foi possível carregar os indicadores do servidor.'); });
   }
 
   ['click', 'keydown', 'touchstart'].forEach(function (tipo) {
@@ -147,6 +164,7 @@ PEP.app = (function () {
     if (rota.nome !== 'auditoria') PEP.telas._verificacao = null;
     if (rota.nome !== 'acesso') PEP.telas._linkLiberado = null;
     if (rota.nome !== 'estudantes') PEP.telas._importacao = null;
+    if (rota.nome !== 'indicadores' && rota.nome !== 'painel') PEP.telas._indicadoresRemotos = null; // ao voltar, busca números novos
     renderizar();
   });
 

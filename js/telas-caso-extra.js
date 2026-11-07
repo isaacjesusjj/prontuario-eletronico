@@ -75,7 +75,7 @@ PEP.telas = PEP.telas || {};
         '<button class="botao pequeno" data-acao="agendar-sessao" data-caso="' + caso.id + '">Agendar</button></div>';
     }
     return html + '<p class="suave pequeno" style="margin-top:.8rem">Falta justificada (avisada com antecedência) não conta para o fluxo de abandono. ' +
-      'Lembretes não levam nome do serviço, do profissional nem conteúdo clínico.</p></div>';
+      'Lembretes não levam nome do serviço, do profissional nem conteúdo clínico. Envie pelo WhatsApp ou e-mail institucional da clínica, nunca pelo seu número pessoal (termo de sigilo).</p></div>';
   }
 
   // ---------- Aba: documentos emitidos e anexos ----------
@@ -149,18 +149,38 @@ PEP.telas = PEP.telas || {};
   }
 
   // ---------- Aba: encerramento ----------
+  function guarda(caso) {
+    return '<p class="suave pequeno">Guarda do prontuário até <strong>' + data(R().guardaAte(caso)) + '</strong> (' + PEP.regra('guardaProntuarioAnos') +
+      ' anos depois do último registro; mínimo de ' + PEP.regra('guardaMinimaCfpAnos') + ' anos pela Res. CFP 05/2025). Nada é apagado antes disso.</p>';
+  }
+
   function abaEncerramento(u, caso) {
     var e = R().encerramentoDoCaso(caso);
+    var tipos = {};
+    PEP.lista('tiposEncerramento').forEach(function (t) { tipos[t.valor] = t.nome; });
     if (caso.status === 'encerrado' && e) {
-      return '<div class="cartao"><h2>Caso encerrado</h2><p><strong>Data:</strong> ' + data(e.data) + '<br><strong>Tipo:</strong> ' + esc(e.tipo) +
-        '<br><strong>Motivo:</strong> ' + esc(e.motivo) + '<br><strong>Registrado por:</strong> ' + esc(PEP.ui.nomeUsuario(e.registradoPor)) + '</p><p>' + esc(e.registro) + '</p></div>';
+      return '<div class="cartao"><h2>Caso encerrado</h2><p><strong>Data:</strong> ' + data(e.data) + '<br><strong>Tipo:</strong> ' + esc(tipos[e.tipo] || e.tipo) +
+        '<br><strong>Motivo:</strong> ' + esc(e.motivo) + (e.destino ? '<br><strong>Encaminhado para:</strong> ' + esc(e.destino) : '') +
+        '<br><strong>Registrado por:</strong> ' + esc(PEP.ui.nomeUsuario(e.registradoPor)) + '</p><p>' + esc(e.registro) + '</p>' + guarda(caso) + '</div>';
     }
-    if (!R().podeEncerrar(u, caso)) return '<p class="vazio">Caso em andamento.</p>';
+    if (!R().podeEncerrar(u, caso)) return '<p class="vazio">Caso em andamento.</p>' + guarda(caso);
+    var pend = R().pendenciasParaEncerrar(caso);
+    // Abandono não entra por aqui: só pelo fluxo de faltas, depois da tentativa de contato (aba Sessões)
+    var opcoesTipo = PEP.lista('tiposEncerramento').filter(function (t) { return t.valor !== 'abandono'; });
     return '<div class="cartao"><h2>Registrar encerramento ou encaminhamento</h2>' +
-      '<div class="campo"><label for="enc-tipo">Tipo</label><select id="enc-tipo">' + PEP.ui.opcoes(PEP.lista('tiposEncerramento')) + '</select></div>' +
-      '<div class="campo"><label for="enc-motivo">Motivo</label><input id="enc-motivo" type="text" maxlength="120"></div>' +
-      '<div class="campo"><label for="enc-registro">Registro</label><textarea id="enc-registro" style="min-height:80px"></textarea></div>' +
-      '<button class="botao perigo pequeno" data-acao="encerrar-caso" data-caso="' + caso.id + '">Encerrar caso</button></div>';
+      (pend.bloqueiam.length ? '<div class="aviso perigo pequeno" role="note"><strong>Antes de encerrar:</strong> ' + esc(pend.bloqueiam.join('; ')) + '.</div>' : '') +
+      (pend.avisos.length ? '<div class="aviso alerta pequeno" role="note"><strong>Confira:</strong> ' + esc(pend.avisos.join('; ')) + '.</div>' : '') +
+      '<div class="grade-2"><div class="campo"><label for="enc-tipo">Tipo</label><select id="enc-tipo">' + PEP.ui.opcoes(opcoesTipo) + '</select>' +
+      '<span class="dica">Abandono é registrado pelo fluxo de faltas (aba Sessões e faltas), depois da tentativa de contato.</span></div>' +
+      '<div class="campo"><label for="enc-motivo">Motivo *</label><input id="enc-motivo" type="text" maxlength="120"></div></div>' +
+      '<div class="campo"><label for="enc-destino">Serviço que recebe o encaminhamento (obrigatório no encaminhamento)</label>' +
+      '<input id="enc-destino" type="text" maxlength="120" list="lista-servicos" autocomplete="off">' +
+      '<datalist id="lista-servicos">' + PEP.lista('servicosRede').map(function (s) { return '<option value="' + esc(s) + '"></option>'; }).join('') + '</datalist>' +
+      '<span class="dica">Ex.: CAPS, UBS, CRAS. No relatório de encaminhamento vai só o necessário (Código de Ética, arts. 6º e 12).</span></div>' +
+      '<div class="campo"><label for="enc-registro">Registro *</label><span class="dica" id="enc-registro-dica">O que foi feito, como o paciente foi orientado e o que fica combinado.</span>' +
+      '<textarea id="enc-registro" style="min-height:80px" maxlength="' + PEP.regra('anamneseCampoMaxCaracteres') + '" aria-describedby="enc-registro-dica"></textarea></div>' +
+      '<button class="botao perigo pequeno" data-acao="encerrar-caso" data-caso="' + caso.id + '"' + (pend.bloqueiam.length ? ' disabled' : '') + '>Encerrar caso</button>' +
+      guarda(caso) + '</div>';
   }
 
   PEP.telas.casoAbaExtra = function (u, caso, aba) {

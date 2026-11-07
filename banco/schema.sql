@@ -147,7 +147,10 @@ create table anamneses (
   historico_familiar text not null default '',
   medicacoes         text not null default '',
   historico_clinico  text not null default '',
-  unique (caso_id, versao)
+  unique (caso_id, versao),
+  -- até 2.000 caracteres por campo (regras.anamneseCampoMaxCaracteres): registro conciso, o paciente pode ler
+  check (greatest(length(demanda), length(objetivos), length(queixa), length(sintomas), length(historico_familiar),
+                  length(medicacoes), length(historico_clinico)) <= 2000)
 );
 
 -- Consentimento por finalidade; revogar = novo registro (vale o mais recente)
@@ -744,7 +747,10 @@ begin
     'presencas', jsonb_build_object(
       'presente', (select count(*) from sessoes where presenca = 'presente' and caso_id = any (escopo)),
       'falta', (select count(*) from sessoes where presenca = 'falta' and caso_id = any (escopo)),
-      'faltaJustificada', (select count(*) from sessoes where presenca = 'falta-justificada' and caso_id = any (escopo)))
+      'faltaJustificada', (select count(*) from sessoes where presenca = 'falta-justificada' and caso_id = any (escopo))),
+    'casosAtivos', (select count(*) from casos where status = 'ativo' and id = any (escopo)),
+    'naFila', (select count(*) from inscricoes where status = 'aguardando'),
+    'esperaMediaDias', coalesce((select round(avg(current_date - data)) from inscricoes where status = 'aguardando'), 0)
   ) into resultado;
   return resultado;
 end $$;

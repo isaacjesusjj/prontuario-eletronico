@@ -41,13 +41,15 @@ PEP.arquivos = (function () {
     });
   }
 
-  // Valida e guarda. Devolve { arquivoId, hash } ou { erro }
-  function guardar(file) {
+  // Valida e guarda. Devolve { arquivoId, hash } ou { erro }.
+  // O identificador começa pelo caso ("c01/arq-..."): no Supabase Storage, a política de acesso
+  // lê essa primeira parte para saber se quem pede o arquivo pode ver o caso.
+  function guardar(file, casoId) {
     return lerBytes(file).then(function (bytes) {
       var erro = PEP.validar.arquivo(file, bytes.slice(0, 8));
       if (erro) return { erro: erro };
       var hash = PEP.seguranca.sha256Bytes(bytes);
-      var id = PEP.util.novoId('arq');
+      var id = casoId + '/' + PEP.util.novoId('arq');
       var blob = new Blob([bytes], { type: file.type });
       var ad = PEP.repo.adaptador();
       var gravar = ad.guardarArquivo ? ad.guardarArquivo(blob, id) : operar('readwrite', function (loja) { return loja.put(blob, id); });

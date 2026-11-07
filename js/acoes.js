@@ -41,6 +41,16 @@ window.PEP = PEP;
       hash: conteudo ? PEP.seguranca.sha256(conteudo) : null });
   }
 
+  var CAMPOS_ANAMNESE = ['demanda', 'objetivos', 'queixa', 'sintomas', 'historicoFamiliar', 'medicacoes', 'historicoClinico'];
+
+  // Texto da evolução: mínimo de 10 caracteres e máximo da regra (o banco confere o mesmo)
+  function erroTextoEvolucao(campoId, texto) {
+    var max = PEP.regra('evolucaoMaxCaracteres');
+    if (texto.length < 10) return [[campoId, 'Escreva a evolução (pelo menos 10 caracteres).']];
+    if (texto.length > max) return [[campoId, 'Use no máximo ' + max + ' caracteres: registre tema, intervenção e plano, não o relato detalhado.']];
+    return [];
+  }
+
   function cancelarSessoesFuturas(casoId) {
     PEP.db.sessoes.filter(function (s) { return s.casoId === casoId && s.presenca === 'agendada'; })
       .forEach(function (s) { repo().atualizar('sessoes', s.id, { presenca: 'cancelada' }); });
@@ -179,13 +189,14 @@ window.PEP = PEP;
     'salvar-anamnese': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
       if (!R().podeEditarAnamnese(u, c)) return negar();
-      var erros = [];
+      var erros = [], max = PEP.regra('anamneseCampoMaxCaracteres');
       if (val('an-demanda').length < 5) erros.push(['an-demanda', 'Descreva a demanda.']);
       if (val('an-objetivos').length < 5) erros.push(['an-objetivos', 'Descreva os objetivos.']);
+      CAMPOS_ANAMNESE.forEach(function (k) { if (val('an-' + k).length > max) erros.push(['an-' + k, 'Use no máximo ' + max + ' caracteres: o prontuário é conciso.']); });
       if (!PEP.form.aplicar(el('form-anamnese'), erros)) return;
       var atual = R().anamneseAtual(c);
       var nova = { casoId: c.id, versao: (atual.versao || 0) + 1, autorId: u.id, em: U().agora() };
-      ['demanda', 'objetivos', 'queixa', 'sintomas', 'historicoFamiliar', 'medicacoes', 'historicoClinico'].forEach(function (k) { nova[k] = val('an-' + k); });
+      CAMPOS_ANAMNESE.forEach(function (k) { nova[k] = val('an-' + k); });
       repo().inserir('anamneses', nova);
       assinar('anamnese', nova.id, u, u.perfil === 'supervisor' ? 'supervisor' : 'estagiario', JSON.stringify(nova));
       concluir('Versão ' + nova.versao + ' salva. As anteriores continuam guardadas.', 'Registrou versão ' + nova.versao + ' da anamnese', c.id);
@@ -209,7 +220,7 @@ window.PEP = PEP;
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
       if (!R().podeEscreverEvolucao(u, c)) return negar();
       var texto = val('nova-texto');
-      if (texto.length < 10) { PEP.form.aplicar(document, [['nova-texto', 'Escreva a evolução (pelo menos 10 caracteres).']]); return; }
+      if (!PEP.form.aplicar(document, erroTextoEvolucao('nova-texto', texto))) return;
       var enviar = b.getAttribute('data-modo') === 'enviar';
       var e = repo().inserir('evolucoes', { casoId: c.id, sessaoId: val('nova-sessao') || null, autorId: u.id, data: U().hoje(),
         status: enviar ? 'enviada' : 'rascunho', texto: texto, comentarioSupervisor: '' });
@@ -220,7 +231,7 @@ window.PEP = PEP;
       var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
       if (e.autorId !== u.id || !R().podeEscreverEvolucao(u, c) || e.status === 'validada' || e.status === 'enviada') return PEP.ui.toast('Esta evolução não pode ser editada.');
       var texto = val('ev-' + e.id);
-      if (texto.length < 10) { PEP.form.aplicar(document, [['ev-' + e.id, 'Escreva a evolução (pelo menos 10 caracteres).']]); return; }
+      if (!PEP.form.aplicar(document, erroTextoEvolucao('ev-' + e.id, texto))) return;
       if (b.getAttribute('data-modo') === 'enviar') {
         repo().atualizar('evolucoes', e.id, { texto: texto, status: 'enviada', comentarioSupervisor: '' });
         assinar('evolucao', e.id, u, 'estagiario', texto);
@@ -262,6 +273,9 @@ window.PEP = PEP;
       if (['presente', 'falta', 'falta-justificada'].indexOf(valor) === -1) return negar();
       // Presença ou falta só a partir do dia da sessão; a falta avisada (justificada) pode vir antes
       if (s.data > U().hoje() && valor !== 'falta-justificada') return PEP.ui.toast('Presença e falta só podem ser registradas a partir do dia da sessão.');
+      // Presença registrada não muda depois: confirma antes a falta, que conta para o fluxo de abandono
+      if (valor === 'falta' && typeof window.confirm === 'function' &&
+          !window.confirm('Registrar falta sem justificativa em ' + U().formatarData(s.data) + '? Ela conta para o fluxo de abandono e não pode ser desfeita.')) return;
       repo().atualizar('sessoes', s.id, { presenca: valor, presencaRegistradaPor: u.id });
       var msg = R().emRiscoDeAbandono(c) ? 'Faltas seguidas: o fluxo de abandono foi aberto.' : 'Presença registrada.';
       concluir(msg, 'Registrou presença: ' + valor, c.id);
@@ -275,12 +289,16 @@ window.PEP = PEP;
       else if (d < U().hoje()) erros.push(['ag-data', 'Escolha uma data a partir de hoje.']);
       if (!/^\d{2}:\d{2}$/.test(h)) erros.push(['ag-hora', 'Informe a hora.']);
       else if (h < '07:00' || h > '21:00') erros.push(['ag-hora', 'A clínica atende das 7h às 21h.']);
-      // A mesma dupla não pode ter duas sessões no mesmo horário
-      var conflito = PEP.db.sessoes.some(function (s) {
+      // A mesma dupla (ou o mesmo paciente) não pode ter sessões que se sobreponham: cada uma ocupa a duração da regra
+      var duracao = PEP.regra('duracaoSessaoMinutos') || 50;
+      var minutos = function (hhmm) { var p = hhmm.split(':'); return Number(p[0]) * 60 + Number(p[1]); };
+      var conflito = !erros.length && PEP.db.sessoes.some(function (s) {
+        if (s.data !== d || s.presenca !== 'agendada') return false;
         var outro = caso(s.casoId);
-        return s.data === d && s.hora === h && s.presenca === 'agendada' && (s.casoId === c.id || (c.subgrupoId && outro.subgrupoId === c.subgrupoId));
+        var mesmaEquipe = s.casoId === c.id || (c.subgrupoId && outro && outro.subgrupoId === c.subgrupoId);
+        return mesmaEquipe && Math.abs(minutos(s.hora) - minutos(h)) < duracao;
       });
-      if (!erros.length && conflito) erros.push(['ag-hora', 'A dupla ou trio já tem sessão neste horário.']);
+      if (conflito) erros.push(['ag-hora', 'A dupla ou trio já tem sessão nesse horário (cada sessão ocupa ' + duracao + ' minutos).']);
       if (!PEP.form.aplicar(document, erros)) return;
       repo().inserir('sessoes', { casoId: c.id, data: d, hora: h, presenca: 'agendada', confirmada: false });
       concluir('Sessão agendada para ' + U().formatarData(d) + ' às ' + h + '.', 'Agendou sessão', c.id);
@@ -316,9 +334,11 @@ window.PEP = PEP;
       if (!R().podeEncerrar(u, c)) return negar();
       var contatos = PEP.db.contatos.filter(function (ct) { return ct.casoId === c.id; });
       if (!contatos.length) return PEP.ui.toast('Registre ao menos uma tentativa de contato antes de liberar a vaga.');
+      var pend = R().pendenciasParaEncerrar(c);
+      if (pend.bloqueiam.length) return PEP.ui.toast('Antes de encerrar: ' + pend.bloqueiam.join('; ') + '.');
       var comMotivo = contatos.filter(function (ct) { return ct.motivo; });
       var motivo = comMotivo.length ? comMotivo[comMotivo.length - 1].motivo : 'Não informado';
-      repo().inserir('encerramentos', { casoId: c.id, data: U().hoje(), tipo: 'abandono', motivo: motivo, registradoPor: u.id,
+      repo().inserir('encerramentos', { casoId: c.id, data: U().hoje(), tipo: 'abandono', motivo: motivo, destino: '', registradoPor: u.id,
         registro: 'Encerrado por abandono após ' + R().faltasSeguidas(c) + ' faltas seguidas e ' + contatos.length + ' tentativa(s) de contato. Vaga liberada para a fila.' });
       repo().atualizar('casos', c.id, { status: 'encerrado' });
       cancelarSessoesFuturas(c.id);
@@ -327,12 +347,23 @@ window.PEP = PEP;
     'encerrar-caso': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
       if (!R().podeEncerrar(u, c)) return negar();
-      var motivo = val('enc-motivo');
-      if (motivo.length < 3) { PEP.form.aplicar(document, [['enc-motivo', 'Informe o motivo do encerramento.']]); return; }
-      repo().inserir('encerramentos', { casoId: c.id, data: U().hoje(), tipo: val('enc-tipo'), motivo: motivo, registro: val('enc-registro') || '—', registradoPor: u.id });
+      var tipo = val('enc-tipo'), motivo = val('enc-motivo'), destino = val('enc-destino'), registro = val('enc-registro');
+      // Abandono só pelo fluxo de faltas: é ele que exige a tentativa de contato e guarda o motivo
+      if (tipo === 'abandono' || !PEP.lista('tiposEncerramento').some(function (t) { return t.valor === tipo; })) {
+        return PEP.ui.toast('Abandono é registrado pelo fluxo de faltas, depois da tentativa de contato.');
+      }
+      var pend = R().pendenciasParaEncerrar(c);
+      if (pend.bloqueiam.length) return PEP.ui.toast('Antes de encerrar: ' + pend.bloqueiam.join('; ') + '.');
+      var erros = [];
+      if (motivo.length < 3) erros.push(['enc-motivo', 'Informe o motivo do encerramento.']);
+      if (tipo === 'encaminhamento' && destino.length < 3) erros.push(['enc-destino', 'Informe o serviço da rede que vai receber o paciente.']);
+      if (registro.length < 10) erros.push(['enc-registro', 'Escreva o registro: o que foi feito e como o paciente foi orientado.']);
+      if (!PEP.form.aplicar(document, erros)) return;
+      repo().inserir('encerramentos', { casoId: c.id, data: U().hoje(), tipo: tipo, motivo: motivo, destino: tipo === 'encaminhamento' ? destino : '',
+        registro: registro, registradoPor: u.id });
       repo().atualizar('casos', c.id, { status: 'encerrado' });
       cancelarSessoesFuturas(c.id);
-      concluir('Caso encerrado.', 'Encerrou caso (' + val('enc-tipo') + ')', c.id);
+      concluir('Caso encerrado.', 'Encerrou caso (' + tipo + ')', c.id);
     },
 
     // ----- Documentos, anexos, área restrita e supervisão -----
@@ -360,7 +391,7 @@ window.PEP = PEP;
       var file = input && input.files && input.files[0];
       if (!file) { PEP.form.aplicar(document, [['ax-arquivo', 'Escolha um arquivo.']]); return; }
       b.disabled = true;
-      PEP.arquivos.guardar(file).then(function (r) {
+      PEP.arquivos.guardar(file, c.id).then(function (r) {
         b.disabled = false;
         if (r.erro) { PEP.form.aplicar(document, [['ax-arquivo', r.erro]]); return; }
         repo().inserir('anexos', { casoId: c.id, nome: V().nomeArquivoSeguro(file.name), tipo: file.type, tamanho: file.size, descricao: val('ax-desc') || '—',
@@ -579,9 +610,47 @@ window.PEP = PEP;
     },
     'verificar-auditoria': function () {
       if (!R().podeVerAuditoria(usuario())) return negar();
+      var ad = repo().adaptador();
+      if (ad.verificarAuditoria) {
+        // Banco ligado: a cadeia é conferida pelo próprio banco (app.verificar_auditoria), não pela cópia da tela
+        return ad.verificarAuditoria().then(function (r) { PEP.telas._verificacao = r; PEP.app.renderizar(); },
+          function () { PEP.ui.toast('Não foi possível verificar no servidor. Tente de novo.'); });
+      }
       PEP.telas._verificacao = PEP.estado.verificarAuditoria();
       PEP.app.renderizar();
     }
+  };
+
+  // Rascunhos abertos na tela são guardados quando a sessão está para encerrar por inatividade:
+  // o texto que a pessoa estava escrevendo não se perde. Lê todos os editores antes de gravar
+  // (gravar redesenha a tela) e registra um evento de auditoria por caso.
+  PEP.acoes._guardarRascunhosAbertos = function () {
+    var u = usuario();
+    if (!u || u.perfil !== 'estagiario') return 0;
+    var pendentes = [];
+    var nova = el('nova-texto'), botaoNova = document.querySelector('[data-acao="nova-evolucao"]');
+    if (nova && botaoNova && nova.value.trim().length >= 10) {
+      pendentes.push({ casoId: botaoNova.getAttribute('data-caso'), texto: nova.value.trim(), sessaoId: val('nova-sessao') || null });
+    }
+    document.querySelectorAll('textarea[id^="ev-"]').forEach(function (t) {
+      var e = evolucao(t.id.slice(3));
+      if (e && t.value.trim().length >= 10 && t.value.trim() !== e.texto) pendentes.push({ evolucao: e, texto: t.value.trim() });
+    });
+    var casos = {};
+    pendentes.forEach(function (p) {
+      var c = caso(p.evolucao ? p.evolucao.casoId : p.casoId);
+      if (!c || !R().podeEscreverEvolucao(u, c) || erroTextoEvolucao('x', p.texto).length) return;
+      if (p.evolucao) {
+        if (p.evolucao.autorId !== u.id || (p.evolucao.status !== 'rascunho' && p.evolucao.status !== 'devolvida')) return;
+        repo().atualizar('evolucoes', p.evolucao.id, { texto: p.texto });
+      } else {
+        repo().inserir('evolucoes', { casoId: c.id, sessaoId: p.sessaoId, autorId: u.id, data: U().hoje(), status: 'rascunho', texto: p.texto, comentarioSupervisor: '' });
+      }
+      casos[c.id] = true;
+    });
+    Object.keys(casos).forEach(function (id) { PEP.estado.registrarAuditoria('Rascunho guardado automaticamente (sessão encerrando por inatividade)', id); });
+    if (Object.keys(casos).length) { repo().salvar(); PEP.app.renderizar(); }
+    return Object.keys(casos).length;
   };
 
   // ----- Formulários -----
@@ -634,6 +703,22 @@ window.PEP = PEP;
     },
     'trocar-senha': function (form) {
       var u = usuario(), atual = el('ts-atual').value, nova = el('ts-nova').value, confirma = el('ts-confirma').value;
+      var ad = repo().adaptador();
+      if (ad.trocarSenha) {
+        // Banco ligado: quem confere a senha atual e guarda a nova (com hash) é o Supabase Auth
+        var av0 = PEP.seguranca.avaliarSenha(nova, { login: u.login, nome: PEP.ui.nomeUsuario(u.id), email: u.email });
+        var erros0 = [];
+        if (!av0.ok) erros0.push(['ts-nova', av0.erros.join(' ')]);
+        if (confirma !== nova) erros0.push(['ts-confirma', 'As duas senhas não são iguais.']);
+        if (!PEP.form.aplicar(form, erros0)) return;
+        return ad.trocarSenha(u.email, atual, nova).then(function (r) {
+          if (!r.ok) { PEP.form.aplicar(form, [['ts-atual', r.motivo === 'senha-atual' ? 'Senha atual incorreta.' : 'Não foi possível trocar a senha agora. Tente de novo.']]); return; }
+          var eraProvisoria = u.senhaProvisoria;
+          repo().atualizar('usuarios', u.id, { senhaProvisoria: false });
+          if (eraProvisoria) window.location.hash = '#/painel';
+          concluir('Senha alterada.', 'Trocou a senha', u.id);
+        });
+      }
       PEP.seguranca.conferirSenha(atual, u.senhaHash).then(function (confere) {
         var erros = [];
         if (!confere) erros.push(['ts-atual', 'Senha atual incorreta.']);
@@ -657,11 +742,11 @@ window.PEP = PEP;
       var c = caso(link.casoId), p = PEP.ui.pacienteDoCaso(c);
       var dono = PEP.db.usuarios.filter(function (x) { return x.pacienteId === p.id; })[0];
       if (form.elements.nascimento.value !== p.dataNascimento) {
-        var falhas = (link.falhas || 0) + 1;
-        repo().atualizar('linksAcesso', link.id, falhas >= 5 ? { falhas: falhas, revogadoEm: U().agora() } : { falhas: falhas });
-        PEP.estado.registrarAuditoria(falhas >= 5 ? 'Link de leitura bloqueado por tentativas' : 'Tentativa de abrir link de leitura sem sucesso', c.id, 'visitante');
-        PEP.form.aplicar(form, [['lk-nasc', falhas >= 5 ? 'Link bloqueado. Peça um novo à clínica.' : 'Data não confere. Tentativas restantes: ' + (5 - falhas) + '.']]);
-        if (falhas >= 5) PEP.app.renderizar();
+        var falhas = (link.falhas || 0) + 1, limite = PEP.regra('tentativasLink') || 5;
+        repo().atualizar('linksAcesso', link.id, falhas >= limite ? { falhas: falhas, revogadoEm: U().agora() } : { falhas: falhas });
+        PEP.estado.registrarAuditoria(falhas >= limite ? 'Link de leitura bloqueado por tentativas' : 'Tentativa de abrir link de leitura sem sucesso', c.id, 'visitante');
+        PEP.form.aplicar(form, [['lk-nasc', falhas >= limite ? 'Link bloqueado. Peça um novo à clínica.' : 'Data não confere. Tentativas restantes: ' + (limite - falhas) + '.']]);
+        if (falhas >= limite) PEP.app.renderizar();
         return;
       }
       PEP.telas._linkLiberado = link.id;
@@ -686,6 +771,9 @@ window.PEP = PEP;
   // Campos que reagem enquanto a pessoa digita
   document.addEventListener('input', function (ev) {
     var t = ev.target;
+    // Contador de caracteres dos textos com limite (evolução)
+    var idContador = t.getAttribute && t.getAttribute('data-contador');
+    if (idContador && el(idContador)) el(idContador).textContent = t.value.length + ' de ' + t.getAttribute('maxlength') + ' caracteres';
     if (t.id === 'f-nasc') {
       var linha = el('linha-resp-ok');
       if (linha) linha.hidden = !(t.value && U().idade(t.value) < 18);

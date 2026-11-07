@@ -170,6 +170,69 @@ PEP.regras = (function () {
     return caso.status === 'ativo' && faltasSeguidas(caso) >= PEP.regra('faltasSeguidasLimite');
   }
 
+  // ---------- Encerramento ----------
+  // O prontuário precisa estar completo antes de fechar: evolução esperando a supervisão ou
+  // devolvida impede (o banco recusa também); rascunho e sessão sem evolução são avisos.
+  function pendenciasParaEncerrar(caso) {
+    var evs = PEP.db.evolucoes.filter(function (e) { return e.casoId === caso.id; });
+    var conta = function (st) { return evs.filter(function (e) { return e.status === st; }).length; };
+    var bloqueiam = [], avisos = [];
+    if (conta('enviada')) bloqueiam.push(conta('enviada') + ' evolução(ões) aguardando a validação da supervisão');
+    if (conta('devolvida')) bloqueiam.push(conta('devolvida') + ' evolução(ões) devolvida(s) para ajuste');
+    if (conta('rascunho')) avisos.push(conta('rascunho') + ' rascunho(s) que não vão para o prontuário');
+    var semEvolucao = PEP.db.sessoes.filter(function (s) {
+      return s.casoId === caso.id && s.presenca === 'presente' && !evs.some(function (e) { return e.sessaoId === s.id; });
+    }).length;
+    if (semEvolucao) avisos.push(semEvolucao + ' sessão(ões) com presença e sem evolução');
+    return { bloqueiam: bloqueiam, avisos: avisos };
+  }
+
+  // Guarda do prontuário: conta a partir do último registro (regra da instituição, parametrizável)
+  function guardaAte(caso) {
+    var datas = [caso.inicio];
+    PEP.db.evolucoes.forEach(function (e) { if (e.casoId === caso.id) datas.push(e.data); });
+    PEP.db.sessoes.forEach(function (s) { if (s.casoId === caso.id && s.presenca !== 'agendada' && s.presenca !== 'cancelada') datas.push(s.data); });
+    var enc = encerramentoDoCaso(caso);
+    if (enc) datas.push(enc.data);
+    var ultima = datas.filter(Boolean).sort().pop();
+    var p = ultima.slice(0, 10).split('-');
+    return (Number(p[0]) + (PEP.regra('guardaProntuarioAnos') || 20)) + '-' + p[1] + '-' + p[2];
+  }
+
+  // ---------- Indicadores agregados (sem nomes) ----------
+  // Mesmo formato da função app.indicadores() do banco: com o banco ligado, a tela recebe esse
+  // objeto pronto do servidor (a direção não lê as tabelas clínicas). Escopo: supervisor vê os
+  // próprios grupos; direção e técnico veem tudo.
+  function indicadores(u) {
+    var casos = u.perfil === 'supervisor' ? casosVisiveis(u) : PEP.db.casos;
+    var ids = casos.map(function (c) { return c.id; });
+    var sessoes = PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1; });
+    var porCaso = {};
+    sessoes.forEach(function (s) { if (s.presenca === 'presente') porCaso[s.casoId] = (porCaso[s.casoId] || 0) + 1; });
+    var atendidos = Object.keys(porCaso).length;
+    var voltaram = Object.keys(porCaso).filter(function (k) { return porCaso[k] >= 2; }).length;
+    var totalPresencas = Object.keys(porCaso).reduce(function (t, k) { return t + porCaso[k]; }, 0);
+    var motivos = {}, encerramentos = {};
+    PEP.db.encerramentos.filter(function (e) { return ids.indexOf(e.casoId) !== -1; }).forEach(function (e) {
+      if (e.tipo === 'abandono') motivos[e.motivo || 'Não informado'] = (motivos[e.motivo || 'Não informado'] || 0) + 1;
+      encerramentos[e.tipo] = (encerramentos[e.tipo] || 0) + 1;
+    });
+    var conta = function (p) { return sessoes.filter(function (s) { return s.presenca === p; }).length; };
+    var fila = PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando'; });
+    return {
+      atendidos: atendidos,
+      taxaRetorno: atendidos ? Math.round((voltaram / atendidos) * 100) : 0,
+      mediaSessoes: atendidos ? Math.round((totalPresencas / atendidos) * 10) / 10 : 0,
+      emRisco: casos.filter(emRiscoDeAbandono).length,
+      motivosAbandono: motivos,
+      encerramentos: encerramentos,
+      presencas: { presente: conta('presente'), falta: conta('falta'), faltaJustificada: conta('falta-justificada') },
+      casosAtivos: casos.filter(function (c) { return c.status === 'ativo'; }).length,
+      naFila: fila.length,
+      esperaMediaDias: fila.length ? Math.round(fila.reduce(function (t, i) { return t + PEP.util.diasEntre(i.data, PEP.util.hoje()); }, 0) / fila.length) : 0
+    };
+  }
+
   return {
     nomePerfil: nomePerfil, alocacaoAtiva: alocacaoAtiva, alocacaoDoEstagiario: alocacaoDoEstagiario,
     estagiariosDoSubgrupo: estagiariosDoSubgrupo, estagiariosSemDupla: estagiariosSemDupla, estagiariosSemGrupo: estagiariosSemGrupo,
@@ -188,6 +251,7 @@ PEP.regras = (function () {
     podeEncerrar: podeEncerrar, podeVerIndicadores: podeVerIndicadores,
     podeGerirFila: podeGerirFila, podeVerAuditoria: podeVerAuditoria, podeEditarCadastro: podeEditarCadastro,
     podeAtenderTitular: podeAtenderTitular, podeGerirEstudantes: podeGerirEstudantes,
-    faltasSeguidas: faltasSeguidas, emRiscoDeAbandono: emRiscoDeAbandono
+    faltasSeguidas: faltasSeguidas, emRiscoDeAbandono: emRiscoDeAbandono,
+    pendenciasParaEncerrar: pendenciasParaEncerrar, guardaAte: guardaAte, indicadores: indicadores
   };
 })();

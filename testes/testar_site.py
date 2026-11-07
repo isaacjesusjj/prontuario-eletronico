@@ -13,6 +13,7 @@ import http.server
 import json
 import os
 import random
+import re
 import shutil
 import sys
 import threading
@@ -140,6 +141,8 @@ def publico(nav, base):
 
     # ---------- Fila de espera e validadores ----------
     s.ir("#/inscricao")
+    conferir("LGPD", "formulário público avisa que é protótipo (nenhuma clínica recebe a inscrição) e indica a rede",
+             "Nenhuma clínica recebe esta inscrição" in s.p.locator("#app").inner_text() and "CAPS" in s.p.locator("#app").inner_text())
     s.clicar('#form-inscricao button[type="submit"]')
     conferir("Validadores", "fila: enviar vazio marca os campos obrigatórios", s.p.locator('[aria-invalid="true"]').count() >= 5, f"{s.p.locator('[aria-invalid=true]').count()} campos")
     conferir("Acessibilidade", "erro ligado ao campo por aria-describedby", "f-nome-erro" in (s.p.get_attribute("#f-nome", "aria-describedby") or ""))
@@ -229,8 +232,12 @@ def estagiaria(nav, base):
     s.ir("#/caso/c01/evolucoes")
     s.clicar("details.cartao summary")
     s.p.fill("#nova-texto", "curto")
+    conferir("Evolução", "contador mostra os caracteres usados e o limite", s.p.locator("#nova-texto-contador").inner_text() == "5 de 5000 caracteres")
     s.clicar('[data-acao="nova-evolucao"][data-modo="enviar"]')
     conferir("Validadores", "evolução muito curta é recusada", s.p.locator("#nova-texto-erro").count() == 1)
+    s.js("() => { document.getElementById('nova-texto').value = 'x'.repeat(5001); }")  # passa por cima do maxlength
+    s.clicar('[data-acao="nova-evolucao"][data-modo="rascunho"]')
+    conferir("Validadores", "evolução acima do limite de caracteres é recusada", "no máximo 5000" in s.p.locator("#nova-texto-erro").inner_text())
     s.p.fill("#nova-texto", "Sessão de teste. Tema: rotina de sono. Intervenção: psicoeducação. Plano: registro diário.")
     s.clicar('[data-acao="nova-evolucao"][data-modo="enviar"]')
     nova = s.js("PEP.db.evolucoes[PEP.db.evolucoes.length-1]")
@@ -258,6 +265,10 @@ def estagiaria(nav, base):
     s.p.fill("#ag-hora", s31["hora"])
     s.clicar('[data-acao="agendar-sessao"]')
     conferir("Sessões", "agendamento no mesmo horário da dupla é recusado", "já tem sessão" in s.p.locator("#ag-hora-erro").inner_text())
+    h31 = int(s31["hora"][:2]) * 60 + int(s31["hora"][3:])
+    s.p.fill("#ag-hora", f"{(h31 + 30) // 60:02d}:{(h31 + 30) % 60:02d}")
+    s.clicar('[data-acao="agendar-sessao"]')
+    conferir("Sessões", "sessão que se sobrepõe a outra da dupla (cada uma ocupa 50 min) é recusada", "já tem sessão" in s.p.locator("#ag-hora-erro").inner_text())
     s.p.fill("#ag-hora", "06:00")
     s.clicar('[data-acao="agendar-sessao"]')
     conferir("Validadores", "horário fora do funcionamento é recusado", s.p.locator("#ag-hora-erro").count() == 1)
@@ -272,6 +283,23 @@ def estagiaria(nav, base):
     conferir("Lembretes", "a mensagem não tem nome do paciente, do serviço nem conteúdo clínico", "Paciente" not in texto and "Psicologia" not in texto and "ansiedade" not in texto.lower())
     aba.value.close()
     conferir("Lembretes", "lembrete registrado (quem, quando, canal)", s.js("PEP.db.lembretes.filter(l => l.sessaoId === 's31').length") == 1)
+
+    # Encerramento: o prontuário precisa estar completo; abandono só pelo fluxo de faltas
+    s.ir("#/caso/c01/encerramento")
+    conferir("Encerramento", "com evolução aguardando a supervisão, encerrar fica bloqueado e a tela diz por quê",
+             s.p.is_disabled('[data-acao="encerrar-caso"]') and "aguardando a validação" in s.p.locator("#app").inner_text())
+    conferir("Encerramento", "abandono não aparece no encerramento manual (só pelo fluxo de faltas)", s.p.locator('#enc-tipo option[value="abandono"]').count() == 0)
+    conferir("Encerramento", "a tela mostra até quando o prontuário fica guardado", "Guarda do prontuário até" in s.p.locator("#app").inner_text())
+    s.ir("#/caso/c02/sessoes")
+    s.clicar('[data-acao="encerrar-abandono"]')
+    conferir("Abandono", "liberar a vaga sem tentativa de contato é recusado", "tentativa de contato" in s.toast())
+    s.p.select_option("#ct-resultado", "Desistiu")
+    s.p.select_option("#ct-motivo", "Transporte ou distância")
+    s.clicar('[data-acao="registrar-contato"]')
+    s.clicar('[data-acao="encerrar-abandono"]')
+    enc = s.js("PEP.db.encerramentos.filter(e => e.casoId === 'c02')[0]") or {}
+    conferir("Abandono", "com o contato registrado, o caso é encerrado por abandono com o motivo informado",
+             enc.get("tipo") == "abandono" and enc.get("motivo") == "Transporte ou distância" and s.js("PEP.util.porId(PEP.db.casos,'c02').status") == "encerrado")
 
     # Upload real
     s.ir("#/caso/c01/documentos")
@@ -357,6 +385,17 @@ def supervisora(nav, base):
     conferir("Permissões", "supervisora não abre caso de outro grupo", s.h1() == "Acesso não permitido")
     s.ir("#/caso/c03/supervisao")
     conferir("Permissões", "supervisora vê o registro de supervisão do seu grupo", s.p.locator("text=Conversar com a Duda").count() == 1)
+    # Encaminhamento à rede: exige o serviço de destino
+    s.ir("#/caso/c02/encerramento")
+    s.p.select_option("#enc-tipo", "encaminhamento")
+    s.p.fill("#enc-motivo", "Demanda de acompanhamento psiquiátrico")
+    s.p.fill("#enc-registro", "Paciente orientada sobre o encaminhamento; relatório só com o necessário.")
+    s.clicar('[data-acao="encerrar-caso"]')
+    conferir("Encerramento", "encaminhamento sem o serviço de destino é recusado", s.p.locator("#enc-destino-erro").count() == 1)
+    s.p.fill("#enc-destino", "CAPS (adulto)")
+    s.clicar('[data-acao="encerrar-caso"]')
+    conferir("Encerramento", "encaminhamento com destino encerra o caso e mostra para onde o paciente foi",
+             s.js("PEP.util.porId(PEP.db.casos,'c02').status") == "encerrado" and "Encaminhado para: CAPS (adulto)" in s.p.locator("#app").inner_text())
     for rota, nome in [("#/painel", "Painel"), ("#/alocacao", "Duplas e trios"), ("#/indicadores", "Indicadores")]:
         s.ir(rota)
         s.axe(nome)
@@ -600,12 +639,130 @@ def celular_e_preferencias(nav, base):
     s.fechar()
 
 
+def bloqueio_progressivo(nav, base):
+    s = Sessao(nav, base, "Bloqueio progressivo")
+    s.p.clock.install(time=datetime(2026, 11, 6, 10, 0))
+    s.abrir("#/entrar")
+
+    def errar(vezes):
+        texto = ""
+        for _ in range(vezes):
+            s.p.fill("#lg-usuario", "rafael.supervisor")
+            s.p.fill("#lg-senha", "senha-errada-123456")
+            s.p.click("#lg-entrar")
+            s.p.wait_for_function("() => !document.getElementById('login-erro').hidden && document.getElementById('lg-entrar').textContent === 'Entrar'", timeout=15000)
+            texto = s.p.locator("#login-erro").inner_text()
+            s.p.evaluate("document.getElementById('login-erro').hidden = true")
+        return texto
+    t1 = errar(5)
+    s.p.clock.fast_forward("00:31")
+    t2 = errar(5)
+    conferir("Senha", "bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento)",
+             "30 segundos" in t1 and "60 segundos" in t2, f"{t1} | {t2}")
+    s.fechar()
+
+
+def rascunho_automatico(nav, base):
+    s = Sessao(nav, base, "Rascunho automático")
+    s.p.clock.install(time=datetime(2026, 11, 6, 10, 0))
+    s.entrar("bia.estagiaria")
+    s.ir("#/caso/c01/evolucoes")
+    s.clicar("details.cartao summary")
+    texto = "Sessão de hoje. Tema: rotina de sono. Intervenção: psicoeducação. Plano: registro diário."
+    s.p.fill("#nova-texto", texto)
+    antes = s.js("PEP.db.evolucoes.length")
+    s.p.clock.fast_forward("14:05")
+    s.p.wait_for_timeout(300)
+    nova = s.js("PEP.db.evolucoes[PEP.db.evolucoes.length-1]")
+    conferir("Sessão", "o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade",
+             s.js("PEP.db.evolucoes.length") == antes + 1 and nova["status"] == "rascunho" and nova["texto"] == texto
+             and "guardado como rascunho" in s.p.locator("#aviso-sessao-texto").inner_text())
+    s.fechar()
+
+
+def adaptador_supabase(nav, base):
+    """O adaptador do Supabase contra um servidor simulado que responde como a API documentada
+    (Auth e PostgREST). Confere o que o site envia ao banco sem precisar de um projeto criado."""
+    s = Sessao(nav, base, "Adaptador Supabase (simulado)")
+    url = "https://vinculo-teste.supabase.co"
+    enviados, estado, erros_antes = [], {"renovou": False, "storage": ""}, len(erros_console)
+
+    def snake(k):
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", k).lower()
+    tabelas = {snake(c): [{snake(k): v for k, v in r.items() if k != "senhaHash"} for r in regs] for c, regs in DADOS.items() if not c.startswith("_")}
+
+    def responder(route):
+        req = route.request
+        partes = urllib.parse.urlparse(req.url)
+        if partes.path == "/auth/v1/token":
+            if "refresh_token" in partes.query:
+                estado["renovou"] = True
+                return route.fulfill(status=200, content_type="application/json", body=json.dumps({"access_token": "tok-renovado", "refresh_token": "ref-2", "expires_in": 3600}))
+            if json.loads(req.post_data or "{}").get("password") == SENHA:
+                # token que vence em 30 s: o próximo pedido já precisa renová-lo
+                return route.fulfill(status=200, content_type="application/json", body=json.dumps({"access_token": "tok-1", "refresh_token": "ref-1", "expires_in": 30}))
+            return route.fulfill(status=400, content_type="application/json", body='{"error":"invalid_grant"}')
+        if partes.path.startswith("/storage/v1/object/anexos/"):
+            estado["storage"] = partes.path
+            return route.fulfill(status=200, content_type="application/json", body='{"Key":"ok"}')
+        if partes.path.startswith("/rest/v1/"):
+            tabela = partes.path.split("/")[-1]
+            if req.method == "GET":
+                return route.fulfill(status=200, content_type="application/json", body=json.dumps(tabelas.get(tabela, [])))
+            enviados.append({"metodo": req.method, "tabela": tabela, "corpo": json.loads(req.post_data or "null"), "autorizacao": req.headers.get("authorization")})
+            if tabela == "evolucoes":  # o banco recusa com um "detalhe" que traz dados da linha
+                return route.fulfill(status=400, content_type="application/json",
+                                     body=json.dumps({"code": "23514", "message": "new row violates check constraint", "details": "Failing row contains (Paciente Exemplo 01, conteúdo sigiloso)"}))
+            return route.fulfill(status=201 if req.method == "POST" else 204, body="")   # Prefer: return=minimal → sem corpo
+        return route.fulfill(status=404, body="")
+    s.ctx.route(url + "/**", responder)
+    # Liga o adaptador só neste teste: troca o js/config-banco.js servido
+    s.ctx.route("**/js/config-banco.js", lambda r: r.fulfill(status=200, content_type="application/javascript",
+                body="var PEP = window.PEP || {}; window.PEP = PEP; PEP.configBanco = { adaptador: 'supabase', supabaseUrl: '" + url + "', supabaseChaveAnon: 'chave-anon-teste' };"))
+    s.abrir("#/entrar")
+    s.p.fill("#lg-usuario", "bia.estagiaria")
+    s.p.fill("#lg-senha", "senha-errada-123456")
+    s.p.click("#lg-entrar")
+    s.p.wait_for_function("() => !document.getElementById('login-erro').hidden", timeout=15000)
+    conferir("Banco (simulado)", "login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth)", not enviados)
+    s.entrar("bia.estagiaria")
+    conferir("Banco (simulado)", "login pelo Supabase Auth e dados carregados da API", s.js("location.hash") == "#/painel" and s.js("PEP.db.casos.length") == len(DADOS["casos"]))
+    aceites = [e for e in enviados if e["tabela"] == "aceites"]
+    auditoria = [e for e in enviados if e["tabela"] == "auditoria"]
+    conferir("Banco (simulado)", "gravação aceita a resposta 201 sem corpo (Prefer: return=minimal)", aceites and s.js("location.hash") == "#/painel")
+    conferir("Banco (simulado)", "data e hora vão com fuso (ISO em UTC), não como hora local solta", aceites and aceites[0]["corpo"]["em"].endswith("Z"), aceites[0]["corpo"]["em"] if aceites else "")
+    conferir("Banco (simulado)", "evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco)",
+             auditoria and all(not ({"em", "hash", "hash_anterior"} & set(e["corpo"])) for e in auditoria))
+    conferir("Banco (simulado)", "token de acesso curto é renovado sozinho antes de vencer", estado["renovou"] and enviados[-1]["autorizacao"] == "Bearer tok-renovado")
+    # Anexo: o caminho no Storage começa pelo caso (é o que a política confere)
+    s.ir("#/caso/c01/documentos")
+    s.p.set_input_files("#ax-arquivo", files=[{"name": "encaminhamento.pdf", "mimeType": "application/pdf", "buffer": b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF"}])
+    s.clicar('[data-acao="anexar"]')
+    s.p.wait_for_timeout(600)
+    conferir("Banco (simulado)", "anexo vai para o Storage no caminho <caso>/<arquivo>", estado["storage"].startswith("/storage/v1/object/anexos/c01/arq-"), estado["storage"])
+    # "Failed to load resource" é o aviso do navegador para o login errado (resposta 400), provocado acima
+    inesperados = [m for _, m in erros_console[erros_antes:] if "Failed to load resource" not in m]
+    conferir("Banco (simulado)", "nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas)", not inesperados, "; ".join(inesperados)[:200])
+    # Erro do banco: o console não recebe o "detalhe" com dados da linha
+    s.ir("#/caso/c01/evolucoes")
+    s.clicar("details.cartao summary")
+    s.p.fill("#nova-texto", "Sessão de teste. Tema, intervenção e plano para a próxima.")
+    s.clicar('[data-acao="nova-evolucao"][data-modo="rascunho"]')
+    s.p.wait_for_timeout(400)
+    novos = erros_console[erros_antes:]
+    conferir("Banco (simulado)", "erro do servidor não leva para o console o conteúdo da linha recusada",
+             any("evolucoes" in m and "23514" in m for _, m in novos) and not any("sigiloso" in m or "Failing row" in m for _, m in novos), "; ".join(m for _, m in novos)[:200])
+    del erros_console[erros_antes:]   # erro provocado de propósito: não conta para o teste do console
+    s.fechar()
+
+
 def main():
     srv, base = servidor()
     with sync_playwright() as p:
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
-        for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias):
+        for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
+                      bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

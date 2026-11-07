@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-06 23:12 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:23 (UTC), num PostgreSQL 18.6 (PGlite).
 
 **83 de 83 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 29 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (1869 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 263 registros em 23 tabelas (3144 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -87,7 +87,7 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-06 23:12 (UTC), num PostgreSQL 18
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
 | ✓ | o banco marca a duplicidade do CPF sozinho (sem avisar quem preencheu) | {"id":"p05","tipo":"paciente"} |
 | ✓ | a inscrição gerou evento de auditoria e a cadeia continua íntegra |  |
-| ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, motivos {"Horário incompatível":1} |
+| ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, ativos 4, na fila 6, motivos {"Horário incompatível":1} |
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
 
 Tamanho do banco de demonstração: 9.5 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.

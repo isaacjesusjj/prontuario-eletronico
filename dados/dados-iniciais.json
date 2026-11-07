@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.2",
+    "versao": "2026-11-06.3",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -24,10 +24,15 @@
       "faltasIntercaladasSugestao": 3,
       "tentativasLogin": 5,
       "bloqueioLoginSegundos": 30,
+      "bloqueioLoginMaximoSegundos": 900,
       "inatividadeMinutos": 15,
       "sessaoMaximaHoras": 12,
       "prazoEvolucaoHoras": 48,
+      "evolucaoMaxCaracteres": 5000,
+      "anamneseCampoMaxCaracteres": 2000,
+      "duracaoSessaoMinutos": 50,
       "linkPacienteHoras": 72,
+      "tentativasLink": 5,
       "uploadMaxMB": 2,
       "senhaMinimo": 15,
       "senhaMaximo": 128,
@@ -69,6 +74,18 @@
           "valor": "abandono",
           "nome": "Abandono"
         }
+      ],
+      "servicosRede": [
+        "CAPS (adulto)",
+        "CAPS ij (infância e adolescência)",
+        "CAPS AD (álcool e outras drogas)",
+        "UBS / atenção básica",
+        "Ambulatório de saúde mental",
+        "CRAS",
+        "CREAS",
+        "Conselho Tutelar",
+        "Defensoria Pública",
+        "Serviço de saúde suplementar (convênio)"
       ],
       "motivosAdendo": [
         "Correção de informação",

@@ -155,8 +155,9 @@ PEP.telas = PEP.telas || {};
   }
 
   function painelDirecao(u) {
-    var ativos = PEP.db.casos.filter(function (c) { return c.status === 'ativo'; }).length;
-    var fila = PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando'; }).length;
+    // Números agregados (com o banco ligado, vêm de app.indicadores(): a direção não lê casos nem a fila)
+    var ind = PEP.telas.indicadoresAtuais(u) || { casosAtivos: '…', naFila: '…' };
+    var ativos = ind.casosAtivos, fila = ind.naFila;
     var alocados = PEP.db.alocacoes.filter(PEP.regras.alocacaoAtiva).length;
     var semGrupo = PEP.regras.estagiariosSemGrupo().length;
     return '<h1>Olá, ' + esc(u.nome) + '</h1><p class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + '</p>' +

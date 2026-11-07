@@ -22,43 +22,27 @@ PEP.telas = PEP.telas || {};
     }).join('');
   }
 
+  // Com o banco ligado, os números vêm prontos de app.indicadores() (a direção não lê tabelas clínicas)
+  PEP.telas._indicadoresRemotos = null;
+  PEP.telas.indicadoresAtuais = function (u) {
+    return PEP.repo.adaptador().remoto ? PEP.telas._indicadoresRemotos : PEP.regras.indicadores(u);
+  };
+
   PEP.telas.indicadores = function (u) {
     if (!PEP.regras.podeVerIndicadores(u)) return PEP.ui.semPermissao();
-    // Escopo: direção e técnico veem tudo; supervisor, só os seus grupos
-    var casos = u.perfil === 'supervisor' ? PEP.regras.casosVisiveis(u) : PEP.db.casos;
-    var ids = casos.map(function (c) { return c.id; });
-    var sessoes = PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1; });
-
-    var porCaso = {};
-    sessoes.forEach(function (s) { if (s.presenca === 'presente') porCaso[s.casoId] = (porCaso[s.casoId] || 0) + 1; });
-    var atendidos = Object.keys(porCaso).length;
-    var voltaram = Object.keys(porCaso).filter(function (k) { return porCaso[k] >= 2; }).length;
-    var taxaRetorno = atendidos ? Math.round((voltaram / atendidos) * 100) : 0;
-    var totalPresencas = Object.keys(porCaso).reduce(function (t, k) { return t + porCaso[k]; }, 0);
-    var media = atendidos ? (totalPresencas / atendidos).toFixed(1).replace('.', ',') : '0';
-
-    var motivos = {}, encerramentos = {};
-    var nomesTipo = {};
+    var ind = PEP.telas.indicadoresAtuais(u);
+    if (!ind) return '<h1>Indicadores</h1><p class="vazio" role="status">Carregando os indicadores do servidor…</p>';
+    var nomesTipo = {}, encerramentos = {};
     PEP.lista('tiposEncerramento').forEach(function (t) { nomesTipo[t.valor] = t.nome.split(' (')[0]; });
-    PEP.db.encerramentos.filter(function (e) { return ids.indexOf(e.casoId) !== -1; }).forEach(function (e) {
-      if (e.tipo === 'abandono') motivos[e.motivo || 'Não informado'] = (motivos[e.motivo || 'Não informado'] || 0) + 1;
-      var tipo = nomesTipo[e.tipo] || e.tipo;
-      encerramentos[tipo] = (encerramentos[tipo] || 0) + 1;
-    });
-    var faltas = { 'Presenças': 0, 'Faltas': 0, 'Faltas justificadas': 0 };
-    sessoes.forEach(function (s) {
-      if (s.presenca === 'presente') faltas['Presenças']++;
-      else if (s.presenca === 'falta') faltas['Faltas']++;
-      else if (s.presenca === 'falta-justificada') faltas['Faltas justificadas']++;
-    });
-    var risco = casos.filter(PEP.regras.emRiscoDeAbandono).length;
-    var fila = PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando'; });
-    var esperaMedia = fila.length ? Math.round(fila.reduce(function (t, i) { return t + PEP.util.diasEntre(i.data, PEP.util.hoje()); }, 0) / fila.length) : 0;
+    Object.keys(ind.encerramentos || {}).forEach(function (k) { encerramentos[nomesTipo[k] || k] = ind.encerramentos[k]; });
+    var motivos = ind.motivosAbandono || {};
+    var faltas = { 'Presenças': ind.presencas.presente, 'Faltas': ind.presencas.falta, 'Faltas justificadas': ind.presencas.faltaJustificada };
+    var media = Number(ind.mediaSessoes || 0).toFixed(1).replace('.', ',');
 
     return '<h1>Indicadores</h1><div class="aviso info pequeno">Dados agregados, sem identificação de pacientes. São calculados na hora a partir dos registros (nada fica guardado).' + (u.perfil === 'supervisor' ? ' Escopo: seus grupos.' : '') + '</div>' +
-      '<div class="grade">' + PEP.ui.numero(atendidos, 'pacientes atendidos') + PEP.ui.numero(taxaRetorno + '%', 'voltaram após a 1ª sessão') +
-      PEP.ui.numero(media, 'sessões por paciente (média)') + PEP.ui.numero(risco, 'casos em risco de abandono agora') +
-      (u.perfil !== 'supervisor' ? PEP.ui.numero(esperaMedia + ' dias', 'espera média na fila') : '') + '</div>' +
+      '<div class="grade">' + PEP.ui.numero(ind.atendidos, 'pacientes atendidos') + PEP.ui.numero(ind.taxaRetorno + '%', 'voltaram após a 1ª sessão') +
+      PEP.ui.numero(media, 'sessões por paciente (média)') + PEP.ui.numero(ind.emRisco, 'casos em risco de abandono agora') +
+      (u.perfil !== 'supervisor' ? PEP.ui.numero(ind.esperaMediaDias + ' dias', 'espera média na fila') : '') + '</div>' +
       '<div class="grade-2"><div class="cartao"><h2>Motivos de abandono</h2>' + barras(motivos) +
       '<p class="suave pequeno">Vem do fluxo de contato: é o dado que faltava para entender por que o paciente não volta.</p></div>' +
       '<div class="cartao"><h2>Presenças e faltas</h2>' + barras(faltas) + '</div>' +

@@ -218,10 +218,13 @@ const porCaso = {};
 json.sessoes.forEach((s) => { if (s.presenca === 'presente') porCaso[s.casoId] = (porCaso[s.casoId] || 0) + 1; });
 const atendidos = Object.keys(porCaso).length;
 const esperadoInd = { atendidos, taxaRetorno: Math.round(100 * Object.values(porCaso).filter((n) => n >= 2).length / atendidos),
-  presente: json.sessoes.filter((s) => s.presenca === 'presente').length };
+  presente: json.sessoes.filter((s) => s.presenca === 'presente').length,
+  ativos: json.casos.filter((c) => c.status === 'ativo').length,
+  fila: json.inscricoes.filter((i) => i.status === 'aguardando').length + 1 };   // +1: a inscrição do visitante no passo 7
 const ind = await como('u-dir', async () => (await valores('select app.indicadores() as i'))[0].i);
-conferir('indicadores do banco = indicadores da tela', ind.atendidos === esperadoInd.atendidos && Number(ind.taxaRetorno) === esperadoInd.taxaRetorno && ind.presencas.presente === esperadoInd.presente,
-  `atendidos ${ind.atendidos}, retorno ${ind.taxaRetorno}%, em risco ${ind.emRisco}, motivos ${JSON.stringify(ind.motivosAbandono)}`);
+conferir('indicadores do banco = indicadores da tela', ind.atendidos === esperadoInd.atendidos && Number(ind.taxaRetorno) === esperadoInd.taxaRetorno && ind.presencas.presente === esperadoInd.presente
+  && ind.casosAtivos === esperadoInd.ativos && ind.naFila === esperadoInd.fila,
+  `atendidos ${ind.atendidos}, retorno ${ind.taxaRetorno}%, em risco ${ind.emRisco}, ativos ${ind.casosAtivos}, na fila ${ind.naFila}, motivos ${JSON.stringify(ind.motivosAbandono)}`);
 conferir('caso com 2 faltas seguidas aparece em risco de abandono (c02)', ind.emRisco === 1);
 
 // ---------- 9. Tamanho ----------

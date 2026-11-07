@@ -60,7 +60,7 @@ PEP.util = (function () {
     if (!texto) return '—';
     var partes = String(texto).split('T');
     var d = partes[0].split('-');
-    if (d.length !== 3) return texto;
+    if (d.length !== 3) return esc(texto); // fora do formato: devolve escapado (o resultado vai direto para o HTML)
     var data = d[2] + '/' + d[1] + '/' + d[0];
     return partes[1] ? data + ' ' + partes[1].slice(0, 5) : data;
   }
@@ -107,9 +107,17 @@ PEP.estado = (function () {
     salvar();
   }
 
+  var avisouEspaco = false;
   function salvar() {
-    try { window.localStorage.setItem(CHAVE_DADOS, JSON.stringify(PEP.db)); }
-    catch (e) { memoria.dados = JSON.stringify(PEP.db); }
+    try { window.localStorage.setItem(CHAVE_DADOS, JSON.stringify(PEP.db)); avisouEspaco = false; }
+    catch (e) {
+      memoria.dados = JSON.stringify(PEP.db);
+      // Espaço do navegador cheio ou bloqueado: avisa, para ninguém achar que o registro ficou guardado
+      if (!avisouEspaco && PEP.ui) {
+        avisouEspaco = true;
+        PEP.ui.toast('Atenção: o navegador não deixou guardar os dados (espaço cheio ou bloqueado). O que for feito agora se perde ao recarregar.');
+      }
+    }
   }
 
   function restaurar() {
@@ -179,7 +187,7 @@ PEP.estado = (function () {
   function autenticar(login, senha) {
     var alvo = String(login || '').trim().toLowerCase();
     var t = lerTentativas();
-    var reg = t[alvo] || { falhas: 0, bloqueadoAte: 0 };
+    var reg = t[alvo] || { falhas: 0, bloqueadoAte: 0, bloqueios: 0 };
     if (Date.now() < reg.bloqueadoAte) return Promise.resolve({ ok: false, motivo: 'bloqueado', segundos: Math.ceil((reg.bloqueadoAte - Date.now()) / 1000) });
 
     function falhou() {
@@ -187,12 +195,18 @@ PEP.estado = (function () {
       registrarAuditoria('Tentativa de login sem sucesso', alvo || '—', 'visitante'); // nunca grava a senha
       if (reg.falhas >= (PEP.regra('tentativasLogin') || 5)) {
         reg.falhas = 0;
-        reg.bloqueadoAte = Date.now() + (PEP.regra('bloqueioLoginSegundos') || 30) * 1000;
-        registrarAuditoria('Login bloqueado temporariamente', alvo || '—', 'visitante');
+        reg.bloqueios = (reg.bloqueios || 0) + 1;
+        // Bloqueio progressivo: 30 s, 60 s, 2 min, 4 min... até o teto. Quem tenta adivinhar a senha
+        // fica cada vez mais lento; quem só errou a senha uma vez quase não sente (NIST SP 800-63B-4).
+        var base = PEP.regra('bloqueioLoginSegundos') || 30, teto = PEP.regra('bloqueioLoginMaximoSegundos') || 900;
+        var segundos = Math.min(base * Math.pow(2, reg.bloqueios - 1), teto);
+        reg.bloqueadoAte = Date.now() + segundos * 1000;
+        registrarAuditoria('Login bloqueado temporariamente (' + segundos + ' s)', alvo || '—', 'visitante');
       }
       t[alvo] = reg;
       gravar('localStorage', CHAVE_TENTATIVAS, JSON.stringify(t));
-      return { ok: false, motivo: reg.bloqueadoAte > Date.now() ? 'bloqueado' : 'invalido', segundos: PEP.regra('bloqueioLoginSegundos') };
+      var bloqueado = reg.bloqueadoAte > Date.now();
+      return { ok: false, motivo: bloqueado ? 'bloqueado' : 'invalido', segundos: bloqueado ? Math.ceil((reg.bloqueadoAte - Date.now()) / 1000) : 0 };
     }
     function deuCerto(usuario) {
       delete t[alvo];

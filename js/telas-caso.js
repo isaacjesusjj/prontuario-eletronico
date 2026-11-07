@@ -71,7 +71,7 @@ PEP.telas = PEP.telas || {};
         '<p class="suave pequeno" style="margin-top:.5rem">Salvar cria uma nova versão; as anteriores ficam guardadas. Registre o necessário: o paciente pode ler o prontuário.</p>' +
         '<div class="grade-2" id="form-anamnese">' + CAMPOS_ANAMNESE.map(function (c) {
           return '<div class="campo"><label for="an-' + c[0] + '">' + c[1] + (c[0] === 'demanda' || c[0] === 'objetivos' ? ' *' : '') + '</label>' +
-            '<textarea id="an-' + c[0] + '" style="min-height:80px">' + esc(a[c[0]] || '') + '</textarea></div>';
+            '<textarea id="an-' + c[0] + '" style="min-height:80px" maxlength="' + PEP.regra('anamneseCampoMaxCaracteres') + '">' + esc(a[c[0]] || '') + '</textarea></div>';
         }).join('') + '</div>' +
         '<button class="botao pequeno" data-acao="salvar-anamnese" data-caso="' + caso.id + '">Salvar nova versão</button></details>';
     }
@@ -121,6 +121,12 @@ PEP.telas = PEP.telas || {};
   }
 
   // ---------- Aba: evoluções ----------
+  // Limite de tamanho (regras.evolucaoMaxCaracteres): o prontuário é conciso, e o paciente pode lê-lo
+  function atributosLimite(id) { return 'maxlength="' + PEP.regra('evolucaoMaxCaracteres') + '" data-contador="' + id + '-contador"'; }
+  function contador(id, texto) {
+    return '<span class="dica" id="' + id + '-contador">' + String(texto || '').length + ' de ' + PEP.regra('evolucaoMaxCaracteres') + ' caracteres</span>';
+  }
+
   function adendos(e) {
     return R().adendosDe(e.id).map(function (ad) {
       return '<div class="adendo"><strong>Adendo</strong> · ' + esc(ad.motivo) + ' · ' + esc(PEP.ui.nomeUsuario(ad.autorId)) + ' em ' + data(ad.em) +
@@ -136,7 +142,7 @@ PEP.telas = PEP.telas || {};
     if ((e.status === 'rascunho' || e.status === 'devolvida') && ehAutor && R().podeEscreverEvolucao(u, caso)) {
       if (e.comentarioSupervisor && e.status === 'devolvida') html += '<div class="comentario-sup"><strong>Supervisão:</strong> ' + esc(e.comentarioSupervisor) + '</div>';
       html += '<div class="campo" style="margin-top:.6rem"><label for="ev-' + e.id + '">Texto da evolução</label>' +
-        '<textarea id="ev-' + e.id + '">' + esc(e.texto) + '</textarea></div>' +
+        '<textarea id="ev-' + e.id + '" ' + atributosLimite('ev-' + e.id) + '>' + esc(e.texto) + '</textarea>' + contador('ev-' + e.id, e.texto) + '</div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="salvar-evolucao" data-id="' + e.id + '" data-modo="rascunho">Salvar rascunho</button>' +
         '<button class="botao pequeno" data-acao="salvar-evolucao" data-id="' + e.id + '" data-modo="enviar">Assinar e enviar à supervisão</button></div>';
       return html + '</div>';
@@ -197,7 +203,7 @@ PEP.telas = PEP.telas || {};
         sessoes.map(function (s) { return '<option value="' + s.id + '">' + data(s.data) + ' às ' + esc(s.hora) + '</option>'; }).join('') +
         '<option value="">Sem sessão vinculada</option></select></div>' +
         '<div class="campo"><label for="nova-texto">Texto</label><span class="dica" id="nova-texto-dica">Modelo: tema trabalhado · intervenção · resposta do paciente · plano para a próxima sessão.</span>' +
-        '<textarea id="nova-texto" aria-describedby="nova-texto-dica"></textarea></div>' +
+        '<textarea id="nova-texto" aria-describedby="nova-texto-dica" ' + atributosLimite('nova-texto') + '></textarea>' + contador('nova-texto', '') + '</div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="rascunho">Salvar rascunho</button>' +
         '<button class="botao pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="enviar">Assinar e enviar à supervisão</button></div></details>';
     }

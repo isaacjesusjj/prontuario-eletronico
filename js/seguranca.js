@@ -89,11 +89,22 @@ PEP.seguranca = (function () {
     return paraBase64(bytesAleatorios(nBytes || 24)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
-  // Senha provisória legível (sem 0/O, 1/l), 16 caracteres em blocos
+  // Senha provisória legível (sem 0/O, 1/l), 16 caracteres em blocos de 4.
+  // Sorteio sem viés: 256 não é múltiplo de 31, então os bytes acima do último múltiplo
+  // são descartados (senão as primeiras letras do alfabeto sairiam mais vezes).
   function senhaProvisoria() {
     var alfabeto = 'abcdefghjkmnpqrstuvwxyz23456789';
-    var b = bytesAleatorios(16), s = '';
-    for (var i = 0; i < 16; i++) { s += alfabeto[b[i] % alfabeto.length]; if (i % 4 === 3 && i < 15) s += '-'; }
+    var limite = 256 - (256 % alfabeto.length);
+    var s = '', n = 0;
+    while (n < 16) {
+      var b = bytesAleatorios(32);
+      for (var i = 0; i < b.length && n < 16; i++) {
+        if (b[i] >= limite) continue;
+        s += alfabeto[b[i] % alfabeto.length];
+        n++;
+        if (n % 4 === 0 && n < 16) s += '-';
+      }
+    }
     return s;
   }
 

@@ -48,11 +48,19 @@ PEP.telas = PEP.telas || {};
       '<button class="botao secundario pequeno" data-acao="restaurar">Restaurar dados de demonstração</button></div>';
   };
 
+  // No protótipo (dados no navegador), nenhuma clínica recebe a inscrição. Quem chegar aqui
+  // procurando ajuda de verdade precisa saber disso e para onde ir.
+  function avisoPrototipo() {
+    if (PEP.repo.adaptador().remoto) return '';
+    return '<div class="aviso alerta" role="note"><strong>Protótipo acadêmico.</strong> Nenhuma clínica recebe esta inscrição: os dados ficam só neste navegador. ' +
+      'Se você procura atendimento psicológico, procure a UBS mais perto de você ou o CAPS da sua cidade. Em crise: CVV 188 (24 horas) · SAMU 192.</div>';
+  }
+
   // Fila de espera online: poucos campos, aviso de urgência, aviso de privacidade e CPF validado
   PEP.telas.inscricao = function () {
     var periodos = PEP.ui.opcoes(PEP.lista('periodos'));
     return '<a href="#/entrar" class="suave">← Voltar</a>' +
-      '<h1 style="margin-top:.5rem">Fila de espera da clínica-escola</h1>' +
+      '<h1 style="margin-top:.5rem">Fila de espera da clínica-escola</h1>' + avisoPrototipo() +
       '<div class="aviso perigo" role="note"><strong>É urgente?</strong> Se você está em risco ou pensando em se machucar, não espere a fila: ' +
       'ligue <strong>192 (SAMU)</strong>, fale com o <strong>CVV pelo 188</strong> (24 horas, gratuito) ou procure a UPA ou o pronto-socorro mais próximo.</div>' +
       '<form class="cartao" data-form="inscricao" id="form-inscricao" novalidate>' +
@@ -81,7 +89,7 @@ PEP.telas = PEP.telas || {};
 
   PEP.telas.inscricaoConcluida = function () {
     // Mesma mensagem para todos: o formulário público não revela se o CPF já tem cadastro
-    return '<div class="cartao"><h1>Inscrição recebida</h1>' +
+    return avisoPrototipo() + '<div class="cartao"><h1>Inscrição recebida</h1>' +
       '<p>A equipe da clínica-escola vai entrar em contato pelo telefone informado. Se você já tiver cadastro ou outra inscrição, a equipe junta as informações.</p>' +
       '<p class="suave">Se a situação ficar urgente enquanto você espera: SAMU 192 · CVV 188 (24 horas).</p>' +
       '<a class="botao secundario" href="#/entrar">Voltar ao início</a></div>';

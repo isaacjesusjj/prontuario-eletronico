@@ -134,6 +134,6 @@ PEP.telas = PEP.telas || {};
       '<p>Para sua proteção, confirme sua data de nascimento antes de abrir.</p>' +
       '<div class="campo"><label for="lk-nasc">Data de nascimento</label><input id="lk-nasc" name="nascimento" type="date" required></div>' +
       '<button class="botao" type="submit">Abrir meu prontuário</button>' +
-      '<p class="suave pequeno" style="margin-top:.8rem">Depois de ' + 5 + ' tentativas erradas, o link é bloqueado.</p></form>';
+      '<p class="suave pequeno" style="margin-top:.8rem">Depois de ' + PEP.regra('tentativasLink') + ' tentativas erradas, o link é bloqueado.</p></form>';
   };
 })();

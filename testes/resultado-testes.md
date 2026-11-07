@@ -1,23 +1,25 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 00:22, no Chrome (Playwright), com axe-core 4.14.0.
 
-**154 de 154 verificações passaram.** Acessibilidade: 45 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**176 de 176 verificações passaram.** Acessibilidade: 45 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
 | Acessibilidade | 52 | 0 |
-| Validadores | 10 | 0 |
+| LGPD | 14 | 0 |
+| Validadores | 11 | 0 |
 | CPF | 6 | 0 |
-| LGPD | 13 | 0 |
 | Auditoria | 5 | 0 |
-| Senha | 10 | 0 |
+| Senha | 11 | 0 |
 | Permissões | 7 | 0 |
-| Evolução | 6 | 0 |
+| Evolução | 7 | 0 |
 | Anamnese | 1 | 0 |
-| Sessões | 4 | 0 |
+| Sessões | 5 | 0 |
 | Lembretes | 3 | 0 |
+| Encerramento | 5 | 0 |
+| Abandono | 2 | 0 |
 | Anexos | 4 | 0 |
 | Agenda | 4 | 0 |
 | Triagem | 1 | 0 |
@@ -28,9 +30,10 @@ Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), 
 | Indicadores | 1 | 0 |
 | Importação | 3 | 0 |
 | Rodízio | 4 | 0 |
-| Sessão | 3 | 0 |
+| Sessão | 4 | 0 |
 | Demonstração | 2 | 0 |
 | Celular | 4 | 0 |
+| Banco (simulado) | 9 | 0 |
 | Console | 1 | 0 |
 
 ## Todas as verificações
@@ -50,6 +53,7 @@ Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Visitante · Link inválido: sem violações WCAG A/AA |  |
 | ✓ | Público | link de leitura inexistente mostra 'Link indisponível' |  |
 | ✓ | Público | nenhum recurso de terceiros carregado na abertura | fontes servidas pelo próprio site |
+| ✓ | LGPD | formulário público avisa que é protótipo (nenhuma clínica recebe a inscrição) e indica a rede |  |
 | ✓ | Validadores | fila: enviar vazio marca os campos obrigatórios | 6 campos |
 | ✓ | Acessibilidade | erro ligado ao campo por aria-describedby |  |
 | ✓ | Acessibilidade | o foco vai para o primeiro campo com erro |  |
@@ -83,7 +87,9 @@ Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Estagiária Bia · Caso · supervisao: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Estagiária Bia · Caso · encerramento: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | título da aba no prontuário não leva nome do paciente | Prontuário — Vínculo · Prontuário da Clínica-Escola |
+| ✓ | Evolução | contador mostra os caracteres usados e o limite |  |
 | ✓ | Validadores | evolução muito curta é recusada |  |
+| ✓ | Validadores | evolução acima do limite de caracteres é recusada |  |
 | ✓ | Evolução | estagiária assina e envia à supervisão |  |
 | ✓ | Evolução | a assinatura guarda o hash SHA-256 do texto assinado |  |
 | ✓ | Validadores | anamnese sem objetivos é recusada |  |
@@ -91,11 +97,17 @@ Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), 
 | ✓ | Sessões | presença registrada na sessão de hoje |  |
 | ✓ | Sessões | presença em sessão futura é recusada |  |
 | ✓ | Sessões | agendamento no mesmo horário da dupla é recusado |  |
+| ✓ | Sessões | sessão que se sobrepõe a outra da dupla (cada uma ocupa 50 min) é recusada |  |
 | ✓ | Validadores | horário fora do funcionamento é recusado |  |
 | ✓ | Sessões | agendamento válido |  |
 | ✓ | Lembretes | lembrete abre o WhatsApp com o número do paciente | https://wa.me/5511900000001?text=Ol%C3%A1!%20Lembrete%3A%20v |
 | ✓ | Lembretes | a mensagem não tem nome do paciente, do serviço nem conteúdo clínico |  |
 | ✓ | Lembretes | lembrete registrado (quem, quando, canal) |  |
+| ✓ | Encerramento | com evolução aguardando a supervisão, encerrar fica bloqueado e a tela diz por quê |  |
+| ✓ | Encerramento | abandono não aparece no encerramento manual (só pelo fluxo de faltas) |  |
+| ✓ | Encerramento | a tela mostra até quando o prontuário fica guardado |  |
+| ✓ | Abandono | liberar a vaga sem tentativa de contato é recusado |  |
+| ✓ | Abandono | com o contato registrado, o caso é encerrado por abandono com o motivo informado |  |
 | ✓ | Anexos | arquivo renomeado para .pdf é recusado (confere o conteúdo, não só a extensão) |  |
 | ✓ | Anexos | arquivo acima de 2 MB é recusado |  |
 | ✓ | Anexos | PDF válido guardado com hash e nome seguro |  |
@@ -119,6 +131,8 @@ Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), 
 | ✓ | Evolução | correção depois de validada só por adendo; o texto original fica intacto |  |
 | ✓ | Permissões | supervisora não abre caso de outro grupo |  |
 | ✓ | Permissões | supervisora vê o registro de supervisão do seu grupo |  |
+| ✓ | Encerramento | encaminhamento sem o serviço de destino é recusado |  |
+| ✓ | Encerramento | encaminhamento com destino encerra o caso e mostra para onde o paciente foi |  |
 | ✓ | Acessibilidade | Supervisora Helena · Painel: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Supervisora Helena · Duplas e trios: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Supervisora Helena · Indicadores: sem violações WCAG A/AA |  |
@@ -190,4 +204,15 @@ Gerado por `testes/testar_site.py` em 06/11/2026 01:20, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Alto contraste · contraste #/caso/c01: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Alto contraste · contraste #/agenda: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | texto em 150% sem rolagem lateral |  |
+| ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
+| ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
+| ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
+| ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
+| ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T00:22:00.000Z |
+| ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
+| ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5nt0b8sca6 |
+| ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
+| ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |
