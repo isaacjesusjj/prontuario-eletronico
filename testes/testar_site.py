@@ -108,6 +108,14 @@ class Sessao:
     def sair(self):
         self.clicar('[data-acao="sair"]')
 
+    def justificar(self, caso, motivo="responsabilidade-tecnica"):
+        # Técnica: registra o motivo do acesso ao conteúdo clínico do caso (se ainda não tiver)
+        self.ir(f"#/caso/{caso}")
+        if self.p.locator("#form-justificativa").count():
+            self.p.check(f"#jt-motivo-{motivo}")
+            self.clicar('[data-acao="justificar-acesso"]')
+            self.p.wait_for_timeout(150)
+
     def axe(self, nome, regras=None):
         if not AXE.exists():
             return
@@ -628,6 +636,7 @@ def celular_e_preferencias(nav, base):
     s.fechar()
     s = Sessao(nav, base, "Alto contraste")
     s.entrar("ana.tecnica")
+    s.justificar("c01")   # o contraste é conferido no prontuário aberto, não só na tela do motivo
     s.clicar('[data-acao="alto-contraste"]')
     conferir("Acessibilidade", "botão de alto contraste liga o tema e informa o estado (aria-pressed)", s.js("document.documentElement.classList.contains('contraste')") and s.p.get_attribute('[data-acao="alto-contraste"]', "aria-pressed") == "true")
     for rota in ["#/painel", "#/caso/c01", "#/agenda"]:
@@ -705,11 +714,13 @@ def risco_e_seguranca(nav, base):
              s.js(f"PEP.db.riscos.some(r => r.casoId === '{novo['id']}' && r.registradoPor === 'u-tec' && !r.cienciaEm)"))
     s.ir("#/painel")
     conferir("Risco", "o painel da técnica destaca o caso com risco que ainda não tem grupo", "Risco visto na triagem" in s.p.locator("#app").inner_text())
+    s.justificar("c04", "pedido-paciente")
     s.ir("#/imprimir/c04")
     tela = s.p.locator("#app").inner_text()
     copia = tela.split("Prontuário psicológico — cópia")[-1]
     conferir("Risco", "cópia de adolescente omite o relato de violência e a notificação (Código de Ética, art. 13); só a equipe é avisada",
              "Relata agressão física" not in copia and "Conselho Tutelar" not in copia and "omite 2 registro(s)" in tela)
+    s.justificar("c03", "pedido-paciente")
     s.ir("#/imprimir/c03")
     copia3 = s.p.locator("#app").inner_text()
     conferir("Risco", "cópia de adulto traz a avaliação de risco e o plano de segurança", "Avaliações de risco" in copia3 and "Plano de segurança (versão 1" in copia3)
@@ -744,6 +755,66 @@ def revisor_de_escrita(nav, base):
     s.entrar("helena.supervisora")
     s.ir("#/supervisao")
     conferir("Revisor", "na fila de validação, a supervisora vê os apontamentos para orientar", "relata" in s.p.locator("#app").inner_text() and "Para orientar a supervisão" in s.p.locator("#app").inner_text())
+    s.fechar()
+
+
+def privacidade_na_tela(nav, base):
+    s = Sessao(nav, base, "Privacidade na tela")
+    s.entrar("ana.tecnica")
+    # Motivo do acesso: o conteúdo clínico só abre com ele
+    eventos_antes = s.js("PEP.db.auditoria.length")
+    s.ir("#/caso/c01")
+    conferir("Privacidade", "técnica fora da equipe vê a capa do caso e o pedido de motivo, não o conteúdo clínico",
+             s.p.locator("#form-justificativa").count() == 1 and "Avaliação de demanda" not in s.p.locator("#app").inner_text())
+    conferir("Privacidade", "só ver a capa do caso não gera o evento 'Abriu o prontuário'",
+             not s.js(f"PEP.db.auditoria.slice({eventos_antes}).some(a => a.acao.indexOf('Abriu o prontuário') === 0)"))
+    s.axe("Motivo do acesso")
+    s.clicar('[data-acao="justificar-acesso"]')
+    conferir("Privacidade", "sem escolher o motivo, não abre", s.p.locator("#form-justificativa").count() == 1 and s.p.locator('[id$="-erro"]').count() >= 1)
+    s.p.check("#jt-motivo-outro")
+    s.clicar('[data-acao="justificar-acesso"]')
+    conferir("Privacidade", "motivo 'outro' exige a descrição", s.p.locator("#jt-detalhe-erro").count() == 1)
+    s.p.check("#jt-motivo-pedido-paciente")
+    s.clicar('[data-acao="justificar-acesso"]')
+    s.p.wait_for_timeout(200)
+    conferir("Privacidade", "com o motivo, o prontuário abre e a auditoria registra o motivo",
+             "Avaliação de demanda" in s.p.locator("#app").inner_text()
+             and s.js("PEP.db.auditoria.some(a => a.acao === 'Abriu o prontuário com motivo: Pedido do paciente (cópia do prontuário ou direito LGPD)' && a.alvo === 'c01')"))
+    conferir("Privacidade", "a abertura com motivo é registrada uma vez só (sem evento duplicado)",
+             s.js(f"PEP.db.auditoria.slice({eventos_antes}).filter(a => a.acao.indexOf('Abriu o prontuário') === 0 && a.alvo === 'c01').length") == 1)
+    s.ir("#/caso/c07")
+    conferir("Privacidade", "caso recém-triado, ainda sem grupo, abre sem pedir motivo", s.p.locator("#form-justificativa").count() == 0)
+    s.ir("#/imprimir/c03")
+    conferir("Privacidade", "a cópia em PDF também pede o motivo", s.p.locator("#form-justificativa").count() == 1)
+    # Modo discreto
+    s.ir("#/casos")
+    s.clicar('[data-acao="modo-discreto"]')
+    texto = s.p.locator("#app").inner_text()
+    conferir("Privacidade", "modo discreto: pacientes aparecem pelas iniciais e pelo código do caso",
+             "Paciente Exemplo 01" not in texto and "P. E. · c01" in texto and s.p.get_attribute('[data-acao="modo-discreto"]', "aria-pressed") == "true")
+    s.ir("#/fila")
+    conferir("Privacidade", "modo discreto continua ao navegar (fila sem nomes por extenso)", "Pessoa Inscrita 01" not in s.p.locator("#app").inner_text())
+    s.ir("#/caso/c01")
+    conferir("Privacidade", "modo discreto oculta telefone e e-mail na identificação", "oculto no modo discreto" in s.p.locator("#app").inner_text()
+             and "paciente01@example.org" not in s.p.locator("#app").inner_text())
+    s.clicar('[data-acao="modo-discreto"]')
+    # Cobrir tela
+    s.clicar('[data-acao="cobrir-tela"]')
+    conferir("Privacidade", "'Cobrir tela' esconde tudo na hora e leva o foco para a cortina",
+             s.p.is_visible("#cortina") and s.js("document.activeElement.id") == "cortina-voltar" and s.js("document.querySelector('.layout').inert") is True)
+    s.axe("Tela coberta")
+    s.clicar('[data-acao="descobrir-tela"]')
+    conferir("Privacidade", "a tela volta como estava, sem sair do sistema", not s.p.is_visible("#cortina") and s.js("location.hash") == "#/caso/c01")
+    # O paciente vê quem acessou o prontuário, com o motivo da técnica
+    s.sair()
+    s.entrar("paciente01")
+    s.ir("#/meus-dados")
+    s.axe("Meus dados com acessos")
+    acessos = s.p.locator("#app").inner_text()
+    conferir("Privacidade", "o paciente vê quem acessou o prontuário e o motivo registrado pela técnica",
+             "Quem acessou o seu prontuário" in acessos and "Ana Lúcia" in acessos and "Motivo: Pedido do paciente" in acessos)
+    conferir("Privacidade", "a lista mostra a categoria da ação, não o texto interno da auditoria",
+             "Registrou informações no prontuário" in acessos and "Assinou e enviou evolução" not in acessos)
     s.fechar()
 
 
@@ -870,7 +941,7 @@ def main():
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
-                      risco_e_seguranca, revisor_de_escrita, bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
+                      risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

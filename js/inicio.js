@@ -41,6 +41,8 @@ PEP.app = (function () {
     ultimaRotaAuditada = rota.p1;
     var c = PEP.util.porId(PEP.db.casos, rota.p1);
     if (!c) return;
+    // A técnica sem motivo vê só a capa do caso: o evento é registrado quando ela informa o motivo
+    if (PEP.regras.podeVerCaso(u, c) && PEP.regras.precisaJustificar(u, c)) { ultimaRotaAuditada = ''; return; }
     PEP.estado.registrarAuditoria(PEP.regras.podeVerCaso(u, c) ? 'Abriu o prontuário' : 'Tentativa de acesso negada ao prontuário', c.id);
   }
 
@@ -147,6 +149,10 @@ PEP.app = (function () {
   function carregarDoServidor(u, rota) {
     var ad = PEP.repo.adaptador();
     if (!ad.remoto || !u || !ad.indicadores) return;
+    if (rota.nome === 'meus-dados' && u.perfil === 'paciente' && !PEP.telas._acessosRemotos) {
+      ad.acessosAoMeuProntuario().then(function (l) { PEP.telas._acessosRemotos = l; renderizar(); },
+        function () { PEP.ui.toast('Não foi possível carregar a lista de acessos.'); });
+    }
     var precisa = rota.nome === 'indicadores' || (rota.nome === 'painel' && u.perfil === 'direcao');
     if (!precisa || PEP.telas._indicadoresRemotos) return;
     ad.indicadores().then(function (ind) { PEP.telas._indicadoresRemotos = ind; renderizar(); },
@@ -167,10 +173,14 @@ PEP.app = (function () {
     if (rota.nome !== 'acesso') PEP.telas._linkLiberado = null;
     if (rota.nome !== 'estudantes') PEP.telas._importacao = null;
     if (rota.nome !== 'indicadores' && rota.nome !== 'painel') PEP.telas._indicadoresRemotos = null; // ao voltar, busca números novos
+    if (rota.nome !== 'meus-dados') PEP.telas._acessosRemotos = null;
     renderizar();
   });
 
-  return { renderizar: renderizar, continuarSessao: continuarSessao };
+  // A ação que já registrou a abertura (ex.: motivo da técnica) avisa, para não registrar duas vezes
+  function marcarAberturaRegistrada(casoId) { ultimaRotaAuditada = casoId; navegou = true; }
+
+  return { renderizar: renderizar, continuarSessao: continuarSessao, marcarAberturaRegistrada: marcarAberturaRegistrada };
 })();
 
 // Inicialização: primeiro lê o JSON de dados, depois desenha a tela

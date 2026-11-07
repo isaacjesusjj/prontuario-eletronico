@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:40 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:00 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**99 de 99 verificações passaram.**
+**109 de 109 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
-| ✓ | schema.sql roda sem erro | 32 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2906 ms) |
+| ✓ | schema.sql roda sem erro | 33 tabelas |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2704 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -98,6 +98,16 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:40 (UTC), num PostgreSQL 18
 | ✓ | plano de segurança não é editado (nova versão, nunca edição) | recusado: permission denied for table planos_seguranca |
 | ✓ | plano de segurança: o paciente do caso lê o próprio plano; estagiária de outra dupla não |  |
 | ✓ | depois do módulo de risco, a cadeia da auditoria continua íntegra |  |
+| ✓ | técnica não lê as evoluções de um caso antes de registrar o motivo do acesso |  |
+| ✓ | sem motivo, a técnica continua vendo casos, cadastro e agenda (camada operacional) |  |
+| ✓ | técnica lê a anamnese do caso recém-triado, que ainda espera alocação |  |
+| ✓ | motivo de acesso é registro da técnica (estagiária não registra) | recusado: new row violates row-level security policy for table "acessos_justificados" |
+| ✓ | motivo "outro" exige a descrição | recusado: new row for relation "acessos_justificados" violates check constraint "acessos_justificado |
+| ✓ | motivo de acesso registrado não muda | recusado: permission denied for table acessos_justificados |
+| ✓ | com o motivo registrado, a técnica lê as evoluções daquele caso, e só dele |  |
+| ✓ | "quem acessou meu prontuário": o paciente vê o motivo da técnica e os eventos do próprio caso, e só deles | 4 registros |
+| ✓ | "quem acessou": quem não é o paciente recebe a lista vazia |  |
+| ✓ | "quem acessou" de criança ou adolescente: sem o motivo da técnica e sem menção a risco ou notificação (Código de Ética, art. 13) | Ana Lúcia: Registrou o motivo do acesso ao prontuário; Rafael: Registrou informações no prontuário |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -106,4 +116,4 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 00:40 (UTC), num PostgreSQL 18
 | ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, ativos 4, na fila 6, motivos {"Horário incompatível":1} |
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
 
-Tamanho do banco de demonstração: 9.8 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.
+Tamanho do banco de demonstração: 9.9 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.

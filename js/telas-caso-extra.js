@@ -230,6 +230,7 @@ PEP.telas = PEP.telas || {};
     if (!caso) return '<h1>Caso não encontrado</h1>';
     var autorizado = u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, caso);
     if (!autorizado) return PEP.ui.semPermissao('A cópia é gerada pela psicóloga técnica ou pelo supervisor do caso.');
+    if (R().precisaJustificar(u, caso)) return '<h1>Cópia do prontuário</h1>' + PEP.telas.formularioJustificativa(caso, '#/imprimir/' + caso.id);
     var omitidos = PEP.telas.riscoNaCopia(caso).omitidos;
     return '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a href="#/caso/' + caso.id + '">← Voltar ao caso</a>' +
       '<button class="botao" data-acao="imprimir" data-caso="' + caso.id + '">Imprimir / salvar em PDF</button></div>' +

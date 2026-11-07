@@ -153,10 +153,10 @@ PEP.telas = PEP.telas || {};
       PEP.ui.numero(lgpd.length, 'pedidos LGPD em aberto') + '</div>' +
       '<div class="grade-2">' +
       '<div class="cartao"><h2>Fila de espera</h2>' + (fila.length ? '<ul>' + fila.slice(0, 5).map(function (i) {
-        return '<li>' + esc(i.nome) + ' · desde ' + data(i.data) + (i.duplicidade ? ' <span class="etiqueta alerta">CPF já cadastrado</span>' : '') + '</li>';
+        return '<li>' + esc(PEP.ui.nomeInscricao(i)) + ' · desde ' + data(i.data) + (i.duplicidade ? ' <span class="etiqueta alerta">CPF já cadastrado</span>' : '') + '</li>';
       }).join('') + '</ul>' : '<p class="vazio">Fila vazia.</p>') + '<a class="botao pequeno" href="#/fila">Ver fila e triar</a></div>' +
       '<div class="cartao"><h2>Pedidos dos titulares</h2>' + (pedidos.length || lgpd.length ? '<ul>' +
-        pedidos.map(function (s) { return '<li>Cópia do prontuário · ' + esc(PEP.util.porId(PEP.db.pacientes, s.pacienteId).nome) + ' · ' + data(s.em) + '</li>'; }).join('') +
+        pedidos.map(function (s) { var p = PEP.util.porId(PEP.db.pacientes, s.pacienteId); return '<li>Cópia do prontuário · ' + esc(PEP.ui.nomePaciente(p, p.id)) + ' · ' + data(s.em) + '</li>'; }).join('') +
         lgpd.map(function (p) { return '<li>LGPD (' + esc(p.tipo) + ') · ' + data(p.em) + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum pedido pendente.</p>') +
       '<div class="linha"><a class="botao pequeno" href="#/solicitacoes">Acesso ao prontuário</a><a class="botao secundario pequeno" href="#/pedidos-lgpd">Pedidos LGPD</a></div></div></div>';
   }

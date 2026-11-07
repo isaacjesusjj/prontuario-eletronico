@@ -385,6 +385,19 @@ create table aceites (
   unique (usuario_id, termo, versao)
 );
 
+-- Motivo de acesso da psicóloga técnica: o conteúdo clínico de um caso que não é da equipe dela só
+-- abre depois de registrar por quê (vale 12 horas). O paciente vê esse registro em "Meus dados".
+create table acessos_justificados (
+  id         text primary key default gen_random_uuid()::text,
+  usuario_id text not null references usuarios (id),
+  caso_id    text not null references casos (id),
+  motivo     text not null check (motivo in ('pedido-paciente', 'triagem-alocacao', 'risco-urgencia', 'responsabilidade-tecnica',
+                                             'substituicao-supervisao', 'auditoria', 'outro')),
+  detalhe    text not null default '' check (length(detalhe) <= 200),
+  em         timestamptz not null default now(),
+  check (motivo <> 'outro' or length(detalhe) >= 5)
+);
+
 -- Auditoria: a maior tabela (cerca de 90% das linhas na projeção), particionada por ano
 create sequence auditoria_seq;
 create table auditoria (
@@ -484,6 +497,18 @@ language sql stable security definer set search_path = public as $$
   select app.perfil_atual() = 'tecnico' or app.eh_estagiario_do_caso(p_caso) or app.eh_supervisor_do_caso(p_caso)
 $$;
 
+-- Conteúdo clínico (anamnese, evoluções, risco, documentos, anexos...): a equipe do caso; a técnica,
+-- só com motivo registrado nas últimas 12 horas (ou no caso recém-triado, que ainda espera alocação).
+-- Cadastro, agenda e fila (camada operacional) continuam com app.pode_ver_caso.
+create or replace function app.pode_ver_clinico(p_caso text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select app.eh_estagiario_do_caso(p_caso) or app.eh_supervisor_do_caso(p_caso)
+    or (app.perfil_atual() = 'tecnico' and (
+          exists (select 1 from casos c where c.id = p_caso and c.status = 'aguardando-alocacao')
+          or exists (select 1 from acessos_justificados j where j.caso_id = p_caso and j.usuario_id = app.usuario_atual()
+                     and j.em > now() - interval '12 hours')))
+$$;
+
 create or replace function app.caso_do_alvo(p_tipo text, p_id text) returns text
 language sql stable security definer set search_path = public as $$
   select case p_tipo
@@ -514,6 +539,7 @@ create trigger so_insercao before update or delete on aceites for each row execu
 create trigger so_insercao before update or delete on lembretes for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on auditoria for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on notificacoes for each row execute function app.bloquear_alteracao();
+create trigger so_insercao before update or delete on acessos_justificados for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on planos_seguranca for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on riscos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on casos for each row execute function app.bloquear_alteracao();
@@ -770,6 +796,7 @@ create trigger carimbo before insert on solicitacoes for each row execute functi
 create trigger carimbo before insert on links_acesso for each row execute function app.carimbo('criado_em', 'hora');
 create trigger carimbo before insert on pedidos_titular for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on aceites for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on acessos_justificados for each row execute function app.carimbo('em', 'hora');
 
 -- ---------------------------------------------------------------------
 -- Auditoria encadeada (mesma fórmula de js/estado.js)
@@ -882,6 +909,41 @@ begin
   return resultado;
 end $$;
 
+-- "Quem acessou meu prontuário" (LGPD, arts. 9º e 18): eventos dos casos do próprio paciente e os
+-- motivos registrados pela técnica. Os motivos vêm direto da tabela: aparecem mesmo que alguém
+-- pule o evento de auditoria (e sem o motivo a técnica não lê o conteúdo clínico).
+-- A ação vem por categoria ("Abriu o prontuário", "Registrou informações no prontuário"...), não pelo
+-- texto da auditoria: se quem usa o portal for o responsável de criança ou adolescente, ele não fica
+-- sabendo, por aqui, de avaliação de risco ou notificação (Código de Ética, art. 13). Pelo mesmo motivo,
+-- para menor de idade o motivo da técnica não aparece. A mesma regra está em js/permissoes.js.
+create or replace function app.categoria_acesso(p_acao text) returns text
+language sql immutable as $$
+  select case
+    when p_acao like 'Abriu o prontuário%' then 'Abriu o prontuário'
+    when p_acao like 'Gerou cópia%' or p_acao like 'Entregou cópia%' or p_acao like 'Paciente leu o prontuário%' then 'Cópia ou leitura do prontuário'
+    when p_acao like 'Gerou lembrete%' then 'Enviou lembrete de sessão'
+    else 'Registrou informações no prontuário' end
+$$;
+
+create or replace function app.acessos_ao_meu_prontuario()
+returns table (quando timestamptz, quem text, papel text, acao text, motivo text, detalhe text)
+language sql stable security definer set search_path = public as $$
+  with meus as (select c.id from casos c where c.paciente_id = app.paciente_atual()),
+       menor as (select coalesce((select p.data_nascimento > current_date - interval '18 years' from pacientes p where p.id = app.paciente_atual()), true) as sim)
+  select x.* from (
+    select a.em, case when a.usuario_id = app.usuario_atual() then 'Você' else coalesce(u.nome, 'Visitante') end,
+           coalesce(u.perfil, ''), case when a.usuario_id = app.usuario_atual() then a.acao else app.categoria_acesso(a.acao) end,
+           null::text, null::text
+    from auditoria a left join usuarios u on u.id = a.usuario_id
+    where a.alvo in (select id from meus) or a.alvo = app.paciente_atual()
+    union all
+    select j.em, u.nome, u.perfil, 'Registrou o motivo do acesso ao prontuário',
+           case when (select sim from menor) then null else j.motivo end, case when (select sim from menor) then null else j.detalhe end
+    from acessos_justificados j join usuarios u on u.id = j.usuario_id
+    where j.caso_id in (select id from meus)
+  ) x order by 1 desc limit 100
+$$;
+
 -- Retenção: inscrição que não virou atendimento é eliminada 12 meses depois (agendar com pg_cron)
 create or replace function app.eliminar_inscricoes_antigas() returns int
 language sql security definer set search_path = public as $$
@@ -920,6 +982,7 @@ alter table solicitacoes enable row level security;
 alter table links_acesso enable row level security;
 alter table pedidos_titular enable row level security;
 alter table aceites enable row level security;
+alter table acessos_justificados enable row level security;
 alter table auditoria enable row level security;
 
 -- Equipe vê a equipe. Conta de paciente: só o próprio paciente, o técnico e a equipe do caso dele
@@ -960,14 +1023,14 @@ create policy inscrever on inscricoes for insert to anon, authenticated with che
 create policy tecnico_le on inscricoes for select to authenticated using (app.perfil_atual() = 'tecnico');
 create policy tecnico_atualiza on inscricoes for update to authenticated using (app.perfil_atual() = 'tecnico');
 
-create policy ver on anamneses for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy ver on anamneses for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy registrar on anamneses for insert to authenticated with check (autor_id = app.usuario_atual() and app.pode_ver_caso(caso_id));
 
 create policy ver on consentimentos for select to authenticated using (app.pode_ver_caso(caso_id) or app.eh_paciente_do_caso(caso_id));
 create policy registrar on consentimentos for insert to authenticated with check (registrado_por = app.usuario_atual()
   and (app.perfil_atual() = 'tecnico' or (app.eh_paciente_do_caso(caso_id) and finalidade <> 'contrato')));
 
-create policy ver on encerramentos for select to authenticated using (app.pode_ver_caso(caso_id) or app.eh_paciente_do_caso(caso_id));
+create policy ver on encerramentos for select to authenticated using (app.pode_ver_clinico(caso_id) or app.eh_paciente_do_caso(caso_id));
 create policy registrar on encerramentos for insert to authenticated with check (registrado_por = app.usuario_atual()
   and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id)));
 
@@ -976,18 +1039,18 @@ create policy agendar on sessoes for insert to authenticated with check (app.pod
 create policy atualizar on sessoes for update to authenticated using (app.pode_ver_caso(caso_id) or app.eh_paciente_do_caso(caso_id));
 
 -- Rascunho só o autor vê; paciente não lê a tabela (recebe a cópia pelo fluxo de acesso)
-create policy ver on evolucoes for select to authenticated using (app.pode_ver_caso(caso_id) and (status <> 'rascunho' or autor_id = app.usuario_atual()));
+create policy ver on evolucoes for select to authenticated using (app.pode_ver_clinico(caso_id) and (status <> 'rascunho' or autor_id = app.usuario_atual()));
 create policy escrever on evolucoes for insert to authenticated with check (autor_id = app.usuario_atual() and app.eh_estagiario_do_caso(caso_id));
 create policy atualizar on evolucoes for update to authenticated using (
   (autor_id = app.usuario_atual() and status in ('rascunho', 'devolvida')) or (app.eh_supervisor_do_caso(caso_id) and status = 'enviada'))
   with check (app.pode_ver_caso(caso_id));   -- a transição permitida é conferida pelo trigger app.evolucao_regras
 
-create policy ver on assinaturas for select to authenticated using (app.pode_ver_caso(app.caso_do_alvo(alvo_tipo, alvo_id)));
+create policy ver on assinaturas for select to authenticated using (app.pode_ver_clinico(app.caso_do_alvo(alvo_tipo, alvo_id)));
 create policy assinar on assinaturas for insert to authenticated with check (usuario_id = app.usuario_atual() and (
   (papel = 'supervisor' and app.eh_supervisor_do_caso(app.caso_do_alvo(alvo_tipo, alvo_id)))
   or (papel = 'estagiario' and app.eh_estagiario_do_caso(app.caso_do_alvo(alvo_tipo, alvo_id)))));
 
-create policy ver on adendos for select to authenticated using (app.pode_ver_caso((select caso_id from evolucoes e where e.id = evolucao_id)));
+create policy ver on adendos for select to authenticated using (app.pode_ver_clinico((select caso_id from evolucoes e where e.id = evolucao_id)));
 create policy registrar on adendos for insert to authenticated with check (autor_id = app.usuario_atual()
   and exists (select 1 from evolucoes e where e.id = evolucao_id and e.status = 'validada'
               and (app.eh_estagiario_do_caso(e.caso_id) or app.eh_supervisor_do_caso(e.caso_id))));
@@ -996,24 +1059,24 @@ create policy registrar on adendos for insert to authenticated with check (autor
 create policy ver on orientacoes for select to authenticated using (app.eh_supervisor_do_caso(caso_id) or app.eh_estagiario_do_caso(caso_id));
 create policy registrar on orientacoes for insert to authenticated with check (supervisor_id = app.usuario_atual() and app.eh_supervisor_do_caso(caso_id));
 
-create policy ver on documentos for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy ver on documentos for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy emitir on documentos for insert to authenticated with check (autor_id = app.usuario_atual() and app.eh_estagiario_do_caso(caso_id));
-create policy ver on anexos for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy ver on anexos for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy anexar on anexos for insert to authenticated with check (enviado_por = app.usuario_atual() and app.pode_ver_caso(caso_id));
 
-create policy ver on avaliacoes for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy ver on avaliacoes for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy registrar on avaliacoes for insert to authenticated with check (aplicado_por = app.usuario_atual()
   and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id)));
 
 -- Risco e segurança: a equipe do caso registra; ciência e notificação são do supervisor (o trigger confere);
 -- o paciente lê o próprio plano de segurança no portal (os riscos chegam a ele pela cópia do prontuário)
-create policy ver on riscos for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy ver on riscos for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy registrar on riscos for insert to authenticated with check (registrado_por = app.usuario_atual()
   and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id) or app.perfil_atual() = 'tecnico'));   -- técnico: risco visto na triagem
 create policy acompanhar on riscos for update to authenticated using (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id));
-create policy ver on notificacoes for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy ver on notificacoes for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy registrar on notificacoes for insert to authenticated with check (registrado_por = app.usuario_atual() and app.eh_supervisor_do_caso(caso_id));
-create policy ver on planos_seguranca for select to authenticated using (app.pode_ver_caso(caso_id) or app.eh_paciente_do_caso(caso_id));
+create policy ver on planos_seguranca for select to authenticated using (app.pode_ver_clinico(caso_id) or app.eh_paciente_do_caso(caso_id));
 create policy registrar on planos_seguranca for insert to authenticated with check (autor_id = app.usuario_atual()
   and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id)));
 
@@ -1039,6 +1102,10 @@ create policy pedir on pedidos_titular for insert to authenticated with check (s
 create policy tecnico_responde on pedidos_titular for update to authenticated using (app.perfil_atual() = 'tecnico');
 
 create policy ver on aceites for select to authenticated using (usuario_id = app.usuario_atual() or app.perfil_atual() = 'tecnico');
+
+-- Motivo de acesso: só a técnica registra; ela e o supervisor do caso leem (o paciente vê pela função abaixo)
+create policy ver on acessos_justificados for select to authenticated using (usuario_id = app.usuario_atual() or app.eh_supervisor_do_caso(caso_id));
+create policy justificar on acessos_justificados for insert to authenticated with check (usuario_id = app.usuario_atual() and app.perfil_atual() = 'tecnico');
 create policy aceitar on aceites for insert to authenticated with check (usuario_id = app.usuario_atual());
 
 -- Cada um registra só os próprios eventos. Eventos de visitante vêm do próprio banco (trigger da
@@ -1053,7 +1120,7 @@ revoke all on all tables in schema public from anon;
 grant insert on inscricoes to anon;
 grant select, insert, update on all tables in schema public to authenticated;
 revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria,
-  notificacoes, planos_seguranca from authenticated;
+  notificacoes, planos_seguranca, acessos_justificados from authenticated;
 -- Na própria conta, só "senha provisória já trocada" muda pela API (perfil e CRP ficam com a administração)
 revoke update on usuarios from authenticated;
 grant update (senha_provisoria) on usuarios to authenticated;
@@ -1074,7 +1141,7 @@ begin
     execute 'drop policy if exists vinculo_ver_anexo on storage.objects';
     execute 'drop policy if exists vinculo_enviar_anexo on storage.objects';
     execute $p$create policy vinculo_ver_anexo on storage.objects for select to authenticated
-      using (bucket_id = 'anexos' and app.pode_ver_caso(split_part(name, '/', 1)))$p$;
+      using (bucket_id = 'anexos' and app.pode_ver_clinico(split_part(name, '/', 1)))$p$;
     execute $p$create policy vinculo_enviar_anexo on storage.objects for insert to authenticated
       with check (bucket_id = 'anexos' and app.pode_ver_caso(split_part(name, '/', 1))
                   and exists (select 1 from casos c where c.id = split_part(name, '/', 1) and c.status = 'ativo'))$p$;

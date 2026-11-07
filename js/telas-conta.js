@@ -74,6 +74,26 @@ PEP.telas = PEP.telas || {};
       '<div class="linha"><button class="botao" data-acao="aceitar-termo" data-termo="sigilo">Aceitar e continuar</button><button class="botao secundario" data-acao="sair">Sair</button></div></div>';
   };
 
+  // ---------- Paciente: quem acessou o meu prontuário (LGPD, arts. 9º e 18) ----------
+  // Com o banco ligado, a lista vem pronta de app.acessos_ao_meu_prontuario() (o paciente não lê a auditoria)
+  PEP.telas._acessosRemotos = null;
+  function cartaoAcessos(u) {
+    var lista = PEP.repo.adaptador().remoto ? PEP.telas._acessosRemotos : PEP.regras.acessosAoProntuario(u);
+    var titulo = '<h2>Quem acessou o seu prontuário</h2>';
+    if (!lista) return '<div class="cartao">' + titulo + '<p class="vazio" role="status">Carregando…</p></div>';
+    var motivos = {};
+    PEP.lista('motivosAcessoTecnico').forEach(function (m) { motivos[m.id] = m.nome; });
+    return '<div class="cartao">' + titulo + '<p class="suave pequeno">Cada acesso e cada registro da equipe ficam guardados. Quando a psicóloga técnica abre o seu prontuário ' +
+      'sem ser da sua equipe, ela registra o motivo, e ele aparece aqui.</p>' +
+      (lista.length ? '<div class="tabela-rolagem"><table><caption class="sr-only">Acessos ao seu prontuário, do mais recente para o mais antigo</caption>' +
+        '<thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">O quê</th></tr></thead><tbody>' +
+        lista.slice(0, 30).map(function (a) {
+          return '<tr><td>' + data(a.quando) + '</td><td>' + esc(a.quem) +
+            (a.papel && a.quem !== 'Você' ? '<br><span class="suave pequeno">' + esc(PEP.regras.nomePerfil(a.papel)) + '</span>' : '') + '</td><td>' + esc(a.acao) +
+            (a.motivo ? '<br><span class="suave pequeno">Motivo: ' + esc(motivos[a.motivo] || a.motivo) + (a.detalhe ? ' — ' + esc(a.detalhe) : '') + '</span>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="vazio">Nenhum acesso registrado.</p>') + '</div>';
+  }
+
   // ---------- Paciente: meus dados (LGPD) ----------
   PEP.telas.meusDados = function (u) {
     if (u.perfil !== 'paciente') return PEP.ui.semPermissao();
@@ -111,6 +131,7 @@ PEP.telas = PEP.telas || {};
       (meus.length ? '<div class="cartao"><h2>Meus pedidos</h2><ul>' + meus.map(function (x) {
         return '<li>' + data(x.em) + ' — ' + esc(nomesTipo[x.tipo] || x.tipo) + ': ' + (x.status === 'respondido' ? '<strong>respondido</strong> — ' + esc(x.resposta) : 'em análise') + '</li>';
       }).join('') + '</ul></div>' : '') +
+      cartaoAcessos(u) +
       '<p class="pequeno">Encarregado de dados: ' + esc(PEP.config().instituicao.encarregado.nome) + ' · ' + esc(PEP.config().instituicao.encarregado.email) + '</p>';
   };
 

@@ -42,6 +42,14 @@
     <button class="botao pequeno" data-acao="continuar-sessao">Continuar conectado</button>
   </div>
 
+  <!-- "Cobrir tela": esconde tudo na hora, quando alguém se aproxima (js/privacidade.js) -->
+  <div class="cortina" id="cortina" role="dialog" aria-modal="true" aria-labelledby="cortina-titulo" aria-describedby="cortina-texto" hidden>
+    <span class="marca-icone" aria-hidden="true">V</span>
+    <strong id="cortina-titulo">Tela coberta</strong>
+    <span id="cortina-texto">O que estava aberto continua aqui. A sessão encerra sozinha se ficar sem uso.</span>
+    <button class="botao" id="cortina-voltar" data-acao="descobrir-tela">Mostrar a tela de novo</button>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="sr-only" id="anuncio" aria-live="polite"></div>
 
@@ -58,6 +66,7 @@
   <script src="js/permissoes.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/acessibilidade.js"></script>
+  <script src="js/privacidade.js"></script>
   <script src="js/telas-entrada.js"></script>
   <script src="js/telas-painel.js"></script>
   <script src="js/telas-caso.js"></script>

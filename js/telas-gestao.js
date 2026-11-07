@@ -35,10 +35,10 @@ PEP.telas = PEP.telas || {};
       var p = PEP.util.porId(PEP.db.pacientes, dup.id);
       var casos = PEP.db.casos.filter(function (c) { return c.pacienteId === dup.id; });
       var ult = casos[casos.length - 1];
-      return 'CPF já cadastrado: ' + (p ? p.nome : dup.id) + (ult ? ' (último caso ' + ult.id + ', ' + (ult.status === 'encerrado' ? 'encerrado' : ult.status) + ')' : '');
+      return 'CPF já cadastrado: ' + (p ? PEP.ui.nomePaciente(p, p.id) : dup.id) + (ult ? ' (último caso ' + ult.id + ', ' + (ult.status === 'encerrado' ? 'encerrado' : ult.status) + ')' : '');
     }
     var i = PEP.util.porId(PEP.db.inscricoes, dup.id);
-    return 'CPF igual ao de outra inscrição na fila: ' + (i ? i.nome + ' (' + data(i.data) + ')' : dup.id);
+    return 'CPF igual ao de outra inscrição na fila: ' + (i ? PEP.ui.nomeInscricao(i) + ' (' + data(i.data) + ')' : dup.id);
   }
 
   // ---------- Técnico: fila de espera ----------
@@ -51,7 +51,7 @@ PEP.telas = PEP.telas || {};
     return html + '<div class="cartao tabela-rolagem"><table><caption class="sr-only">Pessoas aguardando triagem</caption><thead><tr><th scope="col">Inscrição</th><th scope="col">Idade</th><th scope="col">Motivo (resumo)</th><th scope="col">Período</th><th scope="col">Espera</th><th scope="col"></th></tr></thead><tbody>' +
       fila.map(function (i) {
         var idade = PEP.util.idade(i.dataNascimento);
-        return '<tr><td>' + esc(i.nome) + '<br><span class="suave pequeno">desde ' + data(i.data) + '</span>' +
+        return '<tr><td>' + esc(PEP.ui.nomeInscricao(i)) + '<br><span class="suave pequeno">desde ' + data(i.data) + '</span>' +
           (i.duplicidade ? '<br><span class="etiqueta alerta">CPF já cadastrado</span>' : '') + (i.semCpf ? '<br><span class="etiqueta rascunho">sem CPF</span>' : '') + '</td><td>' + esc(idade) +
           (idade < 18 ? ' <span class="etiqueta alerta">menor</span>' : '') + '</td><td>' + esc(i.resumo) + '</td><td>' + esc(i.periodo) + '</td><td>' +
           diasDesde(i.data) + ' dias</td><td><a class="botao pequeno" href="#/triagem/' + i.id + '">Triar</a></td></tr>';

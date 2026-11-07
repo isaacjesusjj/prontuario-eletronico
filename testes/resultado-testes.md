@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 00:47, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 01:01, no Chrome (Playwright), com axe-core 4.14.0.
 
-**204 de 204 verificações passaram.** Acessibilidade: 48 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**222 de 222 verificações passaram.** Acessibilidade: 51 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 55 | 0 |
+| Acessibilidade | 58 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -35,6 +35,7 @@ Gerado por `testes/testar_site.py` em 07/11/2026 00:47, no Chrome (Playwright), 
 | Celular | 4 | 0 |
 | Risco | 17 | 0 |
 | Revisor | 8 | 0 |
+| Privacidade | 15 | 0 |
 | Banco (simulado) | 9 | 0 |
 | Console | 1 | 0 |
 
@@ -234,15 +235,33 @@ Gerado por `testes/testar_site.py` em 07/11/2026 00:47, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Revisor de escrita · Evolução com revisor e prévia: sem violações WCAG A/AA |  |
 | ✓ | Revisor | o revisor não bloqueia: a estagiária decide e envia |  |
 | ✓ | Revisor | na fila de validação, a supervisora vê os apontamentos para orientar |  |
+| ✓ | Privacidade | técnica fora da equipe vê a capa do caso e o pedido de motivo, não o conteúdo clínico |  |
+| ✓ | Privacidade | só ver a capa do caso não gera o evento 'Abriu o prontuário' |  |
+| ✓ | Acessibilidade | Privacidade na tela · Motivo do acesso: sem violações WCAG A/AA |  |
+| ✓ | Privacidade | sem escolher o motivo, não abre |  |
+| ✓ | Privacidade | motivo 'outro' exige a descrição |  |
+| ✓ | Privacidade | com o motivo, o prontuário abre e a auditoria registra o motivo |  |
+| ✓ | Privacidade | a abertura com motivo é registrada uma vez só (sem evento duplicado) |  |
+| ✓ | Privacidade | caso recém-triado, ainda sem grupo, abre sem pedir motivo |  |
+| ✓ | Privacidade | a cópia em PDF também pede o motivo |  |
+| ✓ | Privacidade | modo discreto: pacientes aparecem pelas iniciais e pelo código do caso |  |
+| ✓ | Privacidade | modo discreto continua ao navegar (fila sem nomes por extenso) |  |
+| ✓ | Privacidade | modo discreto oculta telefone e e-mail na identificação |  |
+| ✓ | Privacidade | 'Cobrir tela' esconde tudo na hora e leva o foco para a cortina |  |
+| ✓ | Acessibilidade | Privacidade na tela · Tela coberta: sem violações WCAG A/AA |  |
+| ✓ | Privacidade | a tela volta como estava, sem sair do sistema |  |
+| ✓ | Acessibilidade | Privacidade na tela · Meus dados com acessos: sem violações WCAG A/AA |  |
+| ✓ | Privacidade | o paciente vê quem acessou o prontuário e o motivo registrado pela técnica |  |
+| ✓ | Privacidade | a lista mostra a categoria da ação, não o texto interno da auditoria |  |
 | ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
 | ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T00:47:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:01:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5op8h5rhu7 |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5p6wkpbn5p |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |

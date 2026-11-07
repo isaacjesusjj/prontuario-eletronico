@@ -32,7 +32,7 @@ PEP.adaptadores.supabase = (function () {
   var CHAVE_SESSAO = 'vinculo-sessao-supabase';
   var COLECOES = ['usuarios', 'grupos', 'subgrupos', 'alocacoes', 'pacientes', 'inscricoes', 'casos', 'anamneses', 'consentimentos',
     'encerramentos', 'sessoes', 'evolucoes', 'assinaturas', 'adendos', 'orientacoes', 'documentos', 'anexos', 'avaliacoes',
-    'riscos', 'notificacoes', 'planosSeguranca', 'contatos', 'lembretes', 'solicitacoes', 'linksAcesso', 'pedidosTitular', 'aceites', 'auditoria'];
+    'riscos', 'notificacoes', 'planosSeguranca', 'contatos', 'lembretes', 'solicitacoes', 'linksAcesso', 'pedidosTitular', 'aceites', 'acessosJustificados', 'auditoria'];
   // Campos que o banco calcula ou guarda em outro lugar: a senha fica no Supabase Auth; o hash e a
   // hora da auditoria são do trigger (a tabela é particionada pela hora, que precisa ser a do servidor)
   var NAO_ENVIAR = { usuarios: ['senhaHash'], auditoria: ['hash', 'hashAnterior', 'em'] };
@@ -198,6 +198,9 @@ PEP.adaptadores.supabase = (function () {
   // Indicadores agregados prontos do servidor (mesmo formato de PEP.regras.indicadores)
   function indicadores() { return rpc('indicadores', { p_limite_faltas: PEP.regra('faltasSeguidasLimite') }); }
 
+  // "Quem acessou meu prontuário": o paciente recebe a lista pronta (não lê a tabela de auditoria)
+  function acessosAoMeuProntuario() { return rpc('acessos_ao_meu_prontuario').then(function (l) { return (l || []).map(doBanco); }); }
+
   // ---------- Arquivos no Storage (bucket privado "anexos") ----------
   // O caminho é o arquivoId, "<caso>/<arquivo>": cada parte é codificada, a barra fica
   function caminhoArquivo(id) { return String(id).split('/').map(encodeURIComponent).join('/'); }
@@ -218,7 +221,7 @@ PEP.adaptadores.supabase = (function () {
 
   return { nome: 'Supabase (PostgreSQL, São Paulo)', remoto: true, autenticar: autenticar, trocarSenha: trocarSenha, carregar: carregar, salvar: salvar,
     estruturaVazia: estruturaVazia, sair: sair, temSessao: function () { return !!token(); }, verificarAuditoria: verificarAuditoria,
-    indicadores: indicadores, guardarArquivo: guardarArquivo, obterArquivo: obterArquivo,
+    indicadores: indicadores, acessosAoMeuProntuario: acessosAoMeuProntuario, guardarArquivo: guardarArquivo, obterArquivo: obterArquivo,
     // expostos só para o teste automático do adaptador (testes/testar_site.py)
     _paraBanco: paraBanco, _erroSeguro: erroSeguro };
 })();

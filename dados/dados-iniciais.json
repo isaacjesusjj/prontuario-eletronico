@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.6",
+    "versao": "2026-11-06.7",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -27,6 +27,7 @@
       "bloqueioLoginMaximoSegundos": 900,
       "inatividadeMinutos": 15,
       "sessaoMaximaHoras": 12,
+      "justificativaValidadeHoras": 12,
       "prazoEvolucaoHoras": 48,
       "evolucaoMaxCaracteres": 5000,
       "anamneseCampoMaxCaracteres": 2000,
@@ -278,6 +279,36 @@
           "id": "razoesViver",
           "nome": "7. O que me importa e me mantém aqui",
           "pergunta": "Pessoas, planos e motivos que o paciente quis registrar."
+        }
+      ],
+      "motivosAcessoTecnico": [
+        {
+          "id": "pedido-paciente",
+          "nome": "Pedido do paciente (cópia do prontuário ou direito LGPD)"
+        },
+        {
+          "id": "triagem-alocacao",
+          "nome": "Triagem, alocação ou transferência do caso"
+        },
+        {
+          "id": "risco-urgencia",
+          "nome": "Situação de risco ou urgência"
+        },
+        {
+          "id": "responsabilidade-tecnica",
+          "nome": "Responsabilidade técnica: revisão do caso"
+        },
+        {
+          "id": "substituicao-supervisao",
+          "nome": "Substituição da supervisão (supervisor ausente)"
+        },
+        {
+          "id": "auditoria",
+          "nome": "Auditoria ou incidente de segurança"
+        },
+        {
+          "id": "outro",
+          "nome": "Outro motivo (descreva)"
         }
       ],
       "motivosAdendo": [
@@ -3189,6 +3220,7 @@
       "em": "2026-08-19T15:00"
     }
   ],
+  "acessosJustificados": [],
   "auditoria": [
     {
       "id": "au01",

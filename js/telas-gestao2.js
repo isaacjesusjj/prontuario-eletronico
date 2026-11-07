@@ -86,7 +86,7 @@ PEP.telas = PEP.telas || {};
         return '<li class="pequeno">Link criado em ' + data(l.criadoEm) + ' · ' + (l.revogadoEm ? 'revogado em ' + data(l.revogadoEm) : (expirado ? 'expirou em ' : 'expira em ') + data(l.expiraEm)) +
           ' · ' + l.acessos + ' acesso(s)' + (!expirado ? ' <button class="botao secundario pequeno" data-acao="revogar-link" data-id="' + l.id + '">Revogar</button>' : '') + '</li>';
       }).join('');
-      return '<div class="cartao"><div class="linha entre"><strong>' + esc(p.nome) + '</strong><span class="suave pequeno">pedido em ' + data(s.em) + '</span></div>' +
+      return '<div class="cartao"><div class="linha entre"><strong>' + esc(PEP.ui.nomePaciente(p, p.id)) + '</strong><span class="suave pequeno">pedido em ' + data(s.em) + '</span></div>' +
         '<div class="linha" style="margin-top:.6rem">' + passo + '</div>' + (links ? '<ul>' + links + '</ul>' : '') + '</div>';
     }).join('');
   };
@@ -129,7 +129,8 @@ PEP.telas = PEP.telas || {};
       if (p.status === 'respondido') corpo += '<div class="adendo"><strong>Resposta</strong> (' + esc(PEP.ui.nomeUsuario(p.respondidoPor)) + '): ' + esc(p.resposta) + '</div>';
       else corpo += '<div class="campo"><label for="resp-' + p.id + '">Resposta ao titular</label><textarea id="resp-' + p.id + '" style="min-height:70px"></textarea></div>' +
         '<button class="botao pequeno" data-acao="responder-titular" data-id="' + p.id + '">Registrar resposta</button>';
-      return '<div class="cartao"><div class="linha entre"><span><strong>' + esc(titular ? titular.nome : p.titularId) + '</strong> · ' + data(p.em) + '</span>' + etiqueta + '</div>' + corpo + '</div>';
+      var nomeTitular = !titular ? p.titularId : (p.titularTipo === 'paciente' ? PEP.ui.nomePaciente(titular, titular.id) : titular.nome);
+      return '<div class="cartao"><div class="linha entre"><span><strong>' + esc(nomeTitular) + '</strong> · ' + data(p.em) + '</span>' + etiqueta + '</div>' + corpo + '</div>';
     }).join('');
   };
 

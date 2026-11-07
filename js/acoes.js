@@ -111,6 +111,9 @@ window.PEP = PEP;
     'fonte-maior': function () { PEP.acessibilidade.mudarFonte(1); },
     'alto-contraste': function () { PEP.acessibilidade.alternarContraste(); },
     vlibras: function () { PEP.acessibilidade.abrirVlibras(); },
+    'modo-discreto': function () { PEP.privacidade.alternarDiscreto(); },
+    'cobrir-tela': function () { PEP.privacidade.cobrir(); },
+    'descobrir-tela': function () { PEP.privacidade.descobrir(); },
     'continuar-sessao': function () { PEP.app.continuarSessao(); },
 
     'mostrar-senha': function (b) {
@@ -423,6 +426,26 @@ window.PEP = PEP;
       if (texto.length < 5) { PEP.form.aplicar(document, [['or-texto', 'Escreva a orientação.']]); return; }
       repo().inserir('orientacoes', { casoId: c.id, supervisorId: u.id, em: U().agora(), texto: texto });
       concluir('Orientação registrada.', 'Registrou orientação de supervisão', c.id);
+    },
+
+    // ----- Motivo de acesso da técnica -----
+    'justificar-acesso': function (b) {
+      var u = usuario(), c = caso(b.getAttribute('data-caso'));
+      if (!u || u.perfil !== 'tecnico' || !R().podeVerCaso(u, c)) return negar();
+      var m = document.querySelector('input[name="jt-motivo"]:checked'), detalhe = val('jt-detalhe'), erros = [];
+      if (!m) erros.push(['jt-motivo-' + PEP.lista('motivosAcessoTecnico')[0].id, 'Escolha o motivo do acesso.']);
+      else if (m.value === 'outro' && detalhe.length < 5) erros.push(['jt-detalhe', 'Descreva o motivo do acesso.']);
+      if (!PEP.form.aplicar(el('form-justificativa'), erros)) return;
+      var nome = PEP.lista('motivosAcessoTecnico').filter(function (x) { return x.id === m.value; })[0].nome;
+      repo().inserir('acessosJustificados', { usuarioId: u.id, casoId: c.id, motivo: m.value, detalhe: detalhe, em: U().agora() });
+      var destino = b.getAttribute('data-destino'), ad = repo().adaptador();
+      var abrir = function () { PEP.app.marcarAberturaRegistrada(c.id); window.location.hash = destino; PEP.app.renderizar(); };
+      // Grava o motivo primeiro; com o banco ligado, o conteúdo clínico só chega depois dele (o banco
+      // filtra), então busca os dados de novo
+      repo().salvar().then(function () {
+        PEP.estado.registrarAuditoria('Abriu o prontuário com motivo: ' + nome, c.id);
+        return ad.remoto ? ad.carregar() : null;
+      }).then(abrir);
     },
 
     // ----- Revisor de escrita: como o paciente lê o registro -----

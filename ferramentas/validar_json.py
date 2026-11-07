@@ -27,7 +27,7 @@ except json.JSONDecodeError as e:
 
 COLECOES = ["usuarios", "grupos", "subgrupos", "alocacoes", "pacientes", "inscricoes", "casos", "anamneses", "consentimentos",
             "encerramentos", "sessoes", "evolucoes", "assinaturas", "adendos", "orientacoes", "documentos", "anexos", "avaliacoes",
-            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "auditoria"]
+            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "acessosJustificados", "auditoria"]
 for c in COLECOES:
     if c not in db:
         p(f"coleção ausente: {c}")
@@ -102,7 +102,8 @@ for col, campo, dest, nulo in [
     ("aceites", "usuarioId", "usuarios", False), ("riscos", "casoId", "casos", False), ("riscos", "registradoPor", "usuarios", False),
     ("riscos", "cienciaPor", "usuarios", True), ("riscos", "encerradoPor", "usuarios", True), ("notificacoes", "riscoId", "riscos", False),
     ("notificacoes", "casoId", "casos", False), ("notificacoes", "registradoPor", "usuarios", False),
-    ("planosSeguranca", "casoId", "casos", False), ("planosSeguranca", "autorId", "usuarios", False)]:
+    ("planosSeguranca", "casoId", "casos", False), ("planosSeguranca", "autorId", "usuarios", False),
+    ("acessosJustificados", "usuarioId", "usuarios", False), ("acessosJustificados", "casoId", "casos", False)]:
     fk(col, campo, dest, nulo)
 
 # ---------- usuários e senhas ----------
@@ -276,6 +277,16 @@ for d in db["documentos"]:
 for x in db["anexos"]:
     if x["tipo"] not in [t["mime"] for t in cfg["listas"]["tiposArquivo"]] or x["tamanho"] > cfg["regras"]["uploadMaxMB"] * 1048576:
         p(f"anexo {x['id']}: tipo ou tamanho fora da regra")
+
+# ---------- motivo de acesso da técnica ----------
+MOTIVOS = {x["id"] for x in cfg["listas"]["motivosAcessoTecnico"]}
+for j in db["acessosJustificados"]:
+    if j["motivo"] not in MOTIVOS:
+        p(f"acesso {j['id']}: motivo fora da lista")
+    if U.get(j["usuarioId"], {}).get("perfil") != "tecnico":
+        p(f"acesso {j['id']}: só a psicóloga técnica registra motivo de acesso")
+    if j["motivo"] == "outro" and len(j.get("detalhe", "")) < 5:
+        p(f"acesso {j['id']}: motivo 'outro' sem descrição")
 
 # ---------- revisor de escrita ----------
 rev = cfg.get("revisorEscrita", {})

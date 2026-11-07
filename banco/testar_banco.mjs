@@ -236,6 +236,41 @@ conferir('plano de segurança: o paciente do caso lê o próprio plano; estagiá
 const [{ q5 }] = await valores('select app.verificar_auditoria() as q5');
 conferir('depois do módulo de risco, a cadeia da auditoria continua íntegra', q5 === null);
 
+// ---------- 6d. Motivo de acesso da técnica e "quem acessou meu prontuário" ----------
+const evoC01 = (await valores("select id from evolucoes where caso_id = 'c01' and status = 'validada'")).map((r) => r.id);
+conferir('técnica não lê as evoluções de um caso antes de registrar o motivo do acesso',
+  !(await como('u-tec', () => ids('evolucoes'))).split(',').some((id) => evoC01.includes(id)));
+conferir('sem motivo, a técnica continua vendo casos, cadastro e agenda (camada operacional)',
+  (await como('u-tec', () => ids('casos'))).split(',').length === json.casos.length && (await como('u-tec', () => ids('sessoes'))) !== '');
+const anC07 = json.anamneses.find((a) => a.casoId === 'c07').id;
+conferir('técnica lê a anamnese do caso recém-triado, que ainda espera alocação', (await como('u-tec', () => ids('anamneses'))).split(',').includes(anC07));
+await como('u-est1', async () => {
+  await erroEsperado('motivo de acesso é registro da técnica (estagiária não registra)', "insert into acessos_justificados (usuario_id, caso_id, motivo) values ('u-est1', 'c01', 'auditoria')");
+});
+await como('u-tec', async () => {
+  await erroEsperado('motivo "outro" exige a descrição', "insert into acessos_justificados (usuario_id, caso_id, motivo) values ('u-tec', 'c01', 'outro')");
+  await db.query("insert into acessos_justificados (id, usuario_id, caso_id, motivo) values ('aj-teste', 'u-tec', 'c01', 'pedido-paciente')");
+  await erroEsperado('motivo de acesso registrado não muda', "update acessos_justificados set motivo = 'auditoria' where id = 'aj-teste'");
+});
+const vistasTec = (await como('u-tec', () => ids('evolucoes'))).split(',');
+conferir('com o motivo registrado, a técnica lê as evoluções daquele caso, e só dele',
+  evoC01.every((id) => vistasTec.includes(id)) && !vistasTec.includes('e21'));
+const acessos = await como('u-pac1', () => valores('select * from app.acessos_ao_meu_prontuario()'));
+const [{ n: esperadoAcessos }] = await valores("select (select count(*) from auditoria where alvo in ('c01', 'p01')) + (select count(*) from acessos_justificados where caso_id = 'c01') as n");
+conferir('"quem acessou meu prontuário": o paciente vê o motivo da técnica e os eventos do próprio caso, e só deles',
+  acessos.some((a) => a.motivo === 'pedido-paciente' && a.quem === 'Ana Lúcia') && acessos.some((a) => a.acao === 'Registrou informações no prontuário' && a.quem === 'Caio')
+  && !acessos.some((a) => a.quem !== 'Você' && /risco|notifica/i.test(a.acao))
+  && acessos.length === Number(esperadoAcessos), `${acessos.length} registros`);
+conferir('"quem acessou": quem não é o paciente recebe a lista vazia', (await como('u-tec', () => valores('select * from app.acessos_ao_meu_prontuario()'))).length === 0);
+// Portal de adolescente (c04, com avaliação de risco e notificação): costuma ser usado pelo responsável
+await db.query("insert into usuarios (id, login, email, perfil, paciente_id, auth_id) values ('u-pac4', 'paciente04', 'paciente04@example.org', 'paciente', 'p04', '22222222-2222-4222-8222-222222222222')");
+await como('u-tec', () => db.query("insert into acessos_justificados (usuario_id, caso_id, motivo) values ('u-tec', 'c04', 'risco-urgencia')"));
+await como('u-sup2', () => db.query("insert into auditoria (usuario_id, acao, alvo) values ('u-sup2', 'Registrou notificação compulsória (conselho-tutelar)', 'c04')"));
+const acessosMenor = await como('u-pac4', () => valores('select * from app.acessos_ao_meu_prontuario()'));
+conferir('"quem acessou" de criança ou adolescente: sem o motivo da técnica e sem menção a risco ou notificação (Código de Ética, art. 13)',
+  acessosMenor.length === 2 && acessosMenor.every((a) => a.motivo === null && !/risco|notifica/i.test(a.acao))
+  && acessosMenor.some((a) => a.quem === 'Rafael' && a.acao === 'Registrou informações no prontuário'), acessosMenor.map((a) => a.quem + ': ' + a.acao).join('; '));
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {

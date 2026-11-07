@@ -20,17 +20,26 @@ PEP.ui = (function () {
     direcao: [['#/painel', 'Painel'], ['#/indicadores', 'Indicadores'], ['#/alocacao', 'Grupos de estágio'], ['#/estudantes', 'Estudantes'], ['#/conta', 'Minha conta']]
   };
 
+  // Nome do paciente nas telas: no modo discreto (js/privacidade.js), só as iniciais e um código
+  function discreto() { return PEP.privacidade && PEP.privacidade.discreto(); }
+  function nomePaciente(p, codigo) {
+    if (!p) return '—';
+    var n = p.nomeSocial || p.nome;
+    return discreto() ? PEP.privacidade.iniciais(n) + (codigo ? ' · ' + codigo : '') : n;
+  }
+  function nomeInscricao(i) { return discreto() ? PEP.privacidade.iniciais(i.nome) + ' · ' + i.id : i.nome; }
+
   function nomeUsuario(id) {
     if (id === 'visitante') return 'Visitante';
     var u = PEP.util.porId(PEP.db.usuarios, id);
     if (!u) return id || '—';
     if (u.nome) return u.nome;
     var p = PEP.regras.pacienteDoUsuario(u);
-    return p ? p.nome : u.login;
+    return p ? nomePaciente(p, p.id) : u.login;
   }
 
   function pacienteDoCaso(caso) { return PEP.util.porId(PEP.db.pacientes, caso.pacienteId); }
-  function nomePacienteDoCaso(caso) { var p = pacienteDoCaso(caso); return p ? (p.nomeSocial || p.nome) : '—'; }
+  function nomePacienteDoCaso(caso) { return nomePaciente(pacienteDoCaso(caso), caso.id); }
   function idade(p) { return PEP.util.idade(p.dataNascimento); }
 
   function barraAcessibilidade() {
@@ -48,7 +57,10 @@ PEP.ui = (function () {
       '<span><span class="marca-nome">Vínculo</span><span class="marca-sub">Prontuário da Clínica-Escola de Psicologia</span></span></a>' +
       '<div class="topo-direita">' + barraAcessibilidade();
     if (u) {
-      html += '<div class="usuario-atual"><span>' + esc(nomeUsuario(u.id)) + '</span>' +
+      html += '<div class="barra-acess" role="group" aria-label="Privacidade na tela">' +
+        '<button type="button" class="botao-acess" data-acao="modo-discreto" aria-pressed="' + (discreto() ? 'true' : 'false') + '">Discreto</button>' +
+        '<button type="button" class="botao-acess" data-acao="cobrir-tela">Cobrir tela</button></div>' +
+        '<div class="usuario-atual"><span>' + esc(nomeUsuario(u.id)) + '</span>' +
         '<span class="selo-perfil">' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span>' +
         '<button class="botao secundario pequeno" data-acao="sair">Sair</button></div>';
     }
@@ -121,7 +133,7 @@ PEP.ui = (function () {
   }
 
   return {
-    nomeUsuario: nomeUsuario, pacienteDoCaso: pacienteDoCaso, nomePacienteDoCaso: nomePacienteDoCaso, idade: idade,
+    nomeUsuario: nomeUsuario, pacienteDoCaso: pacienteDoCaso, nomePacienteDoCaso: nomePacienteDoCaso, nomePaciente: nomePaciente, nomeInscricao: nomeInscricao, idade: idade,
     desenharTopo: desenharTopo, desenharMenu: desenharMenu, desenharRodape: desenharRodape, definirTitulo: definirTitulo,
     etiquetaEvolucao: etiquetaEvolucao, etiquetaCaso: etiquetaCaso, numero: numero, semPermissao: semPermissao,
     opcoes: opcoes, toast: toast

@@ -28,7 +28,7 @@ PEP.telas = PEP.telas || {};
     var podePdf = u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, caso);
     return '<a href="#/casos" class="suave">← Casos</a>' +
       '<div class="cartao" style="margin-top:.5rem"><div class="linha entre"><div>' +
-      '<h1 style="margin:0">' + esc(p.nomeSocial || p.nome) + '</h1>' +
+      '<h1 style="margin:0">' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</h1>' +
       '<p class="suave" style="margin:0">' + esc(PEP.ui.idade(p)) + ' anos · caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + '</p></div>' +
       '<div class="linha">' + PEP.ui.etiquetaCaso(caso) + seloRisco(caso) +
       (podePdf ? '<a class="botao secundario pequeno" href="#/imprimir/' + caso.id + '">Cópia em PDF</a>' : '') + '</div></div>' +
@@ -116,13 +116,15 @@ PEP.telas = PEP.telas || {};
   function abaResumo(u, caso) {
     var p = PEP.ui.pacienteDoCaso(caso);
     var canal = PEP.lista('canaisLembrete').filter(function (c) { return c.valor === p.canalLembrete; })[0];
+    // Modo discreto: nome por iniciais, contatos ocultos (o cadastro completo continua em "Editar cadastro")
+    var disc = PEP.privacidade.discreto(), oculto = '<span class="suave">oculto no modo discreto</span>';
     return '<div class="cartao"><div class="linha entre"><h2>Identificação</h2>' +
       (R().podeEditarCadastro(u) ? '<a class="botao secundario pequeno" href="#/paciente/' + p.id + '/editar">Editar cadastro</a>' : '') + '</div>' +
-      '<div class="grade-2"><p><strong>Nome:</strong> ' + esc(p.nome) + (p.nomeSocial ? '<br><strong>Nome social:</strong> ' + esc(p.nomeSocial) : '') +
+      '<div class="grade-2"><p><strong>Nome:</strong> ' + (disc ? esc(PEP.ui.nomePaciente(p, caso.id)) : esc(p.nome) + (p.nomeSocial ? '<br><strong>Nome social:</strong> ' + esc(p.nomeSocial) : '')) +
       '<br><strong>Nascimento:</strong> ' + data(p.dataNascimento) + ' (' + esc(PEP.ui.idade(p)) + ' anos)' +
       '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) + '</p>' +
-      '<p><strong>Telefone:</strong> ' + esc(PEP.validar.formatarTelefone(p.telefone)) + '<br><strong>E-mail:</strong> ' + esc(p.email || '—') +
-      (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + esc(p.responsavelNome) : '') +
+      '<p><strong>Telefone:</strong> ' + (disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) + '<br><strong>E-mail:</strong> ' + (disc ? oculto : esc(p.email || '—')) +
+      (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + (disc ? esc(PEP.privacidade.iniciais(p.responsavelNome)) : esc(p.responsavelNome)) : '') +
       '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') + '</p></div>' +
       (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') + '</div>' +
       blocoAnamnese(u, caso) + blocoConsentimentos(u, caso);
@@ -239,6 +241,8 @@ PEP.telas = PEP.telas || {};
     }
     var permitidas = abasDoCaso(u, caso).map(function (a) { return a[0]; });
     if (permitidas.indexOf(aba) === -1) aba = 'resumo';
+    // Técnica fora da equipe do caso: o conteúdo clínico só abre com o motivo do acesso registrado
+    if (R().precisaJustificar(u, caso)) return cabecalho(u, caso) + abas(u, caso, aba) + PEP.telas.formularioJustificativa(caso, '#/caso/' + caso.id + '/' + aba);
 
     var corpo;
     if (aba === 'evolucoes') corpo = abaEvolucoes(u, caso);
@@ -249,13 +253,26 @@ PEP.telas = PEP.telas || {};
     return cabecalho(u, caso) + abas(u, caso, aba) + corpo;
   };
 
+  // Motivo do acesso (técnica): fica registrado, vale por algumas horas e o paciente pode ver em "Meus dados"
+  PEP.telas.formularioJustificativa = function (caso, destino) {
+    return '<div class="cartao" id="form-justificativa"><h2>Motivo do acesso ao prontuário</h2>' +
+      '<p>Você não faz parte da equipe deste caso. Para abrir o conteúdo clínico (anamnese, evoluções, risco, documentos), registre o motivo. ' +
+      'Ele vale por ' + PEP.regra('justificativaValidadeHoras') + ' horas, fica na auditoria e o paciente pode vê-lo em "Meus dados" (LGPD, arts. 9º e 18).</p>' +
+      '<fieldset class="caixa-campos"><legend class="pequeno"><strong>Motivo</strong></legend>' +
+      PEP.lista('motivosAcessoTecnico').map(function (m) {
+        return '<label class="check"><input type="radio" name="jt-motivo" id="jt-motivo-' + m.id + '" value="' + m.id + '"> <span>' + esc(m.nome) + '</span></label>';
+      }).join('') + '</fieldset>' +
+      '<div class="campo"><label for="jt-detalhe">Detalhe (obrigatório em "Outro motivo")</label><input id="jt-detalhe" type="text" maxlength="200"></div>' +
+      '<button class="botao" data-acao="justificar-acesso" data-caso="' + caso.id + '" data-destino="' + esc(destino) + '">Registrar o motivo e abrir</button></div>';
+  };
+
   // Lista de casos (filtrada pela permissão)
   PEP.telas.casos = function (u) {
     if (u.perfil === 'direcao' || u.perfil === 'paciente') return PEP.ui.semPermissao('Este perfil não navega em prontuários.');
     var casos = PEP.regras.casosVisiveis(u);
     var titulo = u.perfil === 'estagiario' ? 'Meus casos' : (u.perfil === 'supervisor' ? 'Casos dos meus grupos' : 'Todos os casos');
     var html = '<h1>' + titulo + '</h1>';
-    if (u.perfil === 'tecnico') html += '<p class="suave">Como responsável técnica, você vê todos os casos. Cada abertura de prontuário fica registrada na auditoria.</p>';
+    if (u.perfil === 'tecnico') html += '<p class="suave">Como responsável técnica, você vê todos os casos. Para abrir o conteúdo clínico de um caso, registre o motivo: ele fica na auditoria e o paciente pode vê-lo.</p>';
     if (!casos.length) return html + '<p class="vazio">Nenhum caso.</p>';
     return html + '<div class="grade">' + casos.map(function (c) {
       var g = PEP.regras.grupoDoCaso(c);

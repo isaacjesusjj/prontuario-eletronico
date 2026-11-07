@@ -137,7 +137,49 @@ PEP.regras = (function () {
   function podeEscreverOrientacao(u, caso) { return ehSupervisorDoCaso(u, caso); }
 
   // Avaliação psicológica: área restrita, fora do prontuário e do PDF do paciente.
-  function podeVerAreaRestrita(u, caso) { return u.perfil === 'tecnico' || ehSupervisorDoCaso(u, caso) || ehEstagiarioDoCaso(u, caso); }
+  function podeVerAreaRestrita(u, caso) { return podeVerConteudoClinico(u, caso); }
+
+  // ---------- Motivo de acesso da técnica (igual a app.pode_ver_clinico no banco) ----------
+  // A técnica vê a camada operacional de todos os casos (cadastro, agenda). O conteúdo clínico de
+  // um caso que não é da equipe dela só abre com motivo registrado nas últimas horas da regra;
+  // o caso recém-triado, que ainda espera alocação, não pede motivo.
+  function justificativaValida(u, caso) {
+    var limite = Date.now() - (PEP.regra('justificativaValidadeHoras') || 12) * 3600000;
+    return (PEP.db.acessosJustificados || []).some(function (j) {
+      return j.usuarioId === u.id && j.casoId === caso.id && new Date(j.em).getTime() > limite;
+    });
+  }
+  function podeVerConteudoClinico(u, caso) {
+    if (ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso)) return true;
+    return u.perfil === 'tecnico' && (caso.status === 'aguardando-alocacao' || justificativaValida(u, caso));
+  }
+  function precisaJustificar(u, caso) { return u.perfil === 'tecnico' && !podeVerConteudoClinico(u, caso); }
+
+  // ---------- "Quem acessou meu prontuário" (igual a app.acessos_ao_meu_prontuario) ----------
+  // Ações por categoria, não o texto da auditoria; para menor de idade, sem o motivo da técnica
+  // (quem usa o portal pode ser o responsável — Código de Ética, art. 13).
+  function categoriaAcesso(acao) {
+    if (acao.indexOf('Abriu o prontuário') === 0) return 'Abriu o prontuário';
+    if (/^(Gerou cópia|Entregou cópia|Paciente leu o prontuário)/.test(acao)) return 'Cópia ou leitura do prontuário';
+    if (acao.indexOf('Gerou lembrete') === 0) return 'Enviou lembrete de sessão';
+    return 'Registrou informações no prontuário';
+  }
+  function acessosAoProntuario(u) {
+    var p = pacienteDoUsuario(u);
+    if (!p) return [];
+    var menor = PEP.util.idade(p.dataNascimento) < 18;
+    var meus = PEP.db.casos.filter(function (c) { return c.pacienteId === p.id; }).map(function (c) { return c.id; });
+    var perfil = function (id) { var x = porId(PEP.db.usuarios, id); return x ? x.perfil : ''; };
+    var eventos = PEP.db.auditoria.filter(function (a) { return meus.indexOf(a.alvo) !== -1 || a.alvo === p.id; }).map(function (a) {
+      var proprio = a.usuarioId === u.id;
+      return { quando: a.em, quem: proprio ? 'Você' : PEP.ui.nomeUsuario(a.usuarioId), papel: perfil(a.usuarioId), acao: proprio ? a.acao : categoriaAcesso(a.acao), motivo: null, detalhe: null };
+    });
+    var motivos = (PEP.db.acessosJustificados || []).filter(function (j) { return meus.indexOf(j.casoId) !== -1; }).map(function (j) {
+      return { quando: j.em, quem: PEP.ui.nomeUsuario(j.usuarioId), papel: 'tecnico', acao: 'Registrou o motivo do acesso ao prontuário',
+        motivo: menor ? null : j.motivo, detalhe: menor ? null : j.detalhe };
+    });
+    return eventos.concat(motivos).sort(function (a, b) { return b.quando.localeCompare(a.quando); }).slice(0, 100);
+  }
 
   function podeRegistrarPresenca(u, caso) {
     return caso.status === 'ativo' && (ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso) || u.perfil === 'tecnico');
@@ -298,6 +340,8 @@ PEP.regras = (function () {
     riscosDoCaso: riscosDoCaso, situacaoRisco: situacaoRisco, riscosAbertos: riscosAbertos, notificacoesDoRisco: notificacoesDoRisco,
     planosDoCaso: planosDoCaso, planoAtual: planoAtual, podeRegistrarRisco: podeRegistrarRisco, podeDarCiencia: podeDarCiencia,
     podeNotificar: podeNotificar, podeEncerrarRisco: podeEncerrarRisco, podeEditarPlano: podeEditarPlano,
-    notificacoesSugeridas: notificacoesSugeridas, riscoProtegidoNaCopia: riscoProtegidoNaCopia
+    notificacoesSugeridas: notificacoesSugeridas, riscoProtegidoNaCopia: riscoProtegidoNaCopia,
+    justificativaValida: justificativaValida, podeVerConteudoClinico: podeVerConteudoClinico, precisaJustificar: precisaJustificar,
+    categoriaAcesso: categoriaAcesso, acessosAoProntuario: acessosAoProntuario
   };
 })();
