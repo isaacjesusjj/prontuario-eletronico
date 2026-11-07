@@ -210,7 +210,8 @@ PEP.telas = PEP.telas || {};
   };
   PEP.telas.botoesConta = function (x) {
     return '<button class="botao secundario pequeno" data-acao="gerar-senha-provisoria" data-id="' + x.id + '"' + (x.ativo ? '' : ' disabled') + '>Gerar senha provisória</button>' +
-      '<button class="botao secundario pequeno" data-acao="alternar-conta" data-id="' + x.id + '">' + (x.ativo ? 'Desativar' : 'Reativar') + '</button>';
+      '<button class="botao secundario pequeno" data-acao="alternar-conta" data-id="' + x.id + '">' + (x.ativo ? 'Desativar' : 'Reativar') + '</button>' +
+      (x.mfaAtivo ? '<button class="botao secundario pequeno" data-acao="desligar-mfa-conta" data-id="' + x.id + '">Desligar duas etapas (celular perdido)</button>' : '');
   };
 
   // ---------- Direção: estudantes (lista e importação) ----------
@@ -258,7 +259,7 @@ PEP.telas = PEP.telas || {};
       equipe.map(function (x) {
         return '<tr><td>' + esc(x.nome) + (x.matricula ? '<br><span class="suave pequeno">matrícula ' + esc(x.matricula) + '</span>' : '') + '</td><td>' + esc(PEP.regras.nomePerfil(x.perfil)) + '</td>' +
           '<td>' + esc(x.login) + '</td><td>' + (x.ativo ? esc(PEP.regras.descricaoUsuario(x).replace(x.cargo + ' · ', '').replace(x.cargo, '') || 'ativa') : '<span class="etiqueta perigo">desativada</span>') +
-          (x.senhaProvisoria ? ' <span class="etiqueta alerta">senha provisória</span>' : '') + '</td>' +
+          (x.senhaProvisoria ? ' <span class="etiqueta alerta">senha provisória</span>' : '') + (x.mfaAtivo ? ' <span class="etiqueta validada">duas etapas</span>' : '') + '</td>' +
           '<td><div class="linha">' + PEP.telas.botoesConta(x) + '</div></td></tr>';
       }).join('') + '</tbody></table></div></div>';
     return html;

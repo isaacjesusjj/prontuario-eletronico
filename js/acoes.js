@@ -731,6 +731,49 @@ window.PEP = PEP;
       ad.recuperarSenha(email).then(function () { PEP.ui.toast('Se o e-mail estiver cadastrado, você vai receber um link para criar outra senha.'); });
     },
 
+    // ----- Verificação em duas etapas -----
+    'cancelar-mfa': function () { PEP.estado.cancelarMfa(); PEP.app.renderizar(); },
+    'mfa-iniciar': function () {
+      var u = usuario(), ad = repo().adaptador();
+      if (!u) return;
+      var mostrar = function (n) { PEP.telas._mfaNovo = n; PEP.app.renderizar(); if (el('mfa-codigo-novo')) el('mfa-codigo-novo').focus(); };
+      if (ad.remoto) return ad.cadastrarMfa().then(mostrar, function () { PEP.ui.toast('Não foi possível iniciar a configuração. Tente de novo.'); });
+      var segredo = PEP.seguranca.novoSegredoMfa();
+      mostrar({ segredo: segredo, uri: PEP.seguranca.enderecoOtp(segredo, u.email || u.login) });
+    },
+    'mfa-cancelar': function () { PEP.telas._mfaNovo = null; PEP.app.renderizar(); },
+    'mfa-fechar-codigos': function () { PEP.telas._mfaCodigos = null; PEP.app.renderizar(); },
+    'mfa-desativar': function () {
+      var u = usuario(), ad = repo().adaptador();
+      if (!u || !u.mfaAtivo || PEP.estado.mfaExigido(u)) return negar();
+      var codigo = val('mfa-codigo-atual');
+      (ad.remoto ? ad.verificarMfa(u.mfaFatorId, codigo) : PEP.seguranca.conferirTotp(u.mfaSegredo, codigo, u.mfaUltimoPasso)).then(function (ok) {
+        if (!ok) { PEP.form.aplicar(document, [['mfa-codigo-atual', 'Código incorreto.']]); return; }
+        var fim = ad.remoto ? ad.desativarMfa(u.mfaFatorId).then(function () { u.mfaAtivo = false; }) :
+          Promise.resolve(repo().atualizar('usuarios', u.id, { mfaAtivo: false, mfaSegredo: null, mfaRecuperacao: [], mfaDesde: null, mfaUltimoPasso: 0 }));
+        fim.then(function () { concluir('Verificação em duas etapas desativada.', 'Desativou a verificação em duas etapas', u.id); });
+      });
+    },
+    'mfa-novos-codigos': function () {
+      var u = usuario();
+      if (!u || !u.mfaAtivo || repo().adaptador().remoto) return negar();
+      PEP.seguranca.conferirTotp(u.mfaSegredo, val('mfa-codigo-atual'), u.mfaUltimoPasso).then(function (passo) {
+        if (!passo) { PEP.form.aplicar(document, [['mfa-codigo-atual', 'Código incorreto.']]); return; }
+        var codigos = PEP.seguranca.codigosRecuperacao();
+        repo().atualizar('usuarios', u.id, { mfaRecuperacao: codigos.map(function (c) { return PEP.seguranca.sha256(c); }), mfaUltimoPasso: passo });
+        PEP.telas._mfaCodigos = codigos;
+        concluir('Novos códigos gerados; os anteriores deixaram de valer.', 'Gerou novos códigos de recuperação', u.id);
+      });
+    },
+    'desligar-mfa-conta': function (b) {
+      var u = usuario(), alvo = repo().porId('usuarios', b.getAttribute('data-id'));
+      if (!R().podeGerirConta(u, alvo) || !alvo.mfaAtivo) return negar();
+      if (repo().adaptador().remoto) return PEP.ui.toast('Com o banco ligado, o segundo fator é removido por uma função do servidor (Supabase Auth, administração).');
+      if (typeof window.confirm === 'function' && !window.confirm('Desligar a verificação em duas etapas de ' + PEP.ui.nomeUsuario(alvo.id) + '? Use só se a pessoa perdeu o celular e os códigos de recuperação.')) return;
+      repo().atualizar('usuarios', alvo.id, { mfaAtivo: false, mfaSegredo: null, mfaRecuperacao: [], mfaDesde: null, mfaUltimoPasso: 0 });
+      concluir('Verificação em duas etapas desligada: a pessoa configura de novo.', 'Desligou a verificação em duas etapas da conta (celular perdido)', alvo.pacienteId || alvo.id);
+    },
+
     // ----- Acesso do paciente ao prontuário -----
     'conferir-identidade': function (b) {
       var u = usuario();
@@ -838,6 +881,11 @@ window.PEP = PEP;
           PEP.app.renderizar();
           return;
         }
+        if (r.motivo === 'mfa') {   // senha certa e MFA ativo: segundo passo, o código do aplicativo
+          PEP.app.renderizar();
+          if (el('lg-codigo')) el('lg-codigo').focus();
+          return;
+        }
         erro.textContent = r.motivo === 'bloqueado' ? 'Muitas tentativas sem sucesso. Aguarde ' + (r.segundos || 30) + ' segundos e tente de novo.' :
           r.motivo === 'sem-cripto' ? 'Abra o site pelo endereço https (GitHub Pages) ou por localhost: o navegador só libera a criptografia nesses endereços.' :
           'Usuário ou senha incorretos.';
@@ -904,6 +952,41 @@ window.PEP = PEP;
           if (eraProvisoria) window.location.hash = '#/painel';
           concluir('Senha alterada.', 'Trocou a senha', u.id);
         });
+      });
+    },
+    // Segundo passo do login: código do aplicativo ou código de recuperação
+    mfa: function (form) {
+      var botao = el('lg-confirmar'), erro = el('mfa-erro');
+      botao.disabled = true;
+      PEP.estado.confirmarMfa(form.elements.codigo.value).then(function (r) {
+        botao.disabled = false;
+        if (r.ok) { window.location.hash = '#/painel'; PEP.app.renderizar(); return; }
+        if (r.motivo === 'expirou') { PEP.ui.toast('O tempo para digitar o código acabou. Entre de novo.'); PEP.app.renderizar(); return; }
+        erro.textContent = r.motivo === 'bloqueado' ? 'Muitas tentativas sem sucesso. Aguarde ' + r.segundos + ' segundos e tente de novo.' : 'Código incorreto. Confira o aplicativo e tente de novo.';
+        erro.hidden = false;
+        form.elements.codigo.value = '';
+        form.elements.codigo.focus();
+      });
+    },
+    // Ativação do MFA: confere o primeiro código do aplicativo antes de ligar
+    'mfa-ativar': function (form) {
+      var u = usuario(), n = PEP.telas._mfaNovo, codigo = form.elements.codigo.value, ad = repo().adaptador();
+      if (!u || !n) return;
+      (ad.remoto ? ad.confirmarCadastroMfa(n.fatorId, codigo) : PEP.seguranca.conferirTotp(n.segredo, codigo)).then(function (ok) {
+        if (!ok) { PEP.form.aplicar(form, [['mfa-codigo-novo', 'Código não confere. Confira a chave digitada e se o relógio do celular está certo.']]); return; }
+        var campos = { mfaAtivo: true, mfaDesde: U().agora() };
+        if (ad.remoto) { u.mfaAtivo = true; u.mfaDesde = campos.mfaDesde; u.mfaFatorId = n.fatorId; }
+        else {
+          var codigos = PEP.seguranca.codigosRecuperacao();
+          campos.mfaSegredo = n.segredo;
+          campos.mfaUltimoPasso = ok;   // o código usado na ativação não serve para entrar
+          campos.mfaRecuperacao = codigos.map(function (c) { return PEP.seguranca.sha256(c); });
+          PEP.telas._mfaCodigos = codigos;
+          repo().atualizar('usuarios', u.id, campos);
+        }
+        PEP.telas._mfaNovo = null;
+        window.location.hash = '#/conta';
+        concluir('Verificação em duas etapas ativada.', 'Ativou a verificação em duas etapas', u.id);
       });
     },
     'abrir-link': function (form) {

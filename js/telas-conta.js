@@ -29,6 +29,50 @@ PEP.telas = PEP.telas || {};
       '<button class="botao" type="submit">Salvar senha</button></form>';
   }
 
+  // ---------- Verificação em duas etapas ----------
+  PEP.telas._mfaNovo = null;     // { segredo, uri, fatorId } enquanto a pessoa configura o app
+  PEP.telas._mfaCodigos = null;  // códigos de recuperação: aparecem uma vez
+  var mfaExigido = function (u) { return PEP.estado.mfaExigido(u); };
+
+  function cartaoMfa(u) {
+    var remoto = PEP.repo.adaptador().remoto, n = PEP.telas._mfaNovo, html = '<div class="cartao" id="mfa"><h2>Verificação em duas etapas</h2>';
+    if (PEP.telas._mfaCodigos) {
+      html += '<div class="aviso info" role="status"><strong>Códigos de recuperação</strong> (aparecem só agora): guarde em lugar seguro, fora do celular. Cada um vale uma vez, se você perder o aparelho.' +
+        '<ul class="codigos-recuperacao">' + PEP.telas._mfaCodigos.map(function (c) { return '<li class="codigo">' + esc(c) + '</li>'; }).join('') + '</ul>' +
+        '<button class="botao secundario pequeno" data-acao="mfa-fechar-codigos">Já guardei</button></div>';
+    }
+    if (u.mfaAtivo && !n) {
+      html += '<p><span class="etiqueta validada">ativa</span> Ao entrar, além da senha, o sistema pede o código do seu aplicativo autenticador.' +
+        (u.mfaDesde ? ' Ativada em ' + data(u.mfaDesde) + '.' : '') + '</p>' +
+        (!remoto ? '<p class="suave pequeno">Códigos de recuperação que ainda valem: ' + (u.mfaRecuperacao || []).length + '.</p>' : '') +
+        '<div class="campo"><label for="mfa-codigo-atual">Código atual do aplicativo (para mudar a configuração)</label>' +
+        '<input id="mfa-codigo-atual" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="max-width:12rem"></div><div class="linha">' +
+        (!remoto ? '<button class="botao secundario pequeno" data-acao="mfa-novos-codigos">Gerar novos códigos de recuperação</button>' : '') +
+        (mfaExigido(u) ? '<span class="suave pequeno">Obrigatória para o seu perfil.</span>' : '<button class="botao secundario pequeno" data-acao="mfa-desativar">Desativar</button>') + '</div>';
+      return html + '</div>';
+    }
+    if (!n) {
+      return html + '<p>Proteja sua conta com um segundo passo: além da senha, um código de 6 dígitos que muda a cada 30 segundos no seu celular ' +
+        '(Google Authenticator, Microsoft Authenticator ou outro aplicativo de código). Quem descobrir sua senha não entra sem o celular.</p>' +
+        (mfaExigido(u) ? '<div class="aviso info pequeno">Para o seu perfil, a verificação em duas etapas é obrigatória.</div>' : '') +
+        '<button class="botao" data-acao="mfa-iniciar">Ativar a verificação em duas etapas</button></div>';
+    }
+    var grupos = String(n.segredo).match(/.{1,4}/g).join(' ');
+    return html + '<ol><li>No aplicativo autenticador, escolha <strong>adicionar conta</strong> e depois <strong>inserir uma chave de configuração</strong>.</li>' +
+      '<li>Nome da conta: <strong>Vínculo</strong>. Chave: <span class="codigo" id="mfa-chave">' + esc(grupos) + '</span> (tipo: baseado no tempo).</li>' +
+      '<li>Digite abaixo o código de 6 dígitos que o aplicativo mostrar.</li></ol>' +
+      '<details><summary class="pequeno">Endereço para aplicativos que aceitam link (otpauth)</summary><p class="codigo pequeno">' + esc(n.uri) + '</p></details>' +
+      '<form data-form="mfa-ativar" id="form-mfa" novalidate><div class="campo"><label for="mfa-codigo-novo">Código do aplicativo</label>' +
+      '<input id="mfa-codigo-novo" name="codigo" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="max-width:12rem"></div>' +
+      '<div class="linha"><button class="botao" type="submit">Confirmar e ativar</button><button type="button" class="botao secundario" data-acao="mfa-cancelar">Cancelar</button></div></form></div>';
+  }
+
+  // Primeiro acesso com MFA obrigatório para o perfil (regras.mfaObrigatoria)
+  PEP.telas.configurarMfa = function (u) {
+    return '<h1>Verificação em duas etapas</h1><div class="aviso info">A coordenação exige a verificação em duas etapas para o seu perfil antes do primeiro uso. Leva dois minutos.</div>' +
+      cartaoMfa(u) + '<p><button class="botao secundario" data-acao="sair">Sair</button></p>';
+  };
+
   PEP.telas.trocarSenhaObrigatoria = function (u) {
     return '<h1>Primeiro acesso</h1><div class="aviso info">Sua conta está com uma senha provisória. Crie sua senha pessoal para continuar.</div>' + formularioSenha(true);
   };
@@ -41,7 +85,7 @@ PEP.telas = PEP.telas || {};
       '<br><strong>E-mail:</strong> ' + esc(u.email) + '<br><strong>Perfil:</strong> ' + esc(PEP.regras.nomePerfil(u.perfil)) +
       (u.matricula ? '<br><strong>Matrícula:</strong> ' + esc(u.matricula) : '') + (u.crp ? '<br><strong>CRP:</strong> ' + esc(u.crp) : '') + '</p>' +
       '<p class="suave pequeno">A sessão encerra sozinha depois de ' + PEP.regra('inatividadeMinutos') + ' minutos sem uso e quando a aba é fechada.</p></div>' +
-      formularioSenha(false) +
+      formularioSenha(false) + cartaoMfa(u) +
       '<div class="cartao"><h2>Termos aceitos</h2>' + (aceites.length ? '<ul>' + aceites.map(function (a) {
         return '<li>' + esc(nomesTermo[a.termo] || a.termo) + ' · versão ' + esc(a.versao) + ' · ' + data(a.em) + '</li>';
       }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') + '<p class="pequeno"><a href="#/termos">Termos de uso</a> · <a href="#/privacidade">Aviso de privacidade</a></p></div>';

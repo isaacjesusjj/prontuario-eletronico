@@ -18,7 +18,7 @@ import shutil
 import sys
 import threading
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -947,12 +947,11 @@ def rascunho_automatico(nav, base):
     s.fechar()
 
 
-def adaptador_supabase(nav, base):
-    """O adaptador do Supabase contra um servidor simulado que responde como a API documentada
-    (Auth e PostgREST). Confere o que o site envia ao banco sem precisar de um projeto criado."""
-    s = Sessao(nav, base, "Adaptador Supabase (simulado)")
+def supabase_simulado(s, fatores=()):
+    """Liga o adaptador do Supabase nesta sessão, contra um servidor simulado que responde como a API
+    documentada (Auth, PostgREST e Storage). fatores = segundo fator (MFA) da conta, como o Auth devolve."""
     url = "https://vinculo-teste.supabase.co"
-    enviados, estado, erros_antes = [], {"renovou": False, "storage": ""}, len(erros_console)
+    enviados, estado = [], {"renovou": False, "storage": "", "verificacoes": [], "autorizacoes": []}
 
     def snake(k):
         return re.sub(r"(?<!^)(?=[A-Z])", "_", k).lower()
@@ -969,10 +968,22 @@ def adaptador_supabase(nav, base):
                 # token que vence em 30 s: o próximo pedido já precisa renová-lo
                 return route.fulfill(status=200, content_type="application/json", body=json.dumps({"access_token": "tok-1", "refresh_token": "ref-1", "expires_in": 30}))
             return route.fulfill(status=400, content_type="application/json", body='{"error":"invalid_grant"}')
+        if partes.path == "/auth/v1/user":
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"id": "auth-teste", "factors": list(fatores)}))
+        fator = re.fullmatch(r"/auth/v1/factors/([^/]+)/(challenge|verify)", partes.path)
+        if fator:   # MFA: desafio e verificação do código (o código certo deste servidor é 123456)
+            if fator.group(2) == "challenge":
+                return route.fulfill(status=200, content_type="application/json", body=json.dumps({"id": "desafio-" + fator.group(1), "type": "totp", "expires_at": 4102444800}))
+            corpo = json.loads(req.post_data or "{}")
+            estado["verificacoes"].append(corpo)
+            if corpo == {"challenge_id": "desafio-" + fator.group(1), "code": "123456"}:
+                return route.fulfill(status=200, content_type="application/json", body=json.dumps({"access_token": "tok-aal2", "refresh_token": "ref-aal2", "expires_in": 3600}))
+            return route.fulfill(status=422, content_type="application/json", body='{"code":"mfa_verification_failed","msg":"Invalid TOTP code entered"}')
         if partes.path.startswith("/storage/v1/object/anexos/"):
             estado["storage"] = partes.path
             return route.fulfill(status=200, content_type="application/json", body='{"Key":"ok"}')
         if partes.path.startswith("/rest/v1/"):
+            estado["autorizacoes"].append(req.headers.get("authorization"))
             tabela = partes.path.split("/")[-1]
             if req.method == "GET":
                 return route.fulfill(status=200, content_type="application/json", body=json.dumps(tabelas.get(tabela, [])))
@@ -986,6 +997,15 @@ def adaptador_supabase(nav, base):
     # Liga o adaptador só neste teste: troca o js/config-banco.js servido
     s.ctx.route("**/js/config-banco.js", lambda r: r.fulfill(status=200, content_type="application/javascript",
                 body="var PEP = window.PEP || {}; window.PEP = PEP; PEP.configBanco = { adaptador: 'supabase', supabaseUrl: '" + url + "', supabaseChaveAnon: 'chave-anon-teste' };"))
+    return enviados, estado
+
+
+def adaptador_supabase(nav, base):
+    """O adaptador do Supabase contra o servidor simulado: confere o que o site envia ao banco sem
+    precisar de um projeto criado."""
+    s = Sessao(nav, base, "Adaptador Supabase (simulado)")
+    erros_antes = len(erros_console)
+    enviados, estado = supabase_simulado(s)
     s.abrir("#/entrar")
     s.p.fill("#lg-usuario", "bia.estagiaria")
     s.p.fill("#lg-senha", "senha-errada-123456")
@@ -1023,6 +1043,177 @@ def adaptador_supabase(nav, base):
     s.fechar()
 
 
+def verificacao_duas_etapas(nav, base):
+    s = Sessao(nav, base, "Duas etapas")
+    t0 = datetime(2026, 11, 6, 10, 0, 0)
+    s.p.clock.set_fixed_time(t0)   # relógio parado: o código de 6 dígitos só muda quando o teste quiser
+    s.abrir("#/entrar")
+    # O cálculo é o da norma: mesmo segredo e mesma hora dão o mesmo código que o aplicativo do celular
+    rfc = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"   # "12345678901234567890" em base32: o segredo dos exemplos da RFC 6238
+    vetores = {59: "287082", 1111111109: "081804", 1111111111: "050471", 1234567890: "005924", 2000000000: "279037", 20000000000: "353130"}
+    calculados = s.js("([seg, ts]) => Promise.all(ts.map(t => PEP.seguranca.codigoTotp(seg, t * 1000)))", [rfc, list(vetores)])
+    conferir("Duas etapas", "o código de 6 dígitos bate com os exemplos oficiais da RFC 6238 (é o mesmo que o celular calcula)",
+             calculados == list(vetores.values()), ", ".join(calculados or []))
+
+    def codigo(segredo, segundos=0):   # o que o aplicativo mostraria daqui a "segundos"
+        return s.js("([seg, ms]) => PEP.seguranca.codigoTotp(seg, Date.now() + ms)", [segredo, segundos * 1000])
+
+    def bia():
+        return s.js("PEP.util.porId(PEP.db.usuarios, 'u-est1')")
+
+    def senha(login="bia.estagiaria"):
+        s.abrir("#/entrar")
+        s.p.fill("#lg-usuario", login)
+        s.p.fill("#lg-senha", SENHA)
+        s.p.click("#lg-entrar")
+        s.p.wait_for_selector("#lg-codigo", timeout=15000)
+
+    def digitar(c):   # devolve a mensagem de erro ("" se entrou)
+        s.p.fill("#lg-codigo", c)
+        s.p.click("#lg-confirmar")
+        s.p.wait_for_function("() => location.hash !== '#/entrar' || !document.getElementById('mfa-erro').hidden", timeout=15000)
+        s.p.wait_for_timeout(150)
+        if s.js("location.hash") != "#/entrar":
+            return ""
+        texto = s.p.locator("#mfa-erro").inner_text()
+        s.p.evaluate("document.getElementById('mfa-erro').hidden = true")
+        return texto
+
+    # Ativação em "Minha conta"
+    s.entrar("bia.estagiaria")
+    s.ir("#/conta")
+    s.clicar('[data-acao="mfa-iniciar"]')
+    segredo = s.js("PEP.telas._mfaNovo ? PEP.telas._mfaNovo.segredo : ''")
+    conferir("Duas etapas", "ativar mostra a chave para o aplicativo autenticador (160 bits em base32) e o endereço otpauth",
+             len(segredo) == 32 and s.p.locator("#mfa-chave").count() == 1 and s.js("PEP.telas._mfaNovo.uri").startswith("otpauth://totp/"))
+    s.axe("Minha conta · ativar duas etapas")
+    validos = [codigo(segredo, d) for d in (-30, 0, 30)]
+    s.p.fill("#mfa-codigo-novo", next(c for c in ("000000", "111111", "222222", "333333") if c not in validos))
+    s.clicar("#form-mfa button[type=submit]")
+    s.p.wait_for_timeout(200)
+    conferir("Duas etapas", "código errado na ativação não liga a verificação (o campo avisa)",
+             not bia().get("mfaAtivo") and s.p.locator("#mfa-codigo-novo").get_attribute("aria-invalid") == "true")
+    s.p.fill("#mfa-codigo-novo", validos[1])
+    s.clicar("#form-mfa button[type=submit]")
+    s.p.wait_for_selector(".codigos-recuperacao li", timeout=10000)
+    recuperacao = s.p.locator(".codigos-recuperacao li").all_inner_texts()
+    dados = json.dumps(s.js("PEP.db"))
+    conferir("Duas etapas", "com o código certo, liga e mostra 8 códigos de recuperação uma vez só (nos dados fica só o hash)",
+             bia().get("mfaAtivo") is True and len(recuperacao) == 8 and all(re.fullmatch(r"[a-z0-9]{4}-[a-z0-9]{4}", c) for c in recuperacao)
+             and not any(c in dados for c in recuperacao) and len(bia().get("mfaRecuperacao") or []) == 8)
+    s.axe("Minha conta · códigos de recuperação")
+    s.clicar('[data-acao="mfa-fechar-codigos"]')
+    conferir("Duas etapas", "os códigos somem da tela depois de \"Já guardei\"", s.p.locator(".codigos-recuperacao").count() == 0)
+    s.sair()
+
+    # Login em duas etapas
+    senha()
+    conferir("Duas etapas", "com a verificação ligada, a senha certa não basta: o site pede o código e ainda não entra",
+             s.js("PEP.estado.usuarioAtual()") is None and s.h1() == "Verificação em duas etapas")
+    s.axe("Entrar · código do aplicativo")
+    t1 = digitar(validos[1])
+    conferir("Duas etapas", "o mesmo código não entra duas vezes: o da ativação já não vale (RFC 6238, seção 5.2)", "incorreto" in t1, t1)
+    s.p.clock.set_fixed_time(t0 + timedelta(seconds=31))   # 30 s depois, o aplicativo mostra outro código
+    t2 = digitar(codigo(segredo))
+    conferir("Duas etapas", "com o código do momento, entra", t2 == "" and s.js("location.hash") == "#/painel" and (s.js("PEP.estado.usuarioAtual()") or {}).get("id") == "u-est1", t2)
+    acoes = s.js("PEP.db.auditoria.map(a => a.acao + ' ' + a.alvo)")
+    conferir("Duas etapas", "o código errado fica na auditoria, sem o código digitado",
+             any("verificação em duas etapas incorreto" in a for a in acoes) and not any(validos[1] in a for a in acoes))
+    s.sair()
+    senha()
+    t3 = digitar(recuperacao[0])
+    conferir("Duas etapas", "celular perdido: entra com um código de recuperação, que deixa de valer", t3 == "" and len(bia().get("mfaRecuperacao") or []) == 7, t3)
+    s.sair()
+    senha()
+    t4 = digitar(recuperacao[0])
+    conferir("Duas etapas", "o mesmo código de recuperação não entra de novo", "incorreto" in t4, t4)
+    proibidos = {codigo(segredo), codigo(segredo, 30)}
+    errados = [c for c in ("000000", "111111", "222222", "333333", "444444", "555555") if c not in proibidos][:4]
+    for c in errados[:-1]:
+        digitar(c)
+    t5 = digitar(errados[-1])
+    conferir("Duas etapas", "errar o código também bloqueia por um tempo (5 erros → 30 s), como a senha", "30 segundos" in t5, t5)
+    s.clicar('[data-acao="cancelar-mfa"]')
+    conferir("Duas etapas", "\"Voltar\" desiste do código e volta para usuário e senha", s.p.locator("#lg-usuario").count() == 1)
+
+    # Celular e códigos perdidos: a direção desliga
+    s.entrar("marta.direcao")
+    s.ir("#/estudantes")
+    linha = s.p.locator("tr", has=s.p.locator('[data-acao="desligar-mfa-conta"][data-id="u-est1"]'))
+    conferir("Duas etapas", "a direção vê quem tem a verificação ligada", linha.count() == 1 and "duas etapas" in (linha.text_content() or ""))
+    s.clicar('[data-acao="desligar-mfa-conta"][data-id="u-est1"]')
+    conferir("Duas etapas", "celular e códigos perdidos: a direção desliga a verificação da conta (com auditoria) e a pessoa configura de novo",
+             not bia().get("mfaAtivo") and not bia().get("mfaSegredo")
+             and any("Desligou a verificação em duas etapas" in a for a in s.js("PEP.db.auditoria.map(a => a.acao)")))
+    s.sair()
+    s.p.clock.set_fixed_time(t0 + timedelta(seconds=65))   # passou o bloqueio de 30 s
+    s.entrar("bia.estagiaria")
+    conferir("Duas etapas", "com a verificação desligada, entra só com a senha", s.js("location.hash") == "#/painel")
+    s.sair()
+
+    # Obrigatória para a equipe (regras.mfaObrigatoria, como deve ficar em produção)
+    def entrar_com_mfa_obrigatoria(login):
+        s.abrir("#/entrar")
+        s.js("PEP.config().regras.mfaObrigatoria = true")
+        s.p.fill("#lg-usuario", login)
+        s.p.fill("#lg-senha", SENHA)
+        s.p.click("#lg-entrar")
+        s.p.wait_for_function("() => location.hash !== '#/entrar'", timeout=15000)
+        s.p.wait_for_timeout(150)
+        return s.js("location.hash")
+    primeiro = entrar_com_mfa_obrigatoria("hugo.estagiario")
+    s.ir("#/painel")
+    conferir("Duas etapas", "obrigatória para a equipe: no primeiro acesso, configura antes de tudo (sem menu e sem atalho para outra tela)",
+             primeiro == "#/configurar-mfa" and s.js("location.hash") == "#/configurar-mfa" and s.p.locator("#menu a").count() == 0, primeiro)
+    s.axe("Primeiro acesso · duas etapas obrigatórias")
+    s.clicar('[data-acao="mfa-iniciar"]')
+    s.p.fill("#mfa-codigo-novo", codigo(s.js("PEP.telas._mfaNovo.segredo")))
+    s.clicar("#form-mfa button[type=submit]")
+    s.p.wait_for_selector(".codigos-recuperacao li", timeout=10000)
+    conferir("Duas etapas", "configurou: os códigos de recuperação aparecem antes de seguir, e não há botão de desativar (é obrigatória)",
+             s.p.locator('[data-acao="mfa-desativar"]').count() == 0 and "Obrigatória para o seu perfil" in s.p.locator("#mfa").inner_text())
+    s.clicar('[data-acao="mfa-fechar-codigos"]')
+    conferir("Duas etapas", "... e só depois de \"Já guardei\" segue para o termo de sigilo", s.js("location.hash") == "#/termo", s.js("location.hash"))
+    s.sair()
+    conferir("Duas etapas", "para o paciente, não é obrigatória (o portal precisa ser simples)", entrar_com_mfa_obrigatoria("paciente01") != "#/configurar-mfa")
+    s.fechar()
+
+
+def adaptador_supabase_mfa(nav, base):
+    """Login em duas etapas com o banco ligado: quem confere o código é o Supabase Auth (servidor simulado)."""
+    s = Sessao(nav, base, "Adaptador Supabase: duas etapas (simulado)")
+    erros_antes = len(erros_console)
+    enviados, estado = supabase_simulado(s, fatores=[{"id": "fator-1", "factor_type": "totp", "status": "verified"}])
+    s.abrir("#/entrar")
+    s.p.fill("#lg-usuario", "bia.estagiaria")
+    s.p.fill("#lg-senha", SENHA)
+    s.p.click("#lg-entrar")
+    s.p.wait_for_selector("#lg-codigo", timeout=15000)
+    conferir("Banco (simulado)", "conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra",
+             s.js("PEP.estado.usuarioAtual()") is None and s.js("location.hash") == "#/entrar")
+    s.p.fill("#lg-codigo", "654321")
+    s.p.click("#lg-confirmar")
+    s.p.wait_for_function("() => !document.getElementById('mfa-erro').hidden", timeout=15000)
+    s.p.fill("#lg-codigo", "123456")
+    s.p.click("#lg-confirmar")
+    s.p.wait_for_function("() => location.hash !== '#/entrar'", timeout=15000)
+    s.p.wait_for_timeout(300)
+    if s.js("location.hash") == "#/termo":
+        s.p.check("#tm-ok")
+        s.clicar('[data-acao="aceitar-termo"]')
+        s.p.wait_for_timeout(300)
+    v = estado["verificacoes"]
+    conferir("Banco (simulado)", "código errado: o Supabase recusa e o site avisa; código certo: desafio + verificação com o challenge_id",
+             len(v) == 2 and v[0].get("code") == "654321" and v[1] == {"challenge_id": "desafio-fator-1", "code": "123456"}, json.dumps(v))
+    conferir("Banco (simulado)", "depois do código, todos os pedidos ao banco usam o token novo (nível aal2)",
+             s.js("location.hash") == "#/painel" and estado["autorizacoes"][-1] == "Bearer tok-aal2"
+             and s.js("JSON.parse(sessionStorage.getItem('vinculo-sessao-supabase')).acesso") == "tok-aal2")
+    inesperados = [m for _, m in erros_console[erros_antes:] if "Failed to load resource" not in m]
+    conferir("Banco (simulado)", "nenhum erro de JavaScript no login em duas etapas", not inesperados, "; ".join(inesperados)[:200])
+    del erros_console[erros_antes:]   # a resposta 422 do código errado é provocada de propósito
+    s.fechar()
+
+
 def main():
     srv, base = servidor()
     with sync_playwright() as p:
@@ -1030,7 +1221,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      adaptador_supabase):
+                      verificacao_duas_etapas, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

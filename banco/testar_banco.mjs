@@ -23,11 +23,15 @@ async function erroEsperado(nome, sql, params = []) {
 }
 const valores = async (sql, params = []) => (await db.query(sql, params)).rows;
 
-// Executa como um usuário logado (igual ao Supabase: papel "authenticated" + id do token)
-async function como(usuarioId, fn) {
+// Executa como um usuário logado (igual ao Supabase: papel "authenticated" + id e nível do token).
+// aal = como a pessoa entrou: 'aal1' só com a senha; 'aal2' com a senha e o código do aplicativo (MFA)
+async function como(usuarioId, fn, aal = 'aal1') {
   const [{ auth_id }] = await valores('select auth_id from usuarios where id = $1', [usuarioId]);
-  await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${auth_id}', false);`);
-  try { return await fn(); } finally { await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false);`); }
+  await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${auth_id}', false);
+    select set_config('request.jwt.claims', '${JSON.stringify({ sub: auth_id, aal })}', false);`);
+  try { return await fn(); } finally {
+    await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false); select set_config('request.jwt.claims', '', false);`);
+  }
 }
 async function comoVisitante(fn) {
   await db.exec('set role anon;');
@@ -307,6 +311,25 @@ await como('u-tec', async () => {
 conferir('conta desativada não vê mais nada (nem os próprios dados)', (await como('u-pac1', () => ids('pacientes'))) === '');
 await como('u-tec', () => db.query("update usuarios set ativo = true where id = 'u-pac1'"));
 conferir('conta reativada volta a ver o que é dela', (await como('u-pac1', () => ids('pacientes'))) === 'p01');
+
+// ---------- 6g. Verificação em duas etapas (MFA) ----------
+const authDe = async (id) => (await valores('select auth_id from usuarios where id = $1', [id]))[0].auth_id;
+const casosSup1 = await como('u-sup1', () => ids('casos'));
+await db.query("insert into auth.mfa_factors (user_id, status) values ($1, 'verified')", [await authDe('u-sup1')]);
+conferir('MFA ligado: só com a senha (aal1), o supervisor não vê nenhum caso', casosSup1 !== '' && (await como('u-sup1', () => ids('casos'))) === '');
+conferir('... mas vê a própria conta (o site precisa do nome e do perfil para pedir o código)', (await como('u-sup1', () => ids('usuarios'))) === 'u-sup1');
+await como('u-sup1', () => erroEsperado('... e não grava nada, nem auditoria em nome próprio',
+  "insert into auditoria (usuario_id, acao, alvo) values ('u-sup1', 'Abriu o prontuário', 'c01')"));
+conferir('com o código do aplicativo (aal2), volta a ver os casos dos seus grupos', (await como('u-sup1', () => ids('casos'), 'aal2')) === casosSup1);
+const casosEst1 = await como('u-est1', () => ids('casos'));
+await db.query("insert into auth.mfa_factors (user_id, status) values ($1, 'unverified')", [await authDe('u-est1')]);
+conferir('configuração começada e não confirmada não bloqueia a conta', casosEst1 !== '' && (await como('u-est1', () => ids('casos'))) === casosEst1);
+await db.exec('create or replace function app.mfa_obrigatoria() returns boolean language sql stable as $$ select true $$');
+conferir('MFA obrigatório (produção): equipe sem o segundo fator não vê nada até configurar', (await como('u-est1', () => ids('casos'))) === '');
+conferir('... e com o código (aal2), vê de novo', (await como('u-est1', () => ids('casos'), 'aal2')) === casosEst1);
+conferir('MFA obrigatório não vale para o paciente (o portal precisa ser simples)', (await como('u-pac1', () => ids('pacientes'))) === 'p01');
+await db.exec('create or replace function app.mfa_obrigatoria() returns boolean language sql stable as $$ select false $$');
+await db.query('delete from auth.mfa_factors');
 
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');

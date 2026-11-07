@@ -9,7 +9,20 @@ PEP.telas = PEP.telas || {};
 (function () {
   var esc = function (t) { return PEP.util.esc(t); };
 
+  // Segundo passo do login (verificação em duas etapas): a senha já conferiu, falta o código
+  PEP.telas.entrarCodigo = function () {
+    return '<h1>Verificação em duas etapas</h1>' +
+      '<form class="cartao" data-form="mfa" style="max-width:480px" novalidate>' +
+      '<p>Digite o código de 6 dígitos que aparece agora no seu aplicativo autenticador.</p>' +
+      '<div class="aviso perigo" id="mfa-erro" role="alert" hidden></div>' +
+      '<div class="campo"><label for="lg-codigo">Código</label><input id="lg-codigo" name="codigo" type="text" autocomplete="one-time-code" maxlength="9" required>' +
+      '<span class="dica">Perdeu o celular? Use um dos códigos de recuperação (formato abcd-efgh); cada um vale uma vez.</span></div>' +
+      '<div class="linha"><button class="botao" type="submit" id="lg-confirmar">Confirmar</button>' +
+      '<button type="button" class="botao secundario" data-acao="cancelar-mfa">Voltar</button></div></form>';
+  };
+
   PEP.telas.entrar = function () {
+    if (PEP.estado.lerMfaPendente()) return PEP.telas.entrarCodigo();
     var meta = PEP.db._meta || {};
     var motivo = PEP.estado.lerMotivoSaida();
     var cartoes = PEP.config().demo.contasDestaque.map(function (id) {

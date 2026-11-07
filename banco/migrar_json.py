@@ -21,7 +21,7 @@ DESTINO = RAIZ / "banco" / "dados-demo.sql"
 ORDEM = ["pacientes", "usuarios", "grupos", "subgrupos", "alocacoes", "casos", "inscricoes", "anamneses", "consentimentos",
          "encerramentos", "sessoes", "evolucoes", "assinaturas", "adendos", "orientacoes", "documentos", "anexos", "avaliacoes",
          "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "acessosJustificados", "auditoria"]
-FORA = {"usuarios": {"senhaHash"}, "auditoria": {"hash", "hashAnterior"}}
+FORA = {"usuarios": {"senhaHash", "mfaAtivo", "mfaSegredo", "mfaRecuperacao", "mfaDesde", "mfaUltimoPasso"}, "auditoria": {"hash", "hashAnterior"}}
 NAMESPACE = uuid.UUID("6f1c2b1e-0d3a-4b5c-9e7f-2a1b3c4d5e6f")
 
 

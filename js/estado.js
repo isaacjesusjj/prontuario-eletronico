@@ -183,41 +183,63 @@ PEP.estado = (function () {
   // Bloqueio por usuário digitado (guardado no navegador para valer mesmo se recarregar a página).
   // A mensagem é sempre genérica: não revela se o usuário existe.
   function lerTentativas() { try { return JSON.parse(ler('localStorage', CHAVE_TENTATIVAS) || '{}'); } catch (e) { return {}; } }
+  function registroDe(t, alvo) { return t[alvo] || { falhas: 0, bloqueadoAte: 0, bloqueios: 0 }; }
+  function segundosBloqueado(alvo) {
+    var reg = registroDe(lerTentativas(), alvo);
+    return Date.now() < reg.bloqueadoAte ? Math.ceil((reg.bloqueadoAte - Date.now()) / 1000) : 0;
+  }
+
+  // Senha ou código errados: conta a tentativa e, a cada N erros, bloqueia por um tempo cada vez maior
+  function registrarFalha(alvo, acao) {
+    var t = lerTentativas(), reg = registroDe(t, alvo);
+    reg.falhas++;
+    registrarAuditoria(acao, alvo || '—', 'visitante'); // nunca grava a senha nem o código
+    if (reg.falhas >= (PEP.regra('tentativasLogin') || 5)) {
+      reg.falhas = 0;
+      reg.bloqueios = (reg.bloqueios || 0) + 1;
+      // Bloqueio progressivo: 30 s, 60 s, 2 min, 4 min... até o teto. Quem tenta adivinhar a senha
+      // fica cada vez mais lento; quem só errou a senha uma vez quase não sente (NIST SP 800-63B-4).
+      var base = PEP.regra('bloqueioLoginSegundos') || 30, teto = PEP.regra('bloqueioLoginMaximoSegundos') || 900;
+      var segundos = Math.min(base * Math.pow(2, reg.bloqueios - 1), teto);
+      reg.bloqueadoAte = Date.now() + segundos * 1000;
+      registrarAuditoria('Login bloqueado temporariamente (' + segundos + ' s)', alvo || '—', 'visitante');
+    }
+    t[alvo] = reg;
+    gravar('localStorage', CHAVE_TENTATIVAS, JSON.stringify(t));
+    var bloqueado = reg.bloqueadoAte > Date.now();
+    return { ok: false, motivo: bloqueado ? 'bloqueado' : 'invalido', segundos: bloqueado ? Math.ceil((reg.bloqueadoAte - Date.now()) / 1000) : 0 };
+  }
+  function limparFalhas(alvo) {
+    var t = lerTentativas();
+    delete t[alvo];
+    gravar('localStorage', CHAVE_TENTATIVAS, JSON.stringify(t));
+  }
+
+  // Verificação em duas etapas: depois da senha certa, quem tem MFA ainda não entra. Fica "pendente"
+  // (só na memória desta página, por 5 minutos) até digitar o código do app ou um código de recuperação.
+  var mfaPendente = null; // { usuarioId, alvo, ate, fatorId }
+  function lerMfaPendente() { if (mfaPendente && Date.now() > mfaPendente.ate) mfaPendente = null; return mfaPendente; }
+  function cancelarMfa() { mfaPendente = null; }
 
   function autenticar(login, senha) {
     var alvo = String(login || '').trim().toLowerCase();
-    var t = lerTentativas();
-    var reg = t[alvo] || { falhas: 0, bloqueadoAte: 0, bloqueios: 0 };
-    if (Date.now() < reg.bloqueadoAte) return Promise.resolve({ ok: false, motivo: 'bloqueado', segundos: Math.ceil((reg.bloqueadoAte - Date.now()) / 1000) });
+    var espera = segundosBloqueado(alvo);
+    if (espera) return Promise.resolve({ ok: false, motivo: 'bloqueado', segundos: espera });
+    var falhou = function () { return registrarFalha(alvo, 'Tentativa de login sem sucesso'); };
+    var deuCerto = function (usuario) { limparFalhas(alvo); entrar(usuario); return { ok: true, usuario: usuario }; };
+    var pedirCodigo = function (usuario, fatorId) {
+      mfaPendente = { usuarioId: usuario.id, alvo: alvo, ate: Date.now() + 5 * 60000, fatorId: fatorId || null };
+      return { ok: false, motivo: 'mfa' };
+    };
 
-    function falhou() {
-      reg.falhas++;
-      registrarAuditoria('Tentativa de login sem sucesso', alvo || '—', 'visitante'); // nunca grava a senha
-      if (reg.falhas >= (PEP.regra('tentativasLogin') || 5)) {
-        reg.falhas = 0;
-        reg.bloqueios = (reg.bloqueios || 0) + 1;
-        // Bloqueio progressivo: 30 s, 60 s, 2 min, 4 min... até o teto. Quem tenta adivinhar a senha
-        // fica cada vez mais lento; quem só errou a senha uma vez quase não sente (NIST SP 800-63B-4).
-        var base = PEP.regra('bloqueioLoginSegundos') || 30, teto = PEP.regra('bloqueioLoginMaximoSegundos') || 900;
-        var segundos = Math.min(base * Math.pow(2, reg.bloqueios - 1), teto);
-        reg.bloqueadoAte = Date.now() + segundos * 1000;
-        registrarAuditoria('Login bloqueado temporariamente (' + segundos + ' s)', alvo || '—', 'visitante');
-      }
-      t[alvo] = reg;
-      gravar('localStorage', CHAVE_TENTATIVAS, JSON.stringify(t));
-      var bloqueado = reg.bloqueadoAte > Date.now();
-      return { ok: false, motivo: bloqueado ? 'bloqueado' : 'invalido', segundos: bloqueado ? Math.ceil((reg.bloqueadoAte - Date.now()) / 1000) : 0 };
-    }
-    function deuCerto(usuario) {
-      delete t[alvo];
-      gravar('localStorage', CHAVE_TENTATIVAS, JSON.stringify(t));
-      entrar(usuario);
-      return { ok: true, usuario: usuario };
-    }
-
-    // Banco ligado: quem confere a senha é o Supabase Auth, no servidor
+    // Banco ligado: quem confere a senha (e diz se há segundo fator) é o Supabase Auth, no servidor
     var ad = PEP.repo.adaptador();
-    if (ad.remoto) return ad.autenticar(alvo, senha).then(function (r) { return r.ok ? deuCerto(r.usuario) : falhou(); });
+    if (ad.remoto) {
+      return ad.autenticar(alvo, senha).then(function (r) {
+        if (r.ok) return deuCerto(r.usuario);
+        return r.motivo === 'mfa' ? pedirCodigo(r.usuario, r.fatorId) : falhou();
+      });
+    }
 
     if (!PEP.seguranca.suportaCripto()) return Promise.resolve({ ok: false, motivo: 'sem-cripto' });
     var achado = null;
@@ -227,13 +249,59 @@ PEP.estado = (function () {
     // Mesmo sem usuário, calcula um hash: o tempo de resposta não denuncia se a conta existe
     var guardado = achado ? achado.senhaHash : PEP.db.usuarios[0].senhaHash;
     return PEP.seguranca.conferirSenha(senha, guardado).then(function (confere) {
-      return achado && confere && achado.ativo ? deuCerto(achado) : falhou();
+      if (!(achado && confere && achado.ativo)) return falhou();
+      return achado.mfaAtivo ? pedirCodigo(achado) : deuCerto(achado);
     });
   }
 
-  // O usuário precisa trocar a senha (provisória) ou aceitar um termo antes de usar o sistema
+  // Código de 6 dígitos do app, ou código de recuperação ("abcd-efgh", vale uma vez)
+  function conferirCodigoLocal(u, codigo) {
+    var c = String(codigo || '').trim().toLowerCase();
+    if (/^[a-z0-9]{4}-[a-z0-9]{4}$/.test(c)) {
+      var h = PEP.seguranca.sha256(c), lista = u.mfaRecuperacao || [];
+      if (lista.indexOf(h) === -1) return Promise.resolve(false);
+      PEP.repo.atualizar('usuarios', u.id, { mfaRecuperacao: lista.filter(function (x) { return x !== h; }) });
+      registrarAuditoria('Entrou com um código de recuperação (verificação em duas etapas)', u.id, u.id);
+      return Promise.resolve(true);
+    }
+    if (!u.mfaSegredo) return Promise.resolve(false);
+    return PEP.seguranca.conferirTotp(u.mfaSegredo, c, u.mfaUltimoPasso).then(function (passo) {
+      if (passo) PEP.repo.atualizar('usuarios', u.id, { mfaUltimoPasso: passo });   // o mesmo código não serve de novo
+      return !!passo;
+    });
+  }
+
+  function confirmarMfa(codigo) {
+    var p = lerMfaPendente();
+    if (!p) return Promise.resolve({ ok: false, motivo: 'expirou' });
+    var espera = segundosBloqueado(p.alvo);
+    if (espera) return Promise.resolve({ ok: false, motivo: 'bloqueado', segundos: espera });
+    var ad = PEP.repo.adaptador();
+    var u = PEP.util.porId(PEP.db.usuarios, p.usuarioId);
+    var conferencia = ad.remoto ? ad.verificarMfa(p.fatorId, codigo) : conferirCodigoLocal(u, codigo);
+    return conferencia.then(function (ok) {
+      if (!ok) return registrarFalha(p.alvo, 'Código da verificação em duas etapas incorreto');
+      mfaPendente = null;
+      u = PEP.util.porId(PEP.db.usuarios, p.usuarioId);   // com o banco ligado, os dados chegaram de novo
+      limparFalhas(p.alvo);
+      entrar(u);
+      return { ok: true, usuario: u };
+    });
+  }
+
+  // MFA exigido para o perfil (regras.mfaObrigatoria + regras.mfaPerfisObrigatorios)...
+  function mfaExigido(u) {
+    return !!(u && PEP.regra('mfaObrigatoria') && (PEP.regra('mfaPerfisObrigatorios') || []).indexOf(u.perfil) !== -1);
+  }
+  // ... e ainda não configurado
+  function precisaConfigurarMfa(u) { return mfaExigido(u) && !u.mfaAtivo; }
+
+  // O usuário precisa configurar o MFA, trocar a senha (provisória) ou aceitar um termo antes de usar o sistema.
+  // O MFA obrigatório vem primeiro: com o banco ligado, a conta sem o segundo fator não grava nada
+  // (nem a troca de senha nem o aceite do termo), porque app.usuario_atual() fica vazio até o código.
   function pendenciaDeAcesso(u) {
     if (!u) return '';
+    if (precisaConfigurarMfa(u)) return 'configurar-mfa';
     if (u.senhaProvisoria) return 'trocar-senha';
     var termo = u.perfil === 'paciente' ? 'uso' : 'sigilo';
     var versao = PEP.config().termos[termo];
@@ -287,7 +355,8 @@ PEP.estado = (function () {
   return {
     carregar: carregar, salvar: salvar, restaurar: restaurar,
     usuarioAtual: usuarioAtual, marcarAtividade: marcarAtividade, tempoInativo: tempoInativo, entrar: entrar, sair: sair, lerMotivoSaida: lerMotivoSaida,
-    autenticar: autenticar, pendenciaDeAcesso: pendenciaDeAcesso,
+    autenticar: autenticar, pendenciaDeAcesso: pendenciaDeAcesso, lerMfaPendente: lerMfaPendente, cancelarMfa: cancelarMfa, confirmarMfa: confirmarMfa,
+    precisaConfigurarMfa: precisaConfigurarMfa, mfaExigido: mfaExigido,
     registrarAuditoria: registrarAuditoria, selarAuditoria: selarAuditoria, verificarAuditoria: verificarAuditoria
   };
 })();

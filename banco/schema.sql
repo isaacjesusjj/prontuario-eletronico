@@ -444,21 +444,47 @@ create index on auditoria (seq);
 create index on auditoria (alvo);
 
 -- ---------------------------------------------------------------------
+-- Verificação em duas etapas (MFA do Supabase Auth, código TOTP do aplicativo autenticador)
+-- O token diz como a pessoa entrou: aal1 = só a senha; aal2 = senha + código do aplicativo.
+-- ---------------------------------------------------------------------
+create or replace function app.aal() returns text
+language sql stable as $$
+  select coalesce(auth.jwt() ->> 'aal', 'aal1')
+$$;
+
+-- Obrigatória para a equipe? No protótipo, não (regras.mfaObrigatoria = false no JSON). Em produção,
+-- troque para "select true" e ligue regras.mfaObrigatoria: quem é da equipe e não configurou o
+-- segundo fator não vê nada até configurar. O paciente nunca é obrigado (o portal precisa ser simples).
+create or replace function app.mfa_obrigatoria() returns boolean
+language sql stable as $$ select false $$;
+
+-- A conta está liberada se entrou com o código (aal2), ou se não ligou o segundo fator e ele não é
+-- obrigatório para o perfil. Quem ligou e entrou só com a senha fica sem acesso: senha vazada sozinha
+-- não abre o prontuário. Fator "unverified" (configuração começada e não confirmada) não conta.
+create or replace function app.mfa_ok(p_auth uuid, p_perfil text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select app.aal() = 'aal2'
+      or (not exists (select 1 from auth.mfa_factors f where f.user_id = p_auth and f.status = 'verified')
+          and (p_perfil = 'paciente' or not app.mfa_obrigatoria()))
+$$;
+
+-- ---------------------------------------------------------------------
 -- Quem é o usuário da requisição (Supabase: auth.uid() vem do token)
+-- Conta desativada, ou sem o código quando ele é exigido, não é ninguém: todas as políticas negam.
 -- ---------------------------------------------------------------------
 create or replace function app.usuario_atual() returns text
 language sql stable security definer set search_path = public as $$
-  select id from usuarios where auth_id = auth.uid() and ativo
+  select id from usuarios where auth_id = auth.uid() and ativo and app.mfa_ok(auth_id, perfil)
 $$;
 
 create or replace function app.perfil_atual() returns text
 language sql stable security definer set search_path = public as $$
-  select perfil from usuarios where auth_id = auth.uid() and ativo
+  select perfil from usuarios where auth_id = auth.uid() and ativo and app.mfa_ok(auth_id, perfil)
 $$;
 
 create or replace function app.paciente_atual() returns text
 language sql stable security definer set search_path = public as $$
-  select paciente_id from usuarios where auth_id = auth.uid() and ativo
+  select paciente_id from usuarios where auth_id = auth.uid() and ativo and app.mfa_ok(auth_id, perfil)
 $$;
 
 -- Quem chama pela API (site) entra com o papel anon ou authenticated. Fora disso é o administrador
@@ -1021,8 +1047,9 @@ alter table auditoria enable row level security;
 
 -- Equipe vê a equipe. Conta de paciente: só o próprio paciente, o técnico e a equipe do caso dele
 -- (a lista de quem tem conta no portal também é dado pessoal: princípio da necessidade).
+-- A própria linha aparece mesmo antes do código do MFA: o site precisa do nome e do perfil para pedir o código.
 create policy ver on usuarios for select to authenticated using (
-  id = app.usuario_atual() or app.perfil_atual() = 'tecnico'
+  id = app.usuario_atual() or (auth_id = auth.uid() and ativo) or app.perfil_atual() = 'tecnico'
   or (perfil <> 'paciente' and app.perfil_atual() in ('estagiario', 'supervisor', 'direcao'))
   or (perfil = 'paciente' and exists (select 1 from casos c where c.paciente_id = usuarios.paciente_id
                                       and (app.eh_estagiario_do_caso(c.id) or app.eh_supervisor_do_caso(c.id)))));

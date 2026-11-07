@@ -33,9 +33,10 @@ PEP.adaptadores.supabase = (function () {
   var COLECOES = ['usuarios', 'grupos', 'subgrupos', 'alocacoes', 'pacientes', 'inscricoes', 'casos', 'anamneses', 'consentimentos',
     'encerramentos', 'sessoes', 'evolucoes', 'assinaturas', 'adendos', 'orientacoes', 'documentos', 'anexos', 'avaliacoes',
     'riscos', 'notificacoes', 'planosSeguranca', 'contatos', 'lembretes', 'solicitacoes', 'linksAcesso', 'pedidosTitular', 'aceites', 'acessosJustificados', 'auditoria'];
-  // Campos que o banco calcula ou guarda em outro lugar: a senha fica no Supabase Auth; o hash e a
-  // hora da auditoria são do trigger (a tabela é particionada pela hora, que precisa ser a do servidor)
-  var NAO_ENVIAR = { usuarios: ['senhaHash'], auditoria: ['hash', 'hashAnterior', 'em'] };
+  // Campos que o banco calcula ou guarda em outro lugar: a senha e o segundo fator (MFA) ficam no
+  // Supabase Auth; o hash e a hora da auditoria são do trigger (a tabela é particionada pela hora,
+  // que precisa ser a do servidor)
+  var NAO_ENVIAR = { usuarios: ['senhaHash', 'mfaAtivo', 'mfaSegredo', 'mfaRecuperacao', 'mfaDesde', 'mfaFatorId', 'mfaUltimoPasso'], auditoria: ['hash', 'hashAnterior', 'em'] };
 
   function cfg() { return PEP.configBanco; }
   function snake(s) { return s.replace(/[A-Z]/g, function (m) { return '_' + m.toLowerCase(); }); }
@@ -128,16 +129,59 @@ PEP.adaptadores.supabase = (function () {
     }).then(function (r) { return r.ok ? r.json() : null; });
   }
 
+  // ---------- Verificação em duas etapas (MFA do Supabase Auth, TOTP) ----------
+  var emailAtual = '';
+  function usuarioAtualNoBanco() { return PEP.db.usuarios.filter(function (x) { return String(x.email).toLowerCase() === emailAtual; })[0]; }
+  function cabecalhoAuth() { return { apikey: cfg().supabaseChaveAnon, Authorization: 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
+  function fatoresVerificados() {
+    return fetch(cfg().supabaseUrl + '/auth/v1/user', { headers: cabecalhoAuth() })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (usr) { return (usr.factors || []).filter(function (f) { return f.factor_type === 'totp' && f.status === 'verified'; }); });
+  }
+  // Desafio + verificação: o Supabase devolve uma sessão nova, de nível aal2 (entrou com o segundo fator)
+  function verificarMfa(fatorId, codigo) {
+    var base = cfg().supabaseUrl + '/auth/v1/factors/' + encodeURIComponent(fatorId);
+    return garantirToken().then(function () { return fetch(base + '/challenge', { method: 'POST', headers: cabecalhoAuth(), body: '{}' }); })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (desafio) {
+        if (!desafio) return false;
+        return fetch(base + '/verify', { method: 'POST', headers: cabecalhoAuth(), body: JSON.stringify({ challenge_id: desafio.id, code: String(codigo || '').replace(/\D/g, '') }) })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (sessao) {
+            if (!sessao) return false;
+            gravarSessao(sessao);
+            return carregar().then(function () { var u = usuarioAtualNoBanco(); if (u) { u.mfaAtivo = true; u.mfaFatorId = fatorId; } return true; });
+          });
+      });
+  }
+  function cadastrarMfa() {
+    return garantirToken().then(function () {
+      return fetch(cfg().supabaseUrl + '/auth/v1/factors', { method: 'POST', headers: cabecalhoAuth(), body: JSON.stringify({ factor_type: 'totp', friendly_name: 'Vínculo' }) });
+    }).then(function (r) { if (!r.ok) throw new Error('MFA ' + r.status); return r.json(); })
+      .then(function (f) { return { fatorId: f.id, segredo: f.totp.secret, uri: f.totp.uri }; });
+  }
+  function desativarMfa(fatorId) {
+    return garantirToken().then(function () {
+      return fetch(cfg().supabaseUrl + '/auth/v1/factors/' + encodeURIComponent(fatorId), { method: 'DELETE', headers: cabecalhoAuth() });
+    }).then(function (r) { if (!r.ok) throw new Error('MFA ' + r.status); });
+  }
+
   // Login no Supabase Auth com e-mail e senha. Quem digita só o usuário: completa com o domínio dos estudantes
-  // (a equipe e os pacientes entram com o e-mail completo).
+  // (a equipe e os pacientes entram com o e-mail completo). Com fator verificado, pede o código (segundo passo).
   function autenticar(login, senha) {
     var email = login.indexOf('@') === -1 ? login + '@' + PEP.config().instituicao.dominioEmailEstudante : login;
     return entrarNoAuth(email, senha).then(function (sessao) {
       if (!sessao) return { ok: false, motivo: 'invalido' };
       gravarSessao(sessao);
-      return carregar().then(function () {
-        var u = PEP.db.usuarios.filter(function (x) { return String(x.email).toLowerCase() === email.toLowerCase(); })[0];
-        return u ? { ok: true, usuario: u } : { ok: false, motivo: 'invalido' };
+      emailAtual = email.toLowerCase();
+      return fatoresVerificados().then(function (fatores) {
+        return carregar().then(function () {
+          var u = usuarioAtualNoBanco();
+          if (!u) return { ok: false, motivo: 'invalido' };
+          if (fatores.length) return { ok: false, motivo: 'mfa', fatorId: fatores[0].id, usuario: u };
+          u.mfaAtivo = false;
+          return { ok: true, usuario: u };
+        });
       });
     });
   }
@@ -229,6 +273,7 @@ PEP.adaptadores.supabase = (function () {
   }
 
   return { nome: 'Supabase (PostgreSQL, São Paulo)', remoto: true, autenticar: autenticar, trocarSenha: trocarSenha, recuperarSenha: recuperarSenha, carregar: carregar, salvar: salvar,
+    verificarMfa: verificarMfa, cadastrarMfa: cadastrarMfa, confirmarCadastroMfa: verificarMfa, desativarMfa: desativarMfa,
     estruturaVazia: estruturaVazia, sair: sair, temSessao: function () { return !!token(); }, verificarAuditoria: verificarAuditoria,
     indicadores: indicadores, acessosAoMeuProntuario: acessosAoMeuProntuario, guardarArquivo: guardarArquivo, obterArquivo: obterArquivo,
     // expostos só para o teste automático do adaptador (testes/testar_site.py)

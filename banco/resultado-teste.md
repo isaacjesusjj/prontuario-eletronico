@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:12 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:32 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**125 de 125 verificações passaram.**
+**133 de 133 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 33 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2429 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2757 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -123,6 +123,14 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:12 (UTC), num PostgreSQL 18
 | ✓ | técnica não cria conta de equipe | recusado: new row violates row-level security policy for table "usuarios" |
 | ✓ | conta desativada não vê mais nada (nem os próprios dados) |  |
 | ✓ | conta reativada volta a ver o que é dela |  |
+| ✓ | MFA ligado: só com a senha (aal1), o supervisor não vê nenhum caso |  |
+| ✓ | ... mas vê a própria conta (o site precisa do nome e do perfil para pedir o código) |  |
+| ✓ | ... e não grava nada, nem auditoria em nome próprio | recusado: new row violates row-level security policy for table "auditoria" |
+| ✓ | com o código do aplicativo (aal2), volta a ver os casos dos seus grupos |  |
+| ✓ | configuração começada e não confirmada não bloqueia a conta |  |
+| ✓ | MFA obrigatório (produção): equipe sem o segundo fator não vê nada até configurar |  |
+| ✓ | ... e com o código (aal2), vê de novo |  |
+| ✓ | MFA obrigatório não vale para o paciente (o portal precisa ser simples) |  |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -132,4 +140,4 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:12 (UTC), num PostgreSQL 18
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
 | ✓ | indicadores trazem os motivos das faltas avisadas pelo paciente | {"transporte":1,"trabalho-estudo":1} |
 
-Tamanho do banco de demonstração: 9.9 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.
+Tamanho do banco de demonstração: 10.0 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.

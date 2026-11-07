@@ -117,6 +117,8 @@ for u in db["usuarios"]:
         p(f"{onde}: senha em texto (só pode existir senhaHash)")
     if not str(u.get("senhaHash", "")).startswith("pbkdf2-sha256$"):
         p(f"{onde}: senhaHash fora do formato pbkdf2-sha256$iterações$sal$hash")
+    if u.get("mfaAtivo") and not u.get("mfaSegredo"):
+        p(f"{onde}: verificação em duas etapas ativa sem segredo")
     if (u["perfil"] == "paciente") != bool(u.get("pacienteId")):
         p(f"{onde}: só paciente tem pacienteId")
     if u["perfil"] in ("tecnico", "supervisor") and not u.get("crp"):

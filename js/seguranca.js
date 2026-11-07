@@ -189,8 +189,70 @@ PEP.seguranca = (function () {
     return { ok: erros.length === 0, erros: erros, forca: forca, rotulo: rotulos[forca] };
   }
 
+  // ---------- Verificação em duas etapas (TOTP, RFC 6238) ----------
+  // O app autenticador (Google Authenticator, Microsoft Authenticator...) e o sistema guardam o mesmo
+  // segredo; a cada 30 segundos os dois calculam o mesmo código de 6 dígitos (HMAC-SHA1 do horário).
+  // Com o banco ligado, quem confere é o Supabase Auth; aqui é o protótipo.
+  var BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  function base32(bytes) {
+    var bits = 0, valor = 0, s = '';
+    for (var i = 0; i < bytes.length; i++) {
+      valor = (valor << 8) | bytes[i]; bits += 8;
+      while (bits >= 5) { s += BASE32[(valor >>> (bits - 5)) & 31]; bits -= 5; }
+    }
+    if (bits > 0) s += BASE32[(valor << (5 - bits)) & 31];
+    return s;
+  }
+  function deBase32(texto) {
+    var s = String(texto || '').replace(/[\s=-]/g, '').toUpperCase(), bits = 0, valor = 0, saida = [];
+    for (var i = 0; i < s.length; i++) {
+      var idx = BASE32.indexOf(s[i]);
+      if (idx < 0) throw new Error('Chave inválida');
+      valor = (valor << 5) | idx; bits += 5;
+      if (bits >= 8) { saida.push((valor >>> (bits - 8)) & 255); bits -= 8; }
+    }
+    return new Uint8Array(saida);
+  }
+  function novoSegredoMfa() { return base32(bytesAleatorios(20)); }   // 160 bits, como recomenda a RFC 4226
+
+  // Código de 6 dígitos para um instante (milissegundos)
+  function codigoTotp(segredo, instanteMs) {
+    var passo = Math.floor((instanteMs === undefined ? Date.now() : instanteMs) / 30000);
+    var msg = new Uint8Array(8);
+    for (var i = 7; i >= 0; i--) { msg[i] = passo % 256; passo = Math.floor(passo / 256); }
+    return window.crypto.subtle.importKey('raw', deBase32(segredo), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign'])
+      .then(function (chave) { return window.crypto.subtle.sign('HMAC', chave, msg); })
+      .then(function (assinatura) {
+        var h = new Uint8Array(assinatura), o = h[h.length - 1] & 15;
+        var n = ((h[o] & 127) * 16777216) + (h[o + 1] << 16) + (h[o + 2] << 8) + h[o + 3];
+        return ('000000' + (n % 1000000)).slice(-6);
+      });
+  }
+  // Aceita o código de agora e o de 30 s antes ou depois (relógio do celular um pouco adiantado ou atrasado).
+  // Devolve o "passo" de 30 s do código aceito (0 = recusado). Com ultimoPasso, recusa código já usado:
+  // o mesmo código não entra duas vezes, nem se alguém o viu por cima do ombro (RFC 6238, seção 5.2).
+  function conferirTotp(segredo, codigo, ultimoPasso) {
+    var c = String(codigo || '').replace(/\D/g, ''), agora = Math.floor(Date.now() / 30000);
+    if (c.length !== 6 || !segredo) return Promise.resolve(0);
+    var passos = [agora - 1, agora, agora + 1].filter(function (p) { return p > (ultimoPasso || 0); });
+    return Promise.all(passos.map(function (p) { return codigoTotp(segredo, p * 30000); }))
+      .then(function (codigos) { var i = codigos.indexOf(c); return i === -1 ? 0 : passos[i]; });
+  }
+  // Endereço otpauth:// que os apps aceitam (a chave também pode ser digitada à mão)
+  function enderecoOtp(segredo, conta) {
+    return 'otpauth://totp/' + encodeURIComponent('Vínculo:' + conta) + '?secret=' + segredo + '&issuer=' + encodeURIComponent('Vínculo') + '&digits=6&period=30';
+  }
+  // Códigos de recuperação (celular perdido): cada um vale uma vez; o sistema guarda só o hash
+  function codigosRecuperacao() {
+    var lista = [];
+    for (var i = 0; i < 8; i++) lista.push(senhaProvisoria().slice(0, 9));   // "abcd-efgh"
+    return lista;
+  }
+
   return {
     sha256: sha256, sha256Bytes: sha256Bytes, tokenAleatorio: tokenAleatorio, senhaProvisoria: senhaProvisoria,
-    suportaCripto: suportaCripto, hashSenha: hashSenha, conferirSenha: conferirSenha, avaliarSenha: avaliarSenha
+    suportaCripto: suportaCripto, hashSenha: hashSenha, conferirSenha: conferirSenha, avaliarSenha: avaliarSenha,
+    base32: base32, novoSegredoMfa: novoSegredoMfa, codigoTotp: codigoTotp, conferirTotp: conferirTotp, enderecoOtp: enderecoOtp,
+    codigosRecuperacao: codigosRecuperacao
   };
 })();

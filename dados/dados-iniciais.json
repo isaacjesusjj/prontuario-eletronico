@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.8",
+    "versao": "2026-11-06.9",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -25,6 +25,13 @@
       "tentativasLogin": 5,
       "bloqueioLoginSegundos": 30,
       "bloqueioLoginMaximoSegundos": 900,
+      "mfaObrigatoria": false,
+      "mfaPerfisObrigatorios": [
+        "tecnico",
+        "supervisor",
+        "estagiario",
+        "direcao"
+      ],
       "inatividadeMinutos": 15,
       "sessaoMaximaHoras": 12,
       "justificativaValidadeHoras": 12,

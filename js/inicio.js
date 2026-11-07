@@ -26,7 +26,7 @@ PEP.app = (function () {
     agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Acesso do paciente', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
     'meu-plano': 'Meu plano de segurança',
     auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes e contas', paciente: 'Editar cadastro',
-    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade'
+    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas'
   };
 
   function lerRota() {
@@ -60,6 +60,7 @@ PEP.app = (function () {
       case 'acesso': return T.acessoLink(rota.p1);
       case 'trocar-senha': return T.trocarSenhaObrigatoria(u);
       case 'termo': return T.termo(u);
+      case 'configurar-mfa': return T.configurarMfa(u);
       case 'painel': return T.painel(u);
       case 'casos': return T.casos(u);
       case 'caso': return T.caso(u, rota.p1, rota.p2 || 'resumo');
@@ -89,10 +90,12 @@ PEP.app = (function () {
     var rota = lerRota();
     if (!u && !PUBLICAS[rota.nome]) { window.location.hash = '#/entrar'; rota = lerRota(); }
     if (u && rota.nome === 'entrar') { window.location.hash = '#/painel'; rota = lerRota(); }
-    // Primeiro acesso: troca da senha provisória e aceite do termo vêm antes de tudo
+    // Primeiro acesso: MFA obrigatório, troca da senha provisória e aceite do termo vêm antes de tudo
     var pendencia = PEP.estado.pendenciaDeAcesso(u);
+    // Códigos de recuperação recém-gerados aparecem uma vez só: a tela fica neles até a pessoa dizer que guardou
+    if (u && PEP.telas._mfaCodigos && (rota.nome === 'conta' || rota.nome === 'configurar-mfa')) pendencia = rota.nome;
     if (pendencia && rota.nome !== pendencia && !INFORMATIVAS[rota.nome]) { window.location.hash = '#/' + pendencia; rota = lerRota(); }
-    if (!pendencia && (rota.nome === 'trocar-senha' || rota.nome === 'termo')) { window.location.hash = '#/painel'; rota = lerRota(); }
+    if (!pendencia && (rota.nome === 'trocar-senha' || rota.nome === 'termo' || rota.nome === 'configurar-mfa')) { window.location.hash = '#/painel'; rota = lerRota(); }
 
     if (rota.nome === 'caso') auditarAbertura(u, rota);
     else if (navegou) ultimaRotaAuditada = '';
@@ -173,6 +176,7 @@ PEP.app = (function () {
     if (rota.nome !== 'acesso') PEP.telas._linkLiberado = null;
     if (rota.nome !== 'estudantes') PEP.telas._importacao = null;
     PEP.telas._senhaGerada = null;   // senha provisória: mostrada uma vez, some ao trocar de tela
+    if (rota.nome !== 'conta' && rota.nome !== 'configurar-mfa') { PEP.telas._mfaNovo = null; PEP.telas._mfaCodigos = null; }
     if (rota.nome !== 'indicadores' && rota.nome !== 'painel') PEP.telas._indicadoresRemotos = null; // ao voltar, busca números novos
     if (rota.nome !== 'meus-dados') PEP.telas._acessosRemotos = null;
     renderizar();

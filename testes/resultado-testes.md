@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 01:14, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 01:31, no Chrome (Playwright), com axe-core 4.14.0.
 
-**242 de 242 verificações passaram.** Acessibilidade: 53 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**270 de 270 verificações passaram.** Acessibilidade: 57 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 60 | 0 |
+| Acessibilidade | 64 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -40,7 +40,8 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:14, no Chrome (Playwright), 
 | Faltas | 5 | 0 |
 | Prazo | 1 | 0 |
 | Contas | 7 | 0 |
-| Banco (simulado) | 9 | 0 |
+| Duas etapas | 20 | 0 |
+| Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
 ## Todas as verificações
@@ -279,13 +280,41 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:14, no Chrome (Playwright), 
 | ✓ | Contas | o paciente entra com a senha provisória e precisa trocá-la |  |
 | ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
 | ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
+| ✓ | Duas etapas | o código de 6 dígitos bate com os exemplos oficiais da RFC 6238 (é o mesmo que o celular calcula) | 287082, 081804, 050471, 005924, 279037, 353130 |
+| ✓ | Duas etapas | ativar mostra a chave para o aplicativo autenticador (160 bits em base32) e o endereço otpauth |  |
+| ✓ | Acessibilidade | Duas etapas · Minha conta · ativar duas etapas: sem violações WCAG A/AA |  |
+| ✓ | Duas etapas | código errado na ativação não liga a verificação (o campo avisa) |  |
+| ✓ | Duas etapas | com o código certo, liga e mostra 8 códigos de recuperação uma vez só (nos dados fica só o hash) |  |
+| ✓ | Acessibilidade | Duas etapas · Minha conta · códigos de recuperação: sem violações WCAG A/AA |  |
+| ✓ | Duas etapas | os códigos somem da tela depois de "Já guardei" |  |
+| ✓ | Duas etapas | com a verificação ligada, a senha certa não basta: o site pede o código e ainda não entra |  |
+| ✓ | Acessibilidade | Duas etapas · Entrar · código do aplicativo: sem violações WCAG A/AA |  |
+| ✓ | Duas etapas | o mesmo código não entra duas vezes: o da ativação já não vale (RFC 6238, seção 5.2) | Código incorreto. Confira o aplicativo e tente de novo. |
+| ✓ | Duas etapas | com o código do momento, entra |  |
+| ✓ | Duas etapas | o código errado fica na auditoria, sem o código digitado |  |
+| ✓ | Duas etapas | celular perdido: entra com um código de recuperação, que deixa de valer |  |
+| ✓ | Duas etapas | o mesmo código de recuperação não entra de novo | Código incorreto. Confira o aplicativo e tente de novo. |
+| ✓ | Duas etapas | errar o código também bloqueia por um tempo (5 erros → 30 s), como a senha | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. |
+| ✓ | Duas etapas | "Voltar" desiste do código e volta para usuário e senha |  |
+| ✓ | Duas etapas | a direção vê quem tem a verificação ligada |  |
+| ✓ | Duas etapas | celular e códigos perdidos: a direção desliga a verificação da conta (com auditoria) e a pessoa configura de novo |  |
+| ✓ | Duas etapas | com a verificação desligada, entra só com a senha |  |
+| ✓ | Duas etapas | obrigatória para a equipe: no primeiro acesso, configura antes de tudo (sem menu e sem atalho para outra tela) | #/configurar-mfa |
+| ✓ | Acessibilidade | Duas etapas · Primeiro acesso · duas etapas obrigatórias: sem violações WCAG A/AA |  |
+| ✓ | Duas etapas | configurou: os códigos de recuperação aparecem antes de seguir, e não há botão de desativar (é obrigatória) |  |
+| ✓ | Duas etapas | ... e só depois de "Já guardei" segue para o termo de sigilo | #/termo |
+| ✓ | Duas etapas | para o paciente, não é obrigatória (o portal precisa ser simples) |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:14:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:31:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5pnentqy7b |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5q9qigle5n |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
+| ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |
+| ✓ | Banco (simulado) | código errado: o Supabase recusa e o site avisa; código certo: desafio + verificação com o challenge_id | [{"challenge_id": "desafio-fator-1", "code": "654321"}, {"challenge_id": "desafio-fator-1", "code": "123456"}] |
+| ✓ | Banco (simulado) | depois do código, todos os pedidos ao banco usam o token novo (nível aal2) |  |
+| ✓ | Banco (simulado) | nenhum erro de JavaScript no login em duas etapas |  |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |

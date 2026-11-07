@@ -431,6 +431,9 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .previa-paciente .cartao { margin: 0; box-shadow: none; }
 .previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
 
+/* ---------- Verificação em duas etapas ---------- */
+.codigos-recuperacao { list-style: none; padding: 0; margin: .5rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .3rem; font-size: 1rem; }
+
 /* ---------- Portal do paciente: sessões ---------- */
 .sessao-paciente { border-bottom: 1px dashed var(--borda); padding: .4rem 0 .6rem; margin-bottom: .4rem; }
 .aviso-falta summary { font-size: .85rem; color: var(--lilas-700); cursor: pointer; margin-top: .3rem; }
