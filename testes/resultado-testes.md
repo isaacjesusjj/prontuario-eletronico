@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 00:41, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 07/11/2026 00:47, no Chrome (Playwright), com axe-core 4.14.0.
 
-**195 de 195 verificações passaram.** Acessibilidade: 47 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**204 de 204 verificações passaram.** Acessibilidade: 48 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 54 | 0 |
+| Acessibilidade | 55 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -34,6 +34,7 @@ Gerado por `testes/testar_site.py` em 07/11/2026 00:41, no Chrome (Playwright), 
 | Demonstração | 2 | 0 |
 | Celular | 4 | 0 |
 | Risco | 17 | 0 |
+| Revisor | 8 | 0 |
 | Banco (simulado) | 9 | 0 |
 | Console | 1 | 0 |
 
@@ -224,15 +225,24 @@ Gerado por `testes/testar_site.py` em 07/11/2026 00:41, no Chrome (Playwright), 
 | ✓ | Risco | o painel da técnica destaca o caso com risco que ainda não tem grupo |  |
 | ✓ | Risco | cópia de adolescente omite o relato de violência e a notificação (Código de Ética, art. 13); só a equipe é avisada |  |
 | ✓ | Risco | cópia de adulto traz a avaliação de risco e o plano de segurança |  |
+| ✓ | Revisor | aponta 'alega', juízo de valor, telefone e nome de terceiro no texto | duvida, juizo, identificacao, identificacao, estrutura, estrutura |
+| ✓ | Revisor | registro técnico com tema, intervenção e plano não recebe apontamento |  |
+| ✓ | Revisor | 'alega' não é apontado dentro de outra palavra ('alegações') |  |
+| ✓ | Revisor | na evolução devolvida, o revisor aponta falta de intervenção e de plano |  |
+| ✓ | Revisor | enquanto a estagiária escreve, o revisor sugere 'relata' no lugar de 'alega' |  |
+| ✓ | Revisor | 'Ver como o paciente lê' mostra o texto do jeito que sai na cópia |  |
+| ✓ | Acessibilidade | Revisor de escrita · Evolução com revisor e prévia: sem violações WCAG A/AA |  |
+| ✓ | Revisor | o revisor não bloqueia: a estagiária decide e envia |  |
+| ✓ | Revisor | na fila de validação, a supervisora vê os apontamentos para orientar |  |
 | ✓ | Senha | bloqueio progressivo: 30 s no 1º bloqueio e 60 s no 2º (quem tenta adivinhar fica cada vez mais lento) | Muitas tentativas sem sucesso. Aguarde 30 segundos e tente de novo. / Muitas tentativas sem sucesso. Aguarde 60 segundos e tente de novo. |
 | ✓ | Sessão | o texto que estava sendo escrito vira rascunho antes de a sessão encerrar por inatividade |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T00:41:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T00:47:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5oh59r1s2f |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5op8h5rhu7 |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Console | nenhum erro de JavaScript no console em todas as telas |  |

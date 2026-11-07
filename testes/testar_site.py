@@ -716,6 +716,37 @@ def risco_e_seguranca(nav, base):
     s.fechar()
 
 
+def revisor_de_escrita(nav, base):
+    s = Sessao(nav, base, "Revisor de escrita")
+    s.entrar("duda.estagiaria")
+    # As regras, direto
+    achados = s.js("PEP.revisor.analisar('O paciente alega que a mãe é manipuladora. Contato: (11) 91234-5678. Conversou com Joana.').map(a => a.tipo)")
+    conferir("Revisor", "aponta 'alega', juízo de valor, telefone e nome de terceiro no texto",
+             "duvida" in achados and "juizo" in achados and achados.count("identificacao") >= 2, ", ".join(achados))
+    limpo = s.js("PEP.revisor.analisar('Sessão 5. Tema: rotina de sono. Intervenção: psicoeducação sobre higiene do sono. Plano: registro diário até a próxima sessão.')")
+    conferir("Revisor", "registro técnico com tema, intervenção e plano não recebe apontamento", limpo == [])
+    conferir("Revisor", "'alega' não é apontado dentro de outra palavra ('alegações')", s.js("PEP.revisor.analisar('Sem alegações novas nesta semana.').length") == 0)
+    # A evolução devolvida da Duda: o revisor aponta o que a supervisão devolveu
+    s.ir("#/caso/c03/evolucoes")
+    conferir("Revisor", "na evolução devolvida, o revisor aponta falta de intervenção e de plano",
+             "intervenção" in s.p.locator("#ev-e05-revisor").inner_text() and "plano" in s.p.locator("#ev-e05-revisor").inner_text())
+    novo_texto = "Sessão 3. Paciente alega briga com a mãe. Trabalhada a expressão de sentimentos. Plano: retomar o tema na próxima sessão."
+    s.p.fill("#ev-e05", novo_texto)
+    s.p.wait_for_timeout(700)   # o revisor espera a pessoa parar de digitar
+    conferir("Revisor", "enquanto a estagiária escreve, o revisor sugere 'relata' no lugar de 'alega'", "relata" in s.p.locator("#ev-e05-revisor").inner_text())
+    s.clicar('[data-acao="ver-como-paciente"][data-alvo="ev-e05"]')
+    conferir("Revisor", "'Ver como o paciente lê' mostra o texto do jeito que sai na cópia",
+             "Paciente alega briga com a mãe" in s.p.locator("#ev-e05-previa").inner_text() and s.p.get_attribute('[data-alvo="ev-e05"]', "aria-expanded") == "true")
+    s.axe("Evolução com revisor e prévia")
+    s.clicar('[data-acao="salvar-evolucao"][data-id="e05"][data-modo="enviar"]')
+    conferir("Revisor", "o revisor não bloqueia: a estagiária decide e envia", s.js("PEP.util.porId(PEP.db.evolucoes,'e05').status") == "enviada")
+    s.sair()
+    s.entrar("helena.supervisora")
+    s.ir("#/supervisao")
+    conferir("Revisor", "na fila de validação, a supervisora vê os apontamentos para orientar", "relata" in s.p.locator("#app").inner_text() and "Para orientar a supervisão" in s.p.locator("#app").inner_text())
+    s.fechar()
+
+
 def bloqueio_progressivo(nav, base):
     s = Sessao(nav, base, "Bloqueio progressivo")
     s.p.clock.install(time=datetime(2026, 11, 6, 10, 0))
@@ -839,7 +870,7 @@ def main():
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
-                      risco_e_seguranca, bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
+                      risco_e_seguranca, revisor_de_escrita, bloqueio_progressivo, rascunho_automatico, adaptador_supabase):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

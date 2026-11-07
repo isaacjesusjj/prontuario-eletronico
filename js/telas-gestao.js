@@ -24,6 +24,7 @@ PEP.telas = PEP.telas || {};
       var c = PEP.util.porId(PEP.db.casos, e.casoId);
       return '<div class="cartao evolucao"><div class="linha entre"><strong>' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(e.data) + '</strong>' + PEP.ui.etiquetaEvolucao(e.status) + '</div>' +
         '<p class="suave pequeno">por ' + esc(PEP.ui.nomeUsuario(e.autorId)) + '</p><div class="texto">' + esc(e.texto) + '</div>' +
+        PEP.revisor.html(PEP.revisor.analisar(e.texto), true) +
         '<a class="botao pequeno" href="#/caso/' + c.id + '/evolucoes">Abrir para validar ou devolver</a></div>';
     }).join('');
   };

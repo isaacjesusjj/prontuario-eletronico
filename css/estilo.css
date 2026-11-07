@@ -422,6 +422,15 @@ dl.plano dt { font-weight: 700; color: var(--lilas-900); margin-top: .6rem; }
 dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .plano-paciente dd { font-family: var(--serifa); font-size: 1.05rem; }
 
+/* ---------- Revisor de escrita e prévia do paciente ---------- */
+.revisor { background: var(--alerta-fundo); border-left: 3px solid var(--alerta); border-radius: 2px; padding: .55rem .8rem; margin-top: .6rem; }
+.revisor ul { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .85rem; }
+.revisor li { margin-bottom: .35rem; }
+.revisor-ok { color: var(--sucesso); margin: .4rem 0 0; }
+.previa-paciente { border: 1px dashed var(--borda-forte); border-radius: var(--raio); padding: .6rem .8rem; margin-top: .6rem; background: var(--fundo); }
+.previa-paciente .cartao { margin: 0; box-shadow: none; }
+.previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
+
 /* ---------- Alto contraste ---------- */
 html.contraste { --fundo: #000; --superficie: #000; --texto: #fff; --texto-suave: #f0f0f0; --borda: #fff; --borda-forte: #fff;
   --lilas-950: #fff; --lilas-900: #fff; --lilas-800: #ffeb3b; --lilas-700: #ffeb3b; --lilas-500: #ffeb3b; --lilas-300: #fff; --lilas-200: #fff; --lilas-100: #1a1a1a;

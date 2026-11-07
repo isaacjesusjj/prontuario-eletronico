@@ -130,7 +130,14 @@ PEP.telas = PEP.telas || {};
 
   // ---------- Aba: evoluções ----------
   // Limite de tamanho (regras.evolucaoMaxCaracteres): o prontuário é conciso, e o paciente pode lê-lo
-  function atributosLimite(id) { return 'maxlength="' + PEP.regra('evolucaoMaxCaracteres') + '" data-contador="' + id + '-contador"'; }
+  function atributosLimite(id) { return 'maxlength="' + PEP.regra('evolucaoMaxCaracteres') + '" data-contador="' + id + '-contador" data-revisor="' + id + '-revisor"'; }
+
+  // Revisor de escrita (js/revisor.js) e prévia de como o paciente lê o registro na cópia
+  function ferramentasDeEscrita(id, texto) {
+    return '<div class="linha" style="margin-top:.3rem"><button type="button" class="botao secundario pequeno" data-acao="ver-como-paciente" data-alvo="' + id + '" aria-expanded="false" aria-controls="' + id + '-previa">Ver como o paciente lê</button></div>' +
+      '<div id="' + id + '-revisor" role="region" aria-label="Revisor de escrita">' + (texto ? PEP.revisor.html(PEP.revisor.analisar(texto)) : '') + '</div>' +
+      '<div id="' + id + '-previa"></div>';
+  }
   function contador(id, texto) {
     return '<span class="dica" id="' + id + '-contador">' + String(texto || '').length + ' de ' + PEP.regra('evolucaoMaxCaracteres') + ' caracteres</span>';
   }
@@ -150,7 +157,8 @@ PEP.telas = PEP.telas || {};
     if ((e.status === 'rascunho' || e.status === 'devolvida') && ehAutor && R().podeEscreverEvolucao(u, caso)) {
       if (e.comentarioSupervisor && e.status === 'devolvida') html += '<div class="comentario-sup"><strong>Supervisão:</strong> ' + esc(e.comentarioSupervisor) + '</div>';
       html += '<div class="campo" style="margin-top:.6rem"><label for="ev-' + e.id + '">Texto da evolução</label>' +
-        '<textarea id="ev-' + e.id + '" ' + atributosLimite('ev-' + e.id) + '>' + esc(e.texto) + '</textarea>' + contador('ev-' + e.id, e.texto) + '</div>' +
+        '<textarea id="ev-' + e.id + '" ' + atributosLimite('ev-' + e.id) + '>' + esc(e.texto) + '</textarea>' + contador('ev-' + e.id, e.texto) +
+        ferramentasDeEscrita('ev-' + e.id, e.texto) + '</div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="salvar-evolucao" data-id="' + e.id + '" data-modo="rascunho">Salvar rascunho</button>' +
         '<button class="botao pequeno" data-acao="salvar-evolucao" data-id="' + e.id + '" data-modo="enviar">Assinar e enviar à supervisão</button></div>';
       return html + '</div>';
@@ -161,7 +169,8 @@ PEP.telas = PEP.telas || {};
     html += linhaAssinaturas('evolucao', e.id) + adendos(e);
 
     if (e.status === 'enviada' && R().podeValidar(u, caso)) {
-      html += '<div class="campo" style="margin-top:.6rem"><label for="com-' + e.id + '">Comentário para o estagiário (obrigatório para devolver)</label>' +
+      html += PEP.revisor.html(PEP.revisor.analisar(e.texto), true) +
+        '<div class="campo" style="margin-top:.6rem"><label for="com-' + e.id + '">Comentário para o estagiário (obrigatório para devolver)</label>' +
         '<textarea id="com-' + e.id + '" style="min-height:70px"></textarea></div>' +
         '<div class="linha"><button class="botao pequeno" data-acao="validar-evolucao" data-id="' + e.id + '">Validar e assinar</button>' +
         '<button class="botao secundario pequeno" data-acao="devolver-evolucao" data-id="' + e.id + '">Devolver com comentário</button></div>';
@@ -211,7 +220,8 @@ PEP.telas = PEP.telas || {};
         sessoes.map(function (s) { return '<option value="' + s.id + '">' + data(s.data) + ' às ' + esc(s.hora) + '</option>'; }).join('') +
         '<option value="">Sem sessão vinculada</option></select></div>' +
         '<div class="campo"><label for="nova-texto">Texto</label><span class="dica" id="nova-texto-dica">Modelo: tema trabalhado · intervenção · resposta do paciente · plano para a próxima sessão.</span>' +
-        '<textarea id="nova-texto" aria-describedby="nova-texto-dica" ' + atributosLimite('nova-texto') + '></textarea>' + contador('nova-texto', '') + '</div>' +
+        '<textarea id="nova-texto" aria-describedby="nova-texto-dica" ' + atributosLimite('nova-texto') + '></textarea>' + contador('nova-texto', '') +
+        ferramentasDeEscrita('nova-texto', '') + '</div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="rascunho">Salvar rascunho</button>' +
         '<button class="botao pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="enviar">Assinar e enviar à supervisão</button></div></details>';
     }

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.5",
+    "versao": "2026-11-06.6",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -400,6 +400,192 @@
         "paciente": "Paciente",
         "direcao": "Direção do curso"
       }
+    },
+    "revisorEscrita": {
+      "sobre": "Regras do revisor de escrita clínica: ele aponta, não corrige nem bloqueia. Os termos são palavras ou expressões inteiras, comparadas sem acento e sem diferença de maiúsculas. A supervisão pode ajustar esta lista sem mexer no código.",
+      "tipos": {
+        "duvida": "Desacredita o relato",
+        "juizo": "Juízo de valor",
+        "estigma": "Linguagem estigmatizante",
+        "identificacao": "Identifica alguém",
+        "diagnostico": "Diagnóstico",
+        "estrutura": "Estrutura do registro",
+        "tamanho": "Tamanho"
+      },
+      "regras": [
+        {
+          "tipo": "duvida",
+          "termos": [
+            "alega",
+            "alegou",
+            "alegam",
+            "alegando",
+            "alegaram",
+            "supostamente"
+          ],
+          "sugestao": "Use \"relata\" ou \"refere\".",
+          "motivo": "\"Alegar\" e \"supostamente\" sugerem que o profissional não acredita no que a pessoa conta."
+        },
+        {
+          "tipo": "juizo",
+          "termos": [
+            "manipulador",
+            "manipuladora",
+            "manipulou",
+            "mentiroso",
+            "mentirosa",
+            "preguiçoso",
+            "preguiçosa",
+            "vitimista",
+            "dramático",
+            "dramática",
+            "exagerado",
+            "exagerada",
+            "histérico",
+            "histérica",
+            "escandaloso",
+            "escandalosa",
+            "mimado",
+            "mimada",
+            "imaturo",
+            "imatura",
+            "irresponsável",
+            "sem vergonha",
+            "fingindo"
+          ],
+          "sugestao": "Descreva o que foi dito ou observado, não o rótulo.",
+          "motivo": "Juízo de valor não é registro técnico, e o paciente pode ler o prontuário (Res. CFP 05/2025, art. 13)."
+        },
+        {
+          "tipo": "estigma",
+          "termos": [
+            "o suicida",
+            "a suicida",
+            "um suicida",
+            "uma suicida",
+            "cometeu suicídio",
+            "cometer suicídio",
+            "cometeram suicídio"
+          ],
+          "sugestao": "\"Pessoa com ideação suicida\", \"tentativa de suicídio\", \"morreu por suicídio\".",
+          "motivo": "\"Cometer\" associa o suicídio a crime, e a pessoa não se resume ao risco."
+        },
+        {
+          "tipo": "estigma",
+          "termos": [
+            "drogado",
+            "drogada",
+            "viciado",
+            "viciada",
+            "nóia",
+            "alcoólatra",
+            "cachaceiro",
+            "cachaceira"
+          ],
+          "sugestao": "\"Pessoa que faz uso de álcool ou de outras drogas\", com o padrão de uso, se for o caso.",
+          "motivo": "Rótulo moral que afasta a pessoa do cuidado."
+        },
+        {
+          "tipo": "estigma",
+          "termos": [
+            "louco",
+            "louca",
+            "doido",
+            "doida",
+            "maluco",
+            "maluca",
+            "doente mental",
+            "retardado",
+            "retardada",
+            "débil mental",
+            "surtado",
+            "surtada",
+            "surtou",
+            "esquizofrênico",
+            "esquizofrênica",
+            "o bipolar",
+            "a bipolar"
+          ],
+          "sugestao": "\"Pessoa com...\" e o nome do quadro, ou descreva o que aconteceu (\"teve uma crise\").",
+          "motivo": "A pessoa não é o diagnóstico."
+        },
+        {
+          "tipo": "estigma",
+          "termos": [
+            "portador de",
+            "portadora de",
+            "o deficiente",
+            "a deficiente",
+            "aleijado",
+            "aleijada",
+            "inválido",
+            "inválida"
+          ],
+          "sugestao": "\"Pessoa com deficiência\", \"pessoa com...\".",
+          "motivo": "Termo adotado pela Lei Brasileira de Inclusão (Lei 13.146/2015)."
+        },
+        {
+          "tipo": "diagnostico",
+          "termos": [
+            "cid",
+            "cid-10",
+            "cid-11"
+          ],
+          "sugestao": "Hipótese diagnóstica só depois de discutida em supervisão.",
+          "motivo": "O paciente pode ler o prontuário: diagnóstico sem fundamento rotula e expõe."
+        }
+      ],
+      "estrutura": {
+        "intervencao": [
+          "interven",
+          "trabalhad",
+          "psicoeduca",
+          "acolh",
+          "escuta",
+          "técnica",
+          "orientad",
+          "explorad",
+          "abordad",
+          "discutid",
+          "introduzid"
+        ],
+        "plano": [
+          "plano",
+          "próxima sessão",
+          "próximo encontro",
+          "encaminh",
+          "combinad",
+          "tarefa",
+          "retomar"
+        ]
+      },
+      "palavrasComMaiuscula": [
+        "Deus",
+        "Natal",
+        "Páscoa",
+        "Carnaval",
+        "Brasil",
+        "CAPS",
+        "UBS",
+        "UPA",
+        "SAMU",
+        "CVV",
+        "CRAS",
+        "CREAS",
+        "SUS",
+        "Sessão",
+        "Paciente",
+        "Tema",
+        "Intervenção",
+        "Plano",
+        "Resposta",
+        "Demanda",
+        "Objetivo",
+        "Objetivos",
+        "Supervisão"
+      ],
+      "citacaoLongaCaracteres": 120,
+      "textoLongoCaracteres": 1500
     },
     "termos": {
       "privacidade": "2026.1",

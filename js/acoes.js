@@ -425,6 +425,16 @@ window.PEP = PEP;
       concluir('Orientação registrada.', 'Registrou orientação de supervisão', c.id);
     },
 
+    // ----- Revisor de escrita: como o paciente lê o registro -----
+    'ver-como-paciente': function (b) {
+      var alvo = b.getAttribute('data-alvo'), caixa = el(alvo + '-previa');
+      if (!caixa) return;
+      if (caixa.innerHTML) { caixa.innerHTML = ''; b.setAttribute('aria-expanded', 'false'); return; }
+      caixa.innerHTML = '<div class="previa-paciente"><p class="suave pequeno">Assim este registro aparece na cópia que o paciente pode pedir a qualquer momento (Res. CFP 05/2025, art. 13):</p>' +
+        '<div class="cartao"><strong>' + U().formatarData(U().hoje()) + '</strong><div class="texto">' + U().esc(val(alvo) || '(ainda vazio)') + '</div></div></div>';
+      b.setAttribute('aria-expanded', 'true');
+    },
+
     // ----- Risco e segurança -----
     'registrar-risco': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
@@ -844,11 +854,20 @@ window.PEP = PEP;
   });
 
   // Campos que reagem enquanto a pessoa digita
+  var revisarDepois = null;
   document.addEventListener('input', function (ev) {
     var t = ev.target;
     // Contador de caracteres dos textos com limite (evolução)
     var idContador = t.getAttribute && t.getAttribute('data-contador');
     if (idContador && el(idContador)) el(idContador).textContent = t.value.length + ' de ' + t.getAttribute('maxlength') + ' caracteres';
+    // Revisor de escrita: roda quando a pessoa para de digitar (meio segundo), sem atrapalhar a escrita
+    var idRevisor = t.getAttribute && t.getAttribute('data-revisor');
+    if (idRevisor) {
+      clearTimeout(revisarDepois);
+      revisarDepois = setTimeout(function () {
+        if (el(idRevisor)) el(idRevisor).innerHTML = t.value.trim() ? PEP.revisor.html(PEP.revisor.analisar(t.value)) : '';
+      }, 500);
+    }
     if (t.id === 'f-nasc') {
       var linha = el('linha-resp-ok');
       if (linha) linha.hidden = !(t.value && U().idade(t.value) < 18);

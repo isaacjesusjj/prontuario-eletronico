@@ -277,6 +277,12 @@ for x in db["anexos"]:
     if x["tipo"] not in [t["mime"] for t in cfg["listas"]["tiposArquivo"]] or x["tamanho"] > cfg["regras"]["uploadMaxMB"] * 1048576:
         p(f"anexo {x['id']}: tipo ou tamanho fora da regra")
 
+# ---------- revisor de escrita ----------
+rev = cfg.get("revisorEscrita", {})
+for i, r in enumerate(rev.get("regras", [])):
+    if r.get("tipo") not in rev.get("tipos", {}) or not r.get("termos") or not r.get("sugestao") or not r.get("motivo"):
+        p(f"revisorEscrita, regra {i + 1}: precisa de tipo conhecido, termos, sugestão e motivo")
+
 # ---------- risco e segurança ----------
 TIPOS_RISCO = {x["id"] for x in cfg["listas"]["tiposRisco"]}
 NIVEIS_RISCO = {x["id"] for x in cfg["listas"]["niveisRisco"]}
