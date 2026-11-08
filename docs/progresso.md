@@ -67,7 +67,7 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 
 **Feito em 08/11 (etapa D, relatório final):** [`relatorio-final.md`](relatorio-final.md), com o que mudou (problema → o que fizemos → como mostrar), o que dizer sobre o JSON, o que validar e com quem, os limites e os próximos passos.
 
-**Feito em 08/11 (etapa E, blocos 1 e 2, a partir da comparação com outro prontuário):** branch `melhorias-bloco-1-2`.
+**Feito em 08/11 (etapa E, blocos 1 e 2, a partir da comparação com outro prontuário):** feito no branch `melhorias-bloco-1-2` e publicado na `main` no mesmo dia.
 
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
