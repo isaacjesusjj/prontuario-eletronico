@@ -80,30 +80,90 @@ PEP.telas = PEP.telas || {};
       'Lembretes não levam nome do serviço, do profissional nem conteúdo clínico. Envie pelo WhatsApp ou e-mail institucional da clínica, nunca pelo seu número pessoal (termo de sigilo).</p></div>';
   }
 
-  // ---------- Aba: documentos emitidos e anexos ----------
+  // ---------- Aba: documentos psicológicos (Res. CFP 06/2019), comunicações e anexos ----------
+  PEP.telas._modalidadeDoc = null;   // modalidade escolhida no formulário de emissão
+
+  function situacaoDocumento(d) {
+    if (R().eventoDoDocumento(d, 'anulacao')) return '<span class="etiqueta perigo">anulado</span>';
+    if (!R().documentoValido(d)) return '<span class="etiqueta alerta">falta o supervisor</span>';
+    var entrega = R().eventoDoDocumento(d, 'entrega');
+    return '<span class="etiqueta validada">válido</span>' + (entrega ? ' <span class="suave pequeno">entregue em ' + data(entrega.em) + '</span>' : ' <span class="suave pequeno">não entregue</span>') +
+      (R().devolutivaPendente(d) ? ' <span class="etiqueta alerta">devolutiva pendente</span>' : '');
+  }
+
+  function formularioDocumento(u, caso) {
+    var escolhida = R().modalidadeDocumento(PEP.telas._modalidadeDoc);
+    var html = '<details id="emitir-documento"' + (escolhida ? ' open' : '') + ' style="margin-top:.8rem"><summary><strong>Emitir documento psicológico</strong></summary>' +
+      '<p class="suave pequeno">Estrutura da Res. CFP 06/2019. Escreva em linguagem técnica e impessoal. Uma cópia fica no prontuário; documento de estagiário só vale com a assinatura do supervisor.</p>' +
+      '<div class="linha" role="group" aria-label="Modalidade do documento">' + PEP.lista('modalidadesDocumento').map(function (m) {
+        return '<button type="button" class="botao ' + (escolhida && escolhida.id === m.id ? '' : 'secundario ') + 'pequeno" data-acao="escolher-modalidade" data-id="' + m.id + '" aria-pressed="' +
+          (escolhida && escolhida.id === m.id ? 'true' : 'false') + '">' + esc(m.nome) + '</button>';
+      }).join('') + '</div>';
+    if (!escolhida) return html + '<p class="suave pequeno">Escolha a modalidade.</p></details>';
+    var semAvaliacao = escolhida.exigeAvaliacao && !PEP.db.avaliacoes.some(function (a) { return a.casoId === caso.id; });
+    html += '<div class="aviso info pequeno" style="margin-top:.6rem"><strong>' + esc(escolhida.nome) + '</strong> (' + esc(escolhida.artigo) + '): ' + esc(escolhida.orientacao) + '</div>';
+    if (semAvaliacao) return html + '<div class="aviso alerta pequeno">Este caso não tem avaliação psicológica registrada na área restrita: o laudo não pode ser emitido.</div></details>';
+    var campo = function (id, rotulo, valor, extra) {
+      return '<div class="campo"><label for="dp-' + id + '">' + rotulo + '</label><input id="dp-' + id + '" type="text" maxlength="' + (extra || 120) + '" value="' + esc(valor || '') + '"></div>';
+    };
+    var max = PEP.regra('documentoSecaoMaxCaracteres');
+    return html + '<form id="form-documento" data-form="emitir-documento" data-caso="' + caso.id + '" novalidate><div class="grade-2">' +
+      campo('titulo', 'Título *', escolhida.nome) + campo('solicitante', 'Solicitante *', '') + campo('finalidade', 'Finalidade *', '') + campo('destinatario', 'Destinatário *', '') +
+      campo('local', 'Local', 'São Paulo', 80) +
+      (escolhida.validade ? '<div class="campo"><label for="dp-validade">Prazo de validade do conteúdo *</label><input id="dp-validade" type="text" maxlength="200" placeholder="ex.: 6 meses" aria-describedby="dp-validade-dica">' +
+        '<span class="dica" id="dp-validade-dica">Vai no último parágrafo do documento.</span></div>' : '') + '</div>' +
+      escolhida.secoes.map(function (sec) {
+        return '<div class="campo"><label for="dp-s-' + sec.id + '">' + esc(sec.nome) + (sec.obrigatoria ? ' *' : '') + '</label>' +
+          '<textarea id="dp-s-' + sec.id + '" maxlength="' + max + '" style="min-height:90px"></textarea></div>';
+      }).join('') +
+      '<button class="botao" type="submit">' + (R().ehSupervisorDoCaso(u, caso) ? 'Emitir e assinar' : 'Emitir e enviar para a assinatura do supervisor') + '</button></form></details>';
+  }
+
+  function quadroComunicacoes(u, caso) {
+    var lista = R().comunicacoesDoCaso(caso);
+    var html = '<div class="cartao" id="comunicacoes"><h2>Comunicações e compartilhamentos</h2>' +
+      '<p class="suave pequeno">Toda informação passada a terceiros fica registrada: data, destinatário, finalidade e fundamento. Informe só o estritamente necessário (Código de Ética, arts. 10 e 13). ' +
+      'Requisição judicial: responda por documento psicológico, não com cópia do prontuário. A notificação compulsória fica na aba Risco e segurança.</p>';
+    html += lista.length ? '<div class="tabela-rolagem"><table><caption class="sr-only">Comunicações a terceiros, da mais recente para a mais antiga</caption><thead><tr><th scope="col">Data</th><th scope="col">Tipo</th><th scope="col">Destinatário e finalidade</th><th scope="col">O que foi informado</th><th scope="col">Paciente vê?</th></tr></thead><tbody>' +
+      lista.map(function (x) {
+        var t = R().tipoComunicacao(x.tipo);
+        return '<tr><td>' + data(x.data) + '</td><td>' + esc(t ? t.nome : x.tipo) + (x.fundamento ? '<br><span class="suave pequeno">Fundamento: ' + esc(x.fundamento) + '</span>' : '') + '</td>' +
+          '<td>' + esc(x.destinatario) + '<br><span class="suave pequeno">' + esc(x.finalidade) + '</span></td><td class="pequeno">' + esc(x.conteudo) +
+          '<br><span class="suave">por ' + esc(PEP.ui.nomeUsuario(x.registradoPor)) + '</span></td><td>' + (x.visivelPaciente ? 'sim' : 'não<br><span class="suave pequeno">' + esc(x.motivoOculto) + '</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' : '<p class="vazio">Nenhuma comunicação registrada.</p>';
+    var tipos = PEP.lista('tiposComunicacao').filter(function (t) { return R().podeRegistrarComunicacao(u, caso, t.id); });
+    if (caso.status === 'ativo' && tipos.length) {
+      html += '<details style="margin-top:.6rem"><summary><strong>Registrar comunicação</strong></summary><form id="form-comunicacao" data-form="registrar-comunicacao" data-caso="' + caso.id + '" novalidate style="margin-top:.5rem"><div class="grade-2">' +
+        '<div class="campo"><label for="cm-tipo">Tipo *</label><select id="cm-tipo" name="tipo">' + tipos.map(function (t) { return '<option value="' + t.id + '">' + esc(t.nome) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="campo"><label for="cm-data">Data *</label><input id="cm-data" name="data" type="date" value="' + PEP.util.hoje() + '"></div>' +
+        '<div class="campo"><label for="cm-dest">Destinatário *</label><input id="cm-dest" name="destinatario" type="text" maxlength="120"></div>' +
+        '<div class="campo"><label for="cm-fin">Finalidade *</label><input id="cm-fin" name="finalidade" type="text" maxlength="200"></div></div>' +
+        '<div class="campo"><label for="cm-fund">Fundamento (obrigatório em comunicação autorizada, requisição e quebra de sigilo)</label><input id="cm-fund" name="fundamento" type="text" maxlength="300" aria-describedby="cm-fund-dica">' +
+        '<span class="dica" id="cm-fund-dica">' + tipos.map(function (t) { return esc(t.nome) + ': ' + esc(t.fundamentoDica); }).join(' · ') + '</span></div>' +
+        '<div class="campo"><label for="cm-conteudo">O que foi informado *</label><textarea id="cm-conteudo" name="conteudo" maxlength="' + PEP.regra('comunicacaoMaxCaracteres') + '" style="min-height:70px"></textarea></div>' +
+        '<label class="check"><input type="checkbox" id="cm-visivel" name="visivel" checked> <span>Mostrar este registro ao paciente no portal (LGPD, art. 18, VII)</span></label>' +
+        '<div class="campo"><label for="cm-motivo">Se não mostrar, por quê</label><input id="cm-motivo" name="motivo" type="text" maxlength="300"></div>' +
+        '<button class="botao" type="submit">Registrar</button></form></details>';
+    }
+    return html + '</div>';
+  }
+
   function abaDocumentos(u, caso) {
     var docs = PEP.db.documentos.filter(function (d) { return d.casoId === caso.id; });
     var anexos = PEP.db.anexos.filter(function (a) { return a.casoId === caso.id; });
-    var html = '<div class="cartao"><h2>Documentos emitidos</h2><p class="suave pequeno">Cópia arquivada com data, finalidade e destinatário. Documento de estágio só vale com as assinaturas do estagiário e do psicólogo responsável (Res. CFP 05/2025, art. 19).</p>';
+    var html = '<div class="cartao"><h2>Documentos emitidos</h2><p class="suave pequeno">Cópia arquivada com data, finalidade e destinatário (Res. CFP 05/2025, art. 12). Documento de estágio só vale com as assinaturas do estagiário e do supervisor (art. 19).</p>';
     if (!docs.length) html += '<p class="vazio">Nenhum documento emitido.</p>';
     else {
-      html += '<div class="tabela-rolagem"><table><thead><tr><th scope="col">Documento</th><th scope="col">Finalidade</th><th scope="col">Destinatário</th><th scope="col">Emissão</th><th scope="col">Assinaturas</th></tr></thead><tbody>' +
+      html += '<div class="tabela-rolagem"><table><caption class="sr-only">Documentos psicológicos emitidos no caso</caption><thead><tr><th scope="col">Documento</th><th scope="col">Finalidade e destinatário</th><th scope="col">Emissão</th><th scope="col">Situação</th><th scope="col"></th></tr></thead><tbody>' +
         docs.map(function (d) {
-          var assin = R().assinaturasDe('documento', d.id);
-          var completo = R().assinadoPeloSupervisor('documento', d.id);
-          var acao = (!completo && R().ehSupervisorDoCaso(u, caso)) ? ' <button class="botao pequeno" data-acao="assinar-documento" data-id="' + d.id + '">Assinar</button>' : '';
-          return '<tr><td>' + esc(d.titulo) + '</td><td>' + esc(d.finalidade) + '</td><td>' + esc(d.destinatario) + '</td><td>' + data(d.emitidoEm) + '</td><td>' +
-            esc(assin.map(function (a) { return PEP.ui.nomeUsuario(a.usuarioId); }).join(', ')) +
-            (completo ? ' <span class="etiqueta validada">válido</span>' : ' <span class="etiqueta alerta">falta supervisor</span>') + acao + '</td></tr>';
+          var m = R().modalidadeDocumento(d.tipo);
+          return '<tr><td>' + esc(d.titulo) + '<br><span class="suave pequeno">' + esc(m ? m.nome : d.tipo) + '</span></td><td>' + esc(d.finalidade) + '<br><span class="suave pequeno">para ' + esc(d.destinatario) + '</span></td>' +
+            '<td>' + data(d.emitidoEm) + '</td><td>' + situacaoDocumento(d) + '</td><td><a class="botao secundario pequeno" href="#/documento/' + d.id + '">Abrir</a></td></tr>';
         }).join('') + '</tbody></table></div>';
     }
-    if (R().ehEstagiarioDoCaso(u, caso) && caso.status === 'ativo') {
-      html += '<details style="margin-top:.8rem"><summary><strong>Emitir declaração de comparecimento</strong></summary>' +
-        '<div class="grade-2" style="margin-top:.5rem"><div class="campo"><label for="dc-fin">Finalidade</label><input id="dc-fin" type="text" maxlength="120" placeholder="Ex.: justificar ausência no trabalho"></div>' +
-        '<div class="campo"><label for="dc-dest">Destinatário</label><input id="dc-dest" type="text" maxlength="120" placeholder="Ex.: o próprio paciente"></div></div>' +
-        '<button class="botao pequeno" data-acao="emitir-declaracao" data-caso="' + caso.id + '">Emitir e enviar para assinatura do supervisor</button></details>';
-    }
-    html += '</div><div class="cartao"><h2>Anexos externos</h2><p class="suave pequeno">Ex.: encaminhamento da UBS, exames trazidos pelo paciente. Testes psicológicos não entram aqui: ficam na área restrita.</p>';
+    if (R().podeEmitirDocumento(u, caso)) html += formularioDocumento(u, caso);
+    html += '</div>' + quadroComunicacoes(u, caso);
+    html += '<div class="cartao"><h2>Anexos externos</h2><p class="suave pequeno">Ex.: encaminhamento da UBS, exames trazidos pelo paciente. Testes psicológicos não entram aqui: ficam na área restrita.</p>';
     html += anexos.length ? '<ul class="lista-anexos">' + anexos.map(function (a) {
       var tam = a.tamanho ? ' · ' + (a.tamanho / 1024).toFixed(0) + ' KB' : '';
       return '<li><strong>' + esc(a.nome) + '</strong> — ' + esc(a.descricao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.enviadoPor)) + ', ' + data(a.em) + tam + ')</span> ' +
@@ -220,11 +280,87 @@ PEP.telas = PEP.telas || {};
       }).join('') : '<p class="vazio">Sem evoluções validadas.</p>') +
       PEP.telas.riscoNaCopia(caso).html +
       '<h2>Documentos emitidos</h2>' + (docs.length ? '<ul>' + docs.map(function (d) {
-        return '<li>' + esc(d.titulo) + ' — ' + esc(d.finalidade) + ' — para ' + esc(d.destinatario) + ' (' + data(d.emitidoEm) + ')</li>';
+        var m = R().modalidadeDocumento(d.tipo);
+        return '<li>' + esc(m ? m.nome : d.tipo) + ': ' + esc(d.titulo) + ' — ' + esc(d.finalidade) + ' — para ' + esc(d.destinatario) + ' (' + data(d.emitidoEm) + ')' +
+          (R().eventoDoDocumento(d, 'anulacao') ? ' — anulado' : '') + '</li>';
       }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
+      '<h2>Comunicações a terceiros</h2>' + (function () {
+        var l = R().comunicacoesDoCaso(caso).filter(function (x) { return x.visivelPaciente; });
+        return l.length ? '<ul>' + l.map(function (x) {
+          var t = R().tipoComunicacao(x.tipo);
+          return '<li>' + data(x.data) + ' · ' + esc(t ? t.nome : x.tipo) + ' · para ' + esc(x.destinatario) + ' · ' + esc(x.finalidade) + '</li>';
+        }).join('') + '</ul>' : '<p class="vazio">Nenhuma.</p>';
+      })() +
       '<h2>Anexos externos</h2>' + (anexos.length ? '<ul>' + anexos.map(function (x) { return '<li>' + esc(x.nome) + ' — ' + esc(x.descricao) + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
       (enc ? '<h2>Encerramento</h2><p>' + data(enc.data) + ' · ' + esc(enc.tipo) + ' · ' + esc(enc.registro) + '</p>' : '') +
       '<p class="suave pequeno" style="margin-top:1rem">Não fazem parte desta cópia: rascunhos, registros de supervisão e material de avaliação psicológica (Res. CFP 05/2025, arts. 14 e 17).</p></div>';
+  };
+
+  // ---------- Documento psicológico: leitura, ações e impressão ----------
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  function dataPorExtenso(iso) { var p = String(iso).slice(0, 10).split('-'); return Number(p[2]) + ' de ' + MESES[Number(p[1]) - 1] + ' de ' + p[0]; }
+  function quemAssina(id) {
+    var x = PEP.util.porId(PEP.db.usuarios, id) || {};
+    return esc(x.nome || id) + '<br>' + (x.crp ? 'Psicólogo(a) · ' + esc(x.crp) : 'Estagiário(a) de Psicologia' + (x.matricula ? ' · matrícula ' + esc(x.matricula) : ''));
+  }
+  function acoesDoDocumento(u, d, caso) {
+    var html = '', entrega = R().eventoDoDocumento(d, 'entrega');
+    if (!R().documentoValido(d) && !R().eventoDoDocumento(d, 'anulacao') && R().ehSupervisorDoCaso(u, caso)) {
+      html += '<button class="botao pequeno" data-acao="assinar-documento" data-id="' + d.id + '">Assinar como supervisor</button>';
+    }
+    if (R().podeRegistrarEntrega(u, d) && !entrega) {
+      html += '<div class="campo"><label for="ev-para">Entregue a</label><input id="ev-para" type="text" maxlength="120" placeholder="ex.: a própria paciente"></div>' +
+        '<button class="botao secundario pequeno" data-acao="registrar-evento-documento" data-tipo="entrega" data-id="' + d.id + '">Registrar entrega</button>';
+    }
+    if (R().devolutivaPendente(d) && R().podeRegistrarEntrega(u, d)) {
+      html += '<button class="botao secundario pequeno" data-acao="registrar-evento-documento" data-tipo="devolutiva" data-id="' + d.id + '">Registrar devolutiva feita</button>' +
+        '<details><summary class="pequeno">Devolutiva não feita</summary><div class="campo"><label for="ev-motivo-dev">Motivo</label><input id="ev-motivo-dev" type="text" maxlength="500"></div>' +
+        '<button class="botao secundario pequeno" data-acao="registrar-evento-documento" data-tipo="sem-devolutiva" data-id="' + d.id + '">Registrar o motivo</button></details>';
+    }
+    if (R().podeAnularDocumento(u, d)) {
+      html += '<details><summary class="pequeno">Anular este documento</summary><div class="campo"><label for="ev-motivo-anul">Motivo da anulação</label><input id="ev-motivo-anul" type="text" maxlength="500"></div>' +
+        '<button class="botao secundario pequeno" data-acao="registrar-evento-documento" data-tipo="anulacao" data-id="' + d.id + '">Anular</button></details>';
+    }
+    return html;
+  }
+  PEP.telas.documento = function (u, id) {
+    var d = PEP.util.porId(PEP.db.documentos, id), caso = d && PEP.util.porId(PEP.db.casos, d.casoId);
+    if (!d || !caso) return '<h1>Documento não encontrado</h1>';
+    if (!R().podeVerCaso(u, caso)) return PEP.ui.semPermissao();
+    if (R().precisaJustificar(u, caso)) return '<h1>Documento psicológico</h1>' + PEP.telas.formularioJustificativa(caso, '#/documento/' + d.id);
+    var m = R().modalidadeDocumento(d.tipo) || { nome: d.tipo, secoes: [] }, p = PEP.ui.pacienteDoCaso(caso);
+    var eventos = R().eventosDoDocumento(d), nomes = { entrega: 'Entregue', devolutiva: 'Devolutiva feita', 'sem-devolutiva': 'Devolutiva não feita', anulacao: 'Anulado' };
+    var autor = PEP.util.porId(PEP.db.usuarios, d.autorId) || {}, sup = R().supervisorDoCaso(caso);
+    var autoria = esc(autor.nome || d.autorId) + (autor.perfil === 'estagiario' ? ' (estagiário(a) de Psicologia), sob supervisão de ' + esc(PEP.ui.nomeUsuario(sup)) : '');
+    var acoes = acoesDoDocumento(u, d, caso);
+    var html = '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a href="#/caso/' + caso.id + '/documentos">← Voltar aos documentos</a>' +
+      (R().documentoValido(d) ? '<button class="botao" data-acao="imprimir-documento" data-id="' + d.id + '">Imprimir / salvar em PDF</button>' : '') + '</div>' +
+      '<div class="cartao nao-imprimir"><h1 style="font-size:1.3rem;margin-top:0">' + esc(d.titulo) + '</h1><p>' + situacaoDocumento(d) + '</p>' +
+      (eventos.length ? '<ul class="pequeno">' + eventos.map(function (e) {
+        return '<li>' + esc(nomes[e.tipo] || e.tipo) + ' em ' + data(e.em) + (e.para ? ' · para ' + esc(e.para) : '') + (e.observacao ? ' · ' + esc(e.observacao) : '') +
+          ' · registrado por ' + esc(PEP.ui.nomeUsuario(e.registradoPor)) + '</li>';
+      }).join('') + '</ul>' : '') +
+      (!R().documentoValido(d) && !R().eventoDoDocumento(d, 'anulacao') ? '<p class="aviso alerta pequeno">Sem validade até a assinatura do supervisor do caso (Res. CFP 05/2025, art. 19). A impressão fica liberada depois.</p>' : '') +
+      (acoes ? '<div class="pilha-acoes">' + acoes + '</div>' : '') + '</div>';
+    html += '<article class="documento-psicologico" aria-label="' + esc(m.nome) + '">' +
+      '<header class="doc-cabecalho"><strong>' + esc(PEP.config().instituicao.nome) + '</strong><br>Serviço-Escola de Psicologia</header>' +
+      '<h2 class="doc-titulo">' + esc(m.nome) + '</h2>' +
+      '<dl class="doc-identificacao"><dt>Interessado(a)</dt><dd>' + esc(p.nome) + '</dd><dt>Solicitante</dt><dd>' + esc(d.solicitante || '—') + '</dd>' +
+      '<dt>Finalidade</dt><dd>' + esc(d.finalidade) + '</dd><dt>Destinatário</dt><dd>' + esc(d.destinatario) + '</dd><dt>Autoria</dt><dd>' + autoria + '</dd></dl>' +
+      m.secoes.filter(function (sec) { return d.conteudo && d.conteudo[sec.id]; }).map(function (sec) {
+        return (m.secoes.length > 1 ? '<h3 class="doc-secao">' + esc(sec.nome) + '</h3>' : '') + '<p class="doc-texto">' + esc(d.conteudo[sec.id]) + '</p>';
+      }).join('') +
+      (d.validade ? '<p class="doc-texto">Este documento tem validade de ' + esc(d.validade) + ', a contar da data de emissão.</p>' : '') +
+      '<p class="doc-local">' + (d.local ? esc(d.local) + ', ' : '') + dataPorExtenso(d.emitidoEm) + '.</p>' +
+      '<div class="doc-assinaturas">' + R().assinaturasDe('documento', d.id).map(function (a) {
+        return '<div class="doc-assinatura"><span class="linha-assinatura"></span>' + quemAssina(a.usuarioId) +
+          '<br><span class="pequeno">Assinado eletronicamente em ' + data(a.em) + (a.hash ? ' · ' + esc(a.hash.slice(0, 12)) : '') + '</span></div>';
+      }).join('') + '</div></article>' +
+      '<article class="documento-psicologico protocolo" aria-label="Protocolo de entrega"><h2 class="doc-titulo">Protocolo de entrega</h2>' +
+      '<p class="doc-texto">Documento: ' + esc(m.nome) + ' (' + esc(d.titulo) + '), emitido em ' + data(d.emitidoEm) + ', para ' + esc(d.destinatario) + '.</p>' +
+      '<p class="doc-texto">Recebi o documento acima em ____/____/________.</p>' +
+      '<div class="doc-assinaturas"><div class="doc-assinatura"><span class="linha-assinatura"></span>Nome legível e assinatura de quem recebeu</div></div></article>';
+    return html;
   };
 
   PEP.telas.imprimir = function (u, casoId) {

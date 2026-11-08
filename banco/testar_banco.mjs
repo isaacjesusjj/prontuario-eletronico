@@ -60,7 +60,7 @@ await erroEsperado('CPF com dígito verificador errado é recusado', "insert int
 await erroEsperado('CPF repetido é recusado', `insert into pacientes (nome, data_nascimento, cpf, telefone) values ('Teste Dup', '1990-01-01', '${json.pacientes[0].cpf}', '11912345678')`);
 await erroEsperado('telefone inválido é recusado', "insert into pacientes (nome, data_nascimento, cpf, telefone) values ('Teste Tel', '1990-01-01', '', '123')");
 await erroEsperado('presença fora da lista é recusada', "insert into sessoes (caso_id, data, hora, presenca) values ('c01', '2026-12-01', '14:00', 'talvez')");
-await erroEsperado('documento sem finalidade é recusado (Res. CFP 05/2025, art. 12)', "insert into documentos (caso_id, tipo, titulo, finalidade, destinatario, autor_id) values ('c01', 'Declaração', 'Declaração', '', 'Paciente', 'u-est1')");
+await erroEsperado('documento sem finalidade é recusado (Res. CFP 05/2025, art. 12)', `insert into documentos (caso_id, tipo, titulo, finalidade, destinatario, autor_id, conteudo) values ('c01', 'declaracao', 'Declaração', '', 'Paciente', 'u-est1', '{"informacao": "Comparecimento às quartas-feiras."}')`);
 
 await erroEsperado('contato de emergência sem telefone é recusado (nome e telefone vão juntos)', "update pacientes set emergencia_nome = 'Contato Exemplo' where id = 'p02'");
 await erroEsperado('telefone do contato de emergência fora do formato é recusado', "update pacientes set emergencia_nome = 'Contato Exemplo', emergencia_telefone = '123' where id = 'p02'");
@@ -372,6 +372,43 @@ conferir('no outro grupo, o novo supervisor vê o caso e o anterior deixa de ver
   (await como('u-sup2', () => ids('casos'))).split(',').includes('c03') && !(await como('u-sup1', () => ids('casos'))).split(',').includes('c03'));
 conferir('o paciente vê a passagem como "passou o seu atendimento para outra dupla"',
   (await valores("select app.categoria_acesso('Passou o caso para outra dupla') as c"))[0].c === 'Passou o seu atendimento para outra dupla');
+
+// ---------- 6i. Documentos psicológicos (Res. CFP 06/2019) e comunicações a terceiros ----------
+const doc = (id, tipo, conteudo, validade = '6 meses') => `insert into documentos (id, caso_id, tipo, titulo, finalidade, destinatario, solicitante, conteudo, validade, local, autor_id)
+  values ('${id}', 'c01', '${tipo}', 'Documento de teste', 'Acompanhamento escolar', 'Escola Exemplo', 'A própria paciente', '${JSON.stringify(conteudo)}', '${validade}', 'São Paulo', 'u-est1')`;
+const secoesRelatorio = { demanda: 'Demanda trazida pela paciente.', procedimento: 'Entrevistas semanais.', analise: 'Análise do processo.', conclusao: 'Conclusão do relatório.' };
+await como('u-est1', async () => {
+  await erroEsperado('relatório sem a seção "análise" é recusado', doc('d-x1', 'relatorio', { ...secoesRelatorio, analise: '' }));
+  await erroEsperado('atestado sem prazo de validade é recusado', doc('d-x2', 'atestado', { fundamentacao: 'Condição atestada com base no acompanhamento.' }, ''));
+  await erroEsperado('laudo sem avaliação psicológica registrada no caso é recusado',
+    doc('d-x3', 'laudo', { ...secoesRelatorio, referencias: 'Referências da avaliação.' }));
+  await db.query(doc('d-r1', 'relatorio', secoesRelatorio));
+  conferir('estagiária emite relatório psicológico com as seções da Res. CFP 06/2019', true);
+  await erroEsperado('documento sem a assinatura do supervisor não é entregue', "insert into eventos_documento (documento_id, caso_id, tipo, para, registrado_por) values ('d-r1', 'c01', 'entrega', 'Paciente Exemplo 01', 'u-est1')");
+});
+await como('u-sup1', () => db.query(`insert into assinaturas (alvo_tipo, alvo_id, usuario_id, papel, hash) values ('documento', 'd-r1', 'u-sup1', 'supervisor', '${'a'.repeat(64)}')`));
+await como('u-est1', async () => {
+  await db.query("insert into eventos_documento (id, documento_id, caso_id, tipo, para, registrado_por) values ('ev-1', 'd-r1', 'c01', 'entrega', 'Paciente Exemplo 01', 'u-est1')");
+  conferir('com a assinatura do supervisor, a entrega é registrada (protocolo)', true);
+  await erroEsperado('a mesma entrega não é registrada duas vezes', "insert into eventos_documento (documento_id, caso_id, tipo, para, registrado_por) values ('d-r1', 'c01', 'entrega', 'Outra pessoa', 'u-est1')");
+  await erroEsperado('documento já entregue não é anulado', "insert into eventos_documento (documento_id, caso_id, tipo, observacao, registrado_por) values ('d-r1', 'c01', 'anulacao', 'Erro de digitação no relatório.', 'u-est1')");
+  await erroEsperado('devolutiva só de relatório ou laudo (declaração não tem)', "insert into eventos_documento (documento_id, caso_id, tipo, registrado_por) values ('doc01', 'c01', 'devolutiva', 'u-est1')");
+  await db.query("insert into eventos_documento (documento_id, caso_id, tipo, registrado_por) values ('d-r1', 'c01', 'devolutiva', 'u-est1')");
+  conferir('a devolutiva do relatório é registrada', true);
+  await erroEsperado('estagiária não registra quebra de sigilo (decisão da supervisão)',
+    "insert into comunicacoes (caso_id, tipo, data, destinatario, finalidade, fundamento, conteudo, registrado_por) values ('c01', 'quebra-sigilo', current_date, 'Familiar', 'Proteção da vida', 'Risco iminente', 'Informado o risco e o plano de segurança.', 'u-est1')");
+  await db.query("insert into comunicacoes (id, caso_id, tipo, data, destinatario, finalidade, conteudo, registrado_por) values ('cm-1', 'c01', 'encaminhamento', current_date, 'UBS Exemplo', 'Avaliação psiquiátrica', 'Encaminhada para avaliação, com a concordância da paciente.', 'u-est1')");
+  await erroEsperado('comunicação escondida do paciente precisa do motivo',
+    "insert into comunicacoes (caso_id, tipo, data, destinatario, finalidade, conteudo, visivel_paciente, registrado_por) values ('c01', 'encaminhamento', current_date, 'CAPS Exemplo', 'Avaliação', 'Encaminhada para avaliação no CAPS.', false, 'u-est1')");
+});
+await como('u-sup1', async () => {
+  await erroEsperado('quebra de sigilo sem fundamento é recusada',
+    "insert into comunicacoes (caso_id, tipo, data, destinatario, finalidade, conteudo, registrado_por) values ('c01', 'quebra-sigilo', current_date, 'Familiar', 'Proteção da vida', 'Informado o risco e o plano de segurança.', 'u-sup1')");
+  await db.query("insert into comunicacoes (id, caso_id, tipo, data, destinatario, finalidade, fundamento, conteudo, visivel_paciente, motivo_oculto, registrado_por) values ('cm-2', 'c01', 'quebra-sigilo', current_date, 'Familiar', 'Proteção da vida', 'Risco iminente avaliado na supervisão', 'Informado o risco e o plano de segurança.', false, 'Mostrar agora aumentaria o risco; rever na próxima sessão.', 'u-sup1')");
+  conferir('a supervisão registra quebra de sigilo com fundamento', true);
+});
+conferir('o paciente vê as comunicações visíveis para ele, e não as escondidas com motivo (LGPD, art. 18, VII)', (await como('u-pac1', () => ids('comunicacoes'))) === 'cm-1');
+conferir('estagiária de outra dupla não vê as comunicações do caso', (await como('u-est3', () => ids('comunicacoes'))) === '');
 
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');

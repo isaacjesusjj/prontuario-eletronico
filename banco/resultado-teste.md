@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:01 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:23 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**152 de 152 verificações passaram.**
+**168 de 168 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
-| ✓ | schema.sql roda sem erro | 34 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1694 ms) |
+| ✓ | schema.sql roda sem erro | 36 tabelas |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2057 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -150,6 +150,22 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:01 (UTC), num PostgreSQL 18
 | ✓ | a técnica passa o caso para outro grupo, com justificativa (sem resumo) |  |
 | ✓ | no outro grupo, o novo supervisor vê o caso e o anterior deixa de ver |  |
 | ✓ | o paciente vê a passagem como "passou o seu atendimento para outra dupla" |  |
+| ✓ | relatório sem a seção "análise" é recusado | recusado: Documento incompleto: falta a seção "analise". |
+| ✓ | atestado sem prazo de validade é recusado | recusado: Informe o prazo de validade do conteúdo (Res. CFP 06/2019). |
+| ✓ | laudo sem avaliação psicológica registrada no caso é recusado | recusado: Laudo é resultado de avaliação psicológica: registre antes o instrumento na área restrita  |
+| ✓ | estagiária emite relatório psicológico com as seções da Res. CFP 06/2019 |  |
+| ✓ | documento sem a assinatura do supervisor não é entregue | recusado: O documento só vale com a assinatura do supervisor: assine antes de entregar. |
+| ✓ | com a assinatura do supervisor, a entrega é registrada (protocolo) |  |
+| ✓ | a mesma entrega não é registrada duas vezes | recusado: Este registro já foi feito para o documento. |
+| ✓ | documento já entregue não é anulado | recusado: Documento já entregue não é anulado: emita outro documento que o corrija. |
+| ✓ | devolutiva só de relatório ou laudo (declaração não tem) | recusado: Devolutiva é registrada para relatório e laudo. |
+| ✓ | a devolutiva do relatório é registrada |  |
+| ✓ | estagiária não registra quebra de sigilo (decisão da supervisão) | recusado: Quebra de sigilo é decisão da supervisão ou da psicóloga técnica (Código de Ética, art. 10 |
+| ✓ | comunicação escondida do paciente precisa do motivo | recusado: new row for relation "comunicacoes" violates check constraint "comunicacoes_check1" |
+| ✓ | quebra de sigilo sem fundamento é recusada | recusado: new row for relation "comunicacoes" violates check constraint "comunicacoes_check" |
+| ✓ | a supervisão registra quebra de sigilo com fundamento |  |
+| ✓ | o paciente vê as comunicações visíveis para ele, e não as escondidas com motivo (LGPD, art. 18, VII) |  |
+| ✓ | estagiária de outra dupla não vê as comunicações do caso |  |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -159,4 +175,4 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:01 (UTC), num PostgreSQL 18
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
 | ✓ | indicadores trazem os motivos das faltas avisadas pelo paciente | {"transporte":1,"trabalho-estudo":1} |
 
-Tamanho do banco de demonstração: 10.0 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.
+Tamanho do banco de demonstração: 10.2 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, auditoria_2026 64 KB, casos 64 KB, alocacoes 64 KB.

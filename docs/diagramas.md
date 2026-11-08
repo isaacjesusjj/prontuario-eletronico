@@ -47,6 +47,8 @@ erDiagram
     CASOS ||--o{ TRANSFERENCIAS : "passa para outra dupla"
     SUBGRUPOS ||--o{ TRANSFERENCIAS : "recebe o caso"
     EVOLUCOES |o--o| TRANSFERENCIAS : "resumo de transferência"
+    DOCUMENTOS ||--o{ EVENTOS_DOCUMENTO : "entrega, devolutiva, anulação"
+    CASOS ||--o{ COMUNICACOES : "compartilhamentos"
 
     PACIENTES {
         text id PK
@@ -57,6 +59,8 @@ erDiagram
         text telefone
         text email
         text responsavel_nome
+        text emergencia_nome
+        text emergencia_telefone
         text canal_lembrete
     }
     USUARIOS {
@@ -184,9 +188,31 @@ erDiagram
     DOCUMENTOS {
         text id PK
         text caso_id FK
+        text tipo
         text titulo
         text finalidade
         text destinatario
+        jsonb conteudo
+        text validade
+    }
+    EVENTOS_DOCUMENTO {
+        text id PK
+        text documento_id FK
+        text tipo
+        text para
+        text observacao
+        text registrado_por FK
+    }
+    COMUNICACOES {
+        text id PK
+        text caso_id FK
+        text tipo
+        date data
+        text destinatario
+        text finalidade
+        text fundamento
+        bool visivel_paciente
+        text registrado_por FK
     }
     ANEXOS {
         text id PK
@@ -328,11 +354,12 @@ flowchart LR
     P -->|Paciente| PS[Meu plano de segurança]
     P --> AG[Agenda: dia · semana · mês · lista]
     P --> MC[Minha conta: trocar senha, duas etapas]
+    P --> BU[Busca de paciente] --> CA
 
     CA --> R1[Resumo, anamnese e consentimentos]
     CA --> R2[Evoluções]
     CA --> R3[Sessões, faltas e lembretes]
-    CA --> R4[Documentos e anexos]
+    CA --> R4[Documentos, comunicações e anexos] --> DP[Documento psicológico: assinar, entregar, imprimir]
     CA --> R5[Avaliação psicológica - restrita]
     CA --> R6[Supervisão - restrita]
     CA --> R7[Encerramento]
@@ -359,11 +386,11 @@ flowchart LR
     PA --- U3[Pedir cópia do prontuário]
     PA --- U4[Ver e corrigir dados, revogar autorizações - LGPD]
     PA --- U19[Avisar que não vai à sessão]
-    PA --- U20[Ler o plano de segurança e ver quem acessou]
+    PA --- U20[Ler o plano de segurança, ver quem acessou e com quem os dados foram compartilhados]
     ES --- U5[Registrar anamnese e evolução]
     ES --- U6[Registrar presença, agendar, enviar lembrete]
     ES --- U7[Fluxo de abandono: contato e motivo]
-    ES --- U8[Emitir declaração e anexar arquivos]
+    ES --- U8[Emitir documento psicológico, registrar comunicação e anexar arquivos]
     ES --- U21[Registrar risco e plano de segurança]
     ES --- U25[Escrever o resumo de transferência]
     SU --- U9[Validar ou devolver evolução]

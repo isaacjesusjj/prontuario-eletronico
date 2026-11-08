@@ -22,7 +22,10 @@ O Vínculo acompanha o paciente da fila de espera até o encerramento, com a sup
 - **CPF já cadastrado:** o formulário público não revela (mesma mensagem para todos); a equipe vê a duplicidade na fila e, na triagem, o novo caso é ligado ao cadastro existente.
 - **Triagem e cadastro** com consentimentos separados por finalidade, cada um com data, responsável e versão do termo; revogar vira novo registro.
 - **Alocação:** a direção monta os grupos e encerra os vínculos no fim do semestre; o supervisor forma duplas ou trios; o técnico aloca os pacientes (só com contrato terapêutico registrado).
-- **Prontuário do caso:** anamnese, demanda e objetivos com versões, evoluções, documentos, anexos com upload real e cópia em PDF.
+- **Prontuário do caso:** anamnese, demanda e objetivos com versões, evoluções (com modelo de sessão e de acolhimento), anexos com upload real e cópia em PDF.
+- **Documentos psicológicos (Res. CFP 06/2019):** declaração, atestado, relatório, laudo e parecer, cada um com as suas seções; prazo de validade; declaração sem termo clínico; laudo só com avaliação psicológica; impressão com páginas numeradas e protocolo de entrega; registro da entrega e da devolutiva; anulação com motivo.
+- **Comunicações e compartilhamentos:** tudo o que é passado a terceiros fica registrado com data, destinatário, finalidade e fundamento; quebra de sigilo só pela supervisão ou pela técnica; o paciente vê com quem os dados dele foram compartilhados (LGPD, art. 18, VII).
+- **Busca de paciente** no menu (só entre os casos que a pessoa pode ver, sem o nome no endereço da página) e **contato de emergência** no cadastro.
 - **Evolução com validação:** rascunho → enviada → validada (assinatura do estagiário e do supervisor, com hash do texto) → bloqueada. Correção só por adendo.
 - **Fluxo de abandono:** duas faltas seguidas sem justificativa abrem o registro de contato e motivo antes de liberar a vaga.
 - **Agenda em calendário** (dia, semana, mês e lista) e **lembretes** por WhatsApp ou e-mail, sem conteúdo clínico e só com autorização.
@@ -34,8 +37,8 @@ O Vínculo acompanha o paciente da fila de espera até o encerramento, com a sup
 - **Faltas avisadas pelo paciente** pelo portal, com motivo de lista fechada, que viram indicador. Relato urgente no formulário público mostra os contatos de crise e sobe na fila. Evolução atrasada (mais de 48 h) aparece no painel.
 - **Transição de semestre:** no fim do estágio, o estagiário escreve o **resumo de transferência** (o rascunho já vem com período, sessões, demanda e objetivos tirados do prontuário) e a supervisão valida. A **passagem do caso** para a nova dupla tem lista de conferência, exige o paciente avisado e o resumo validado (ou uma justificativa) e fica registrada; a dupla anterior perde o acesso e o prontuário continua inteiro. Os casos sem dupla ativa aparecem no painel.
 - **Contas:** a direção gera senha provisória e desativa ou reativa contas da equipe; a técnica cria e cuida do acesso do paciente ao portal.
-- **Segurança:** senhas só como hash (PBKDF2, 600 mil iterações), política de senha do NIST (15 caracteres, sem regra de símbolo), senha provisória com troca obrigatória, bloqueio progressivo por tentativas (30 s até 15 min), **verificação em duas etapas** (código do aplicativo autenticador e códigos de recuperação), sessão que encerra por inatividade com aviso (o texto em edição vira rascunho), auditoria com cadeia de hash verificável. No banco, as mesmas regras valem para quem chamar a API direto.
-- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras, erros ligados aos campos, títulos por tela. 59 telas conferidas com axe-core, sem violações.
+- **Segurança:** senhas só como hash (PBKDF2, 600 mil iterações), política de senha do NIST (15 caracteres, sem regra de símbolo), senha provisória com troca obrigatória, bloqueio progressivo por tentativas (30 s até 15 min), **verificação em duas etapas** (código do aplicativo autenticador e códigos de recuperação), sessão que encerra por inatividade com aviso (o texto em edição vira rascunho), auditoria com cadeia de hash verificável, filtros e exportação em planilha, aviso de último acesso e tentativas sem sucesso depois do login. No banco, as mesmas regras valem para quem chamar a API direto.
+- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras, erros ligados aos campos, títulos por tela. 65 telas conferidas com axe-core, sem violações.
 - **Indicadores agregados:** pacientes atendidos, taxa de retorno, média de sessões, motivos de abandono e de falta avisada, casos ativos e espera na fila.
 
 As regras e as normas de onde elas vêm estão no próprio site, em **Regras e leis** (`#/regras`).
@@ -102,11 +105,11 @@ PostgreSQL no Supabase (região São Paulo). Projeção: ~84 MB por ano no cená
 
 | O quê | Como rodar | Resultado |
 |---|---|---|
-| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 287 de 287 |
-| Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 150 de 150 |
+| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 326 de 326 |
+| Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 168 de 168 |
 | JSON antes de migrar | `python ferramentas/validar_json.py` | 0 problemas |
 
-Preparação: `pip install playwright`, `cd testes && npm install` e `cd banco && npm install`.
+Preparação: `pip install playwright`, `cd testes && npm install` e `cd banco && npm install`. No GitHub, os três testes rodam sozinhos a cada envio (aba **Actions**, arquivo `.github/workflows/testes.yml`).
 
 ## Registro de correções em relação à Etapa 1
 
@@ -163,6 +166,9 @@ Falhas encontradas na revisão do protótipo e corrigidas. Os commits do branch 
 | Revisor de escrita | Regras transparentes em `_config.revisorEscrita`, sem IA; só aponta, não corrige nem bloqueia | O texto clínico não sai do navegador e a supervisão ajusta as regras |
 | "Quem acessou" para o paciente | Categorias ("Abriu o prontuário"), não o texto interno da auditoria; para menor de idade, sem o motivo | LGPD, arts. 9º e 18; o portal pode estar com o responsável (Código de Ética, art. 13) |
 | Aviso de falta pelo paciente | Lista fechada de motivos, sem texto livre | O sistema não é canal de crise; o aviso lembra CVV 188 e SAMU 192 |
+| Documentos psicológicos | Cinco modalidades da Res. CFP 06/2019, com as seções em `_config.listas.modalidadesDocumento`; o documento nunca muda: entrega, devolutiva e anulação são registros novos | A norma que todo psicólogo usa; nada é apagado |
+| Comunicações a terceiros | Tabela própria, com fundamento obrigatório para comunicação autorizada, requisição e quebra de sigilo; visível ao paciente por padrão, escondida só com motivo | LGPD, art. 18, VII; Código de Ética, arts. 10 e 13 |
+| Busca de paciente | Só entre os casos visíveis; o termo fica na memória da página, não no endereço | O endereço vai para o histórico do navegador: nome de paciente não pode ir junto |
 | Transição de semestre | Resumo de transferência (rascunho gerado do prontuário, sem IA) validado pela supervisão; passagem registrada em tabela própria; sem resumo, só com justificativa | O caso continua; quem atende muda. A nova dupla precisa saber o que foi feito, e a anterior perde o acesso (Código de Ética, art. 15) |
 | Verificação em duas etapas | Código do aplicativo autenticador (TOTP) e códigos de recuperação; obrigatória para a equipe só em produção; paciente não é obrigado | Senha vazada sozinha não abre o prontuário; o portal do paciente precisa ser simples |
 

@@ -431,6 +431,26 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .previa-paciente .cartao { margin: 0; box-shadow: none; }
 .previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
 
+/* ---------- Documento psicológico (tela e impressão) ---------- */
+.documento-psicologico { background: var(--superficie); border: 1px solid var(--borda); padding: 2rem 2.2rem; margin: 0 0 1.2rem; max-width: 46rem; font-family: var(--serifa); }
+.doc-cabecalho { text-align: center; font-family: var(--fonte); font-size: .9rem; border-bottom: 1px solid var(--borda-forte); padding-bottom: .6rem; margin-bottom: 1rem; }
+.doc-titulo { text-align: center; text-transform: uppercase; letter-spacing: .08em; font-size: 1.15rem; margin: .4rem 0 1rem; }
+.doc-secao { font-size: 1rem; margin: 1rem 0 .3rem; }
+.doc-identificacao { display: grid; grid-template-columns: max-content 1fr; gap: .2rem .8rem; font-family: var(--fonte); font-size: .92rem; margin: 0 0 1rem; }
+.doc-identificacao dt { font-weight: 600; }
+.doc-identificacao dd { margin: 0; }
+.doc-texto { white-space: pre-wrap; text-align: justify; }
+.doc-local { margin-top: 1.4rem; text-align: right; }
+.doc-assinaturas { display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2.2rem; font-family: var(--fonte); font-size: .88rem; }
+.doc-assinatura { flex: 1 1 14rem; text-align: center; }
+.linha-assinatura { display: block; border-top: 1px solid var(--texto); margin-bottom: .3rem; }
+.pilha-acoes { display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; margin-top: .6rem; }
+@media print {
+  @page { margin: 2cm 2cm 2.4cm; @bottom-center { content: "Página " counter(page) " de " counter(pages); font: 9pt sans-serif; } }
+  .documento-psicologico { border: none; padding: 0; max-width: none; }
+  .documento-psicologico.protocolo { break-before: page; }
+}
+
 /* ---------- Busca de paciente (menu) ---------- */
 .busca-menu { padding: .2rem .2rem .6rem; }
 .busca-menu input { width: 100%; }

@@ -16,8 +16,9 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 287 de 287 (59 telas no axe-core).
-  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 150 de 150.
+  - `python testes/testar_site.py` → hoje 326 de 326 (65 telas no axe-core).
+  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 168 de 168.
+  - No GitHub, os três rodam sozinhos a cada envio (`.github/workflows/testes.yml`, aba Actions).
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
 
 ## Arquitetura em poucas linhas
@@ -53,6 +54,9 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Risco: registrado no caso, não muda depois; a supervisão dá ciência; a notificação compulsória só o supervisor registra. Na cópia ao responsável de criança ou adolescente, relato de violência e notificação ficam de fora.
 - Técnica fora da equipe do caso registra o motivo antes de abrir o conteúdo clínico (vale `justificativaValidadeHoras`). O paciente vê "quem acessou" por categoria; para menor de idade, sem o motivo.
 - Transição de semestre: caso que já tem dupla só muda de dupla pela passagem (tabela `transferencias`, trigger `app.transferencia_regras`): técnica ou supervisor do caso (este, só dentro do grupo), nenhuma evolução esperando a supervisão, paciente avisado e resumo de transferência validado (evolução `tipo: 'transferencia'`, sem sessão) ou justificativa. Cada resumo vale para uma passagem.
+- Documento psicológico (Res. CFP 06/2019): modalidade e seções obrigatórias em `_config.listas.modalidadesDocumento` (o banco confere as mesmas em `app.documento_regras`); só vale com a assinatura do supervisor; o documento nunca muda: entrega, devolutiva e anulação vão em `eventos_documento`. Declaração sem termo clínico (`listas.termosClinicosDeclaracao`, orientação no site).
+- Comunicação a terceiros (`comunicacoes`): fundamento obrigatório em comunicação autorizada, requisição e quebra de sigilo; quebra de sigilo só supervisor ou técnica; o paciente vê o que ficou visível, e esconder exige motivo.
+- Busca de paciente: só nos casos visíveis, e o termo nunca vai para o endereço da página.
 - O paciente só avisa falta de sessão futura, com motivo de lista fechada (sem texto livre: o sistema não é canal de crise).
 - Lembretes nunca têm conteúdo clínico. Não existe chat entre paciente e equipe.
 - Base normativa: Res. CFP 05/2025 e 01/2009, Código de Ética Profissional do Psicólogo e LGPD. Os artigos estão na skill do projeto e na tela "Regras e leis" do site (`#/regras`).
@@ -73,7 +77,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`.
 - O grupo decidiu deixar as escalas PHQ-9 e GAD-7 para depois (se entrarem, só com as pontuações). O Figma (Etapa 3) ainda não tem as telas novas.
 - O resumo para a banca e a lista do que validar, e com quem, estão em `docs/relatorio-final.md`.
-- Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita e seções do resumo de transferência.
+- Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita, seções do resumo de transferência e dos documentos psicológicos, o artigo da Res. CFP 13/2022 citado no contrato e a guarda de menor contada a partir dos 18 anos.
 - Produção: ligar o MFA obrigatório para a equipe, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Functions (link do paciente, convite por e-mail, desligar o MFA de quem perdeu o celular) e backup.
 
 ## Skill do projeto

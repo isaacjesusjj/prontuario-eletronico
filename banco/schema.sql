@@ -245,15 +245,55 @@ create table orientacoes (
   texto         text not null
 );
 
+-- Documentos psicológicos (Res. CFP 06/2019): a modalidade define as seções obrigatórias do conteúdo
 create table documentos (
   id           text primary key default gen_random_uuid()::text,
   caso_id      text not null references casos (id),
-  tipo         text not null,
-  titulo       text not null,
+  tipo         text not null check (tipo in ('declaracao', 'atestado', 'relatorio', 'laudo', 'parecer')),
+  titulo       text not null check (length(titulo) between 3 and 120),
   finalidade   text not null check (length(finalidade) >= 3),
   destinatario text not null check (length(destinatario) >= 3),
+  solicitante  text not null default '' check (length(solicitante) <= 120),
+  conteudo     jsonb not null default '{}'::jsonb check (jsonb_typeof(conteudo) = 'object'),
+  validade     text not null default '' check (length(validade) <= 200),   -- prazo de validade do conteúdo
+  local        text not null default '' check (length(local) <= 80),
   emitido_em   date not null default current_date,
   autor_id     text not null references usuarios (id)
+);
+
+-- O que acontece com o documento depois de emitido: entrega (protocolo), devolutiva, devolutiva não feita
+-- (com motivo) e anulação (com motivo). Só inserção: o documento em si nunca muda.
+create table eventos_documento (
+  id             text primary key default gen_random_uuid()::text,
+  documento_id   text not null references documentos (id),
+  caso_id        text not null references casos (id),
+  tipo           text not null check (tipo in ('entrega', 'devolutiva', 'sem-devolutiva', 'anulacao')),
+  em             timestamptz not null default now(),
+  para           text not null default '' check (length(para) <= 120),     -- quem recebeu (entrega)
+  observacao     text not null default '' check (length(observacao) <= 500),
+  registrado_por text not null references usuarios (id),
+  check (tipo <> 'entrega' or length(para) >= 3),
+  check (tipo not in ('sem-devolutiva', 'anulacao') or length(observacao) >= 10)
+);
+
+-- Comunicações e compartilhamentos: toda informação passada a terceiros, com data, destinatário,
+-- finalidade e fundamento (LGPD, art. 18, VII; Código de Ética, arts. 10 e 13). A notificação
+-- compulsória tem tabela própria (notificacoes), ligada à avaliação de risco.
+create table comunicacoes (
+  id               text primary key default gen_random_uuid()::text,
+  caso_id          text not null references casos (id),
+  tipo             text not null check (tipo in ('autorizada', 'encaminhamento', 'responsaveis', 'requisicao', 'quebra-sigilo')),
+  data             date not null check (data <= current_date + 1),
+  destinatario     text not null check (length(destinatario) between 3 and 120),
+  finalidade       text not null check (length(finalidade) between 3 and 200),
+  fundamento       text not null default '' check (length(fundamento) <= 300),
+  conteudo         text not null check (length(conteudo) between 10 and 1000),   -- o que foi informado (só o necessário)
+  visivel_paciente boolean not null default true,
+  motivo_oculto    text not null default '' check (length(motivo_oculto) <= 300),
+  registrado_por   text not null references usuarios (id),
+  em               timestamptz not null default now(),
+  check (tipo not in ('autorizada', 'requisicao', 'quebra-sigilo') or length(fundamento) >= 5),
+  check (visivel_paciente or length(motivo_oculto) >= 10)
 );
 
 -- O conteúdo do arquivo vai para o Supabase Storage (bucket privado "anexos")
@@ -466,6 +506,8 @@ create index on riscos (caso_id) where encerrado_em is null;
 create index on notificacoes (risco_id);
 create index on planos_seguranca (caso_id, versao desc);
 create index on transferencias (caso_id, em desc);
+create index on eventos_documento (documento_id);
+create index on comunicacoes (caso_id, data desc);
 create index on auditoria (seq);
 create index on auditoria (alvo);
 
@@ -601,6 +643,8 @@ create trigger so_insercao before update or delete on notificacoes for each row 
 create trigger so_insercao before update or delete on acessos_justificados for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on planos_seguranca for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on transferencias for each row execute function app.bloquear_alteracao();
+create trigger so_insercao before update or delete on eventos_documento for each row execute function app.bloquear_alteracao();
+create trigger so_insercao before update or delete on comunicacoes for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on riscos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on casos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on pacientes for each row execute function app.bloquear_alteracao();
@@ -906,6 +950,83 @@ begin
 end $$;
 create trigger aplicar after insert on transferencias for each row execute function app.transferencia_aplicar();
 
+-- Documento psicológico (Res. CFP 06/2019): as seções obrigatórias de cada modalidade (as mesmas de
+-- _config.listas.modalidadesDocumento), o prazo de validade (menos na declaração) e o laudo só com
+-- avaliação psicológica registrada. A verificação de termos clínicos na declaração fica no site (orientação).
+create or replace function app.documento_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare secoes text[]; s text;
+begin
+  if app.em_migracao() then return new; end if;
+  if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso em andamento emite documento.'; end if;
+  secoes := case new.tipo
+    when 'declaracao' then array['informacao']
+    when 'atestado' then array['fundamentacao']
+    when 'relatorio' then array['demanda', 'procedimento', 'analise', 'conclusao']
+    when 'laudo' then array['demanda', 'procedimento', 'analise', 'conclusao', 'referencias']
+    else array['demanda', 'analise', 'conclusao', 'referencias'] end;
+  foreach s in array secoes loop
+    if length(coalesce(new.conteudo ->> s, '')) < 10 then raise exception 'Documento incompleto: falta a seção "%".', s; end if;
+  end loop;
+  if exists (select 1 from jsonb_each_text(new.conteudo) x where length(x.value) > 3000) then raise exception 'Seção do documento com mais de 3000 caracteres.'; end if;
+  if new.tipo <> 'declaracao' and length(new.validade) < 3 then raise exception 'Informe o prazo de validade do conteúdo (Res. CFP 06/2019).'; end if;
+  if new.tipo = 'laudo' and not exists (select 1 from avaliacoes a where a.caso_id = new.caso_id) then
+    raise exception 'Laudo é resultado de avaliação psicológica: registre antes o instrumento na área restrita do caso.';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on documentos for each row execute function app.documento_regras();
+
+-- Entrega (protocolo), devolutiva e anulação. Entregar só documento válido (assinado pelo supervisor);
+-- devolutiva só de relatório e laudo; cada registro uma vez; anular só antes da entrega, pelo autor ou supervisor.
+create or replace function app.evento_documento_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare d documentos%rowtype;
+begin
+  if app.em_migracao() then return new; end if;
+  select * into d from documentos where id = new.documento_id;
+  if d.id is null then raise exception 'Documento não encontrado.'; end if;
+  new.caso_id := d.caso_id;
+  new.registrado_por := app.usuario_atual();
+  if exists (select 1 from eventos_documento e where e.documento_id = d.id and e.tipo = 'anulacao') then
+    raise exception 'Documento anulado não recebe novos registros.';
+  end if;
+  if new.tipo = 'anulacao' then
+    if exists (select 1 from eventos_documento e where e.documento_id = d.id and e.tipo = 'entrega') then
+      raise exception 'Documento já entregue não é anulado: emita outro documento que o corrija.';
+    end if;
+    if not (d.autor_id = app.usuario_atual() or app.eh_supervisor_do_caso(d.caso_id)) then
+      raise exception 'Só o autor ou o supervisor do caso anula o documento.';
+    end if;
+    return new;
+  end if;
+  if not exists (select 1 from assinaturas a where a.alvo_tipo = 'documento' and a.alvo_id = d.id and a.papel = 'supervisor') then
+    raise exception 'O documento só vale com a assinatura do supervisor: assine antes de entregar.';
+  end if;
+  if new.tipo in ('devolutiva', 'sem-devolutiva') and d.tipo not in ('relatorio', 'laudo') then
+    raise exception 'Devolutiva é registrada para relatório e laudo.';
+  end if;
+  if exists (select 1 from eventos_documento e where e.documento_id = d.id
+             and (e.tipo = new.tipo or (new.tipo in ('devolutiva', 'sem-devolutiva') and e.tipo in ('devolutiva', 'sem-devolutiva')))) then
+    raise exception 'Este registro já foi feito para o documento.';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on eventos_documento for each row execute function app.evento_documento_regras();
+
+-- Comunicação: quem registra vem do banco; quebra de sigilo é decisão da supervisão ou da técnica
+create or replace function app.comunicacao_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  new.registrado_por := app.usuario_atual();
+  if new.tipo = 'quebra-sigilo' and coalesce(app.perfil_atual(), '') not in ('supervisor', 'tecnico') then
+    raise exception 'Quebra de sigilo é decisão da supervisão ou da psicóloga técnica (Código de Ética, art. 10).';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on comunicacoes for each row execute function app.comunicacao_regras();
+
 -- Carimbo de tempo: a data e a hora de cada registro vêm do relógio do servidor, não do computador
 -- de quem registra (ninguém "volta no tempo" para assinar ou registrar). Argumentos: coluna e tipo.
 create or replace function app.carimbo() returns trigger
@@ -938,6 +1059,8 @@ create trigger carimbo before insert on pedidos_titular for each row execute fun
 create trigger carimbo before insert on aceites for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on acessos_justificados for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on transferencias for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on eventos_documento for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on comunicacoes for each row execute function app.carimbo('em', 'hora');
 
 -- ---------------------------------------------------------------------
 -- Auditoria encadeada (mesma fórmula de js/estado.js)
@@ -1128,6 +1251,8 @@ alter table pedidos_titular enable row level security;
 alter table aceites enable row level security;
 alter table acessos_justificados enable row level security;
 alter table transferencias enable row level security;
+alter table eventos_documento enable row level security;
+alter table comunicacoes enable row level security;
 alter table auditoria enable row level security;
 
 -- Equipe vê a equipe. Conta de paciente: só o próprio paciente, o técnico e a equipe do caso dele
@@ -1213,7 +1338,17 @@ create policy ver on orientacoes for select to authenticated using (app.eh_super
 create policy registrar on orientacoes for insert to authenticated with check (supervisor_id = app.usuario_atual() and app.eh_supervisor_do_caso(caso_id));
 
 create policy ver on documentos for select to authenticated using (app.pode_ver_clinico(caso_id));
-create policy emitir on documentos for insert to authenticated with check (autor_id = app.usuario_atual() and app.eh_estagiario_do_caso(caso_id));
+create policy emitir on documentos for insert to authenticated
+  with check (autor_id = app.usuario_atual() and (app.eh_estagiario_do_caso(caso_id) or app.eh_supervisor_do_caso(caso_id)));
+-- Entrega, devolutiva e anulação: a equipe do caso e a técnica (com motivo de acesso); as regras ficam no trigger
+create policy ver on eventos_documento for select to authenticated using (app.pode_ver_clinico(caso_id));
+create policy registrar on eventos_documento for insert to authenticated
+  with check (registrado_por = app.usuario_atual() and app.pode_ver_clinico(caso_id) and app.perfil_atual() in ('estagiario', 'supervisor', 'tecnico'));
+-- Comunicações: a equipe e a técnica veem; o paciente vê as que ficaram visíveis para ele (LGPD, art. 18, VII)
+create policy ver on comunicacoes for select to authenticated
+  using (app.pode_ver_clinico(caso_id) or (app.eh_paciente_do_caso(caso_id) and visivel_paciente));
+create policy registrar on comunicacoes for insert to authenticated
+  with check (registrado_por = app.usuario_atual() and app.pode_ver_clinico(caso_id) and app.perfil_atual() in ('estagiario', 'supervisor', 'tecnico'));
 create policy ver on anexos for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy anexar on anexos for insert to authenticated with check (enviado_por = app.usuario_atual() and app.pode_ver_caso(caso_id));
 
@@ -1277,7 +1412,7 @@ revoke all on all tables in schema public from anon;
 grant insert on inscricoes to anon;
 grant select, insert, update on all tables in schema public to authenticated;
 revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria,
-  notificacoes, planos_seguranca, acessos_justificados, transferencias from authenticated;
+  notificacoes, planos_seguranca, acessos_justificados, transferencias, eventos_documento, comunicacoes from authenticated;
 -- Em usuarios, pela API só mudam "senha provisória" e "ativa" (perfil, CRP e vínculo com paciente ficam com a administração)
 revoke update on usuarios from authenticated;
 grant update (senha_provisoria, ativo) on usuarios to authenticated;

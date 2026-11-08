@@ -1,4 +1,4 @@
--- Gerado por banco/migrar_json.py a partir de dados-iniciais.json (versão 2026-11-06.11)
+-- Gerado por banco/migrar_json.py a partir de dados-iniciais.json (versão 2026-11-06.12)
 -- Dados 100% fictícios. Rodar depois de banco/schema.sql.
 set timezone to 'America/Sao_Paulo';
 set app.migracao = 'on';
@@ -257,7 +257,7 @@ insert into orientacoes (id, caso_id, supervisor_id, em, texto) values ('o01', '
 insert into orientacoes (id, caso_id, supervisor_id, em, texto) values ('o02', 'c04', 'u-sup2', '2026-09-04T09:00', 'Atenção ao combinado de sigilo com o responsável. Planejar uma sessão de orientação familiar no próximo mês.');
 insert into orientacoes (id, caso_id, supervisor_id, em, texto) values ('o03', 'c03', 'u-sup1', '2026-10-29T09:10', 'Conversar com a Duda sobre o nível de detalhe nas evoluções: registrar tema, intervenção e plano. Retomar o caso na supervisão de quinta.');
 
-insert into documentos (id, caso_id, tipo, titulo, finalidade, destinatario, emitido_em, autor_id) values ('doc01', 'c01', 'Declaração', 'Declaração de comparecimento', 'Justificar ausência no trabalho', 'A própria paciente', '2026-09-09', 'u-est1');
+insert into documentos (id, caso_id, tipo, titulo, finalidade, destinatario, solicitante, emitido_em, autor_id, conteudo, validade, local) values ('doc01', 'c01', 'declaracao', 'Declaração de comparecimento', 'Justificar ausência no trabalho', 'A própria paciente', 'A própria paciente', '2026-09-09', 'u-est1', '{"informacao": "Declaro, para os devidos fins, que a paciente está em acompanhamento psicológico neste Serviço-Escola, às quartas-feiras, das 14h às 14h50, e compareceu à sessão na data desta declaração."}'::jsonb, '', 'São Paulo');
 
 insert into anexos (id, caso_id, nome, tipo, tamanho, descricao, enviado_por, em, hash, arquivo_id) values ('a01', 'c01', 'encaminhamento-ubs.pdf', 'application/pdf', 182340, 'Encaminhamento recebido da UBS', 'u-tec', '2026-08-19', null, null);
 

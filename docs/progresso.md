@@ -1,6 +1,6 @@
 # Progresso do trabalho
 
-Última atualização: 08/11/2026 (etapas A, B e D concluídas; a C ficou de fora por decisão do grupo). Pausa anterior: 06/11/2026, 22h30.
+Última atualização: 08/11/2026 (etapas A, B, D e os blocos 1 e 2 da etapa E concluídos). Pausa anterior: 06/11/2026, 22h30.
 
 **Publicado em 08/11/2026:** o branch `andamento-06-11` foi juntado à `main`, e o site no ar tem todas as melhorias.
 
@@ -25,8 +25,8 @@ Depois, rode os três testes (comandos no `CLAUDE.md`) antes de mexer em qualque
 | Teste | Comando | Resultado |
 |---|---|---|
 | Validador do JSON | `python ferramentas/validar_json.py` | **0 problemas**. 1 aviso de propósito: a sessão s40 do caso c03 está sem evolução, para mostrar o alerta de 48 h |
-| Site | `python testes/testar_site.py` | **287 de 287** (59 telas conferidas com axe-core, WCAG 2.2 AA) |
-| Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **150 de 150** |
+| Site | `python testes/testar_site.py` | **326 de 326** (65 telas conferidas com axe-core, WCAG 2.2 AA) |
+| Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **168 de 168** |
 
 Antes deste trabalho eram 154 verificações no site e 56 no banco.
 
@@ -66,6 +66,12 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 - Testes novos: 17 no site e 17 no banco.
 
 **Feito em 08/11 (etapa D, relatório final):** [`relatorio-final.md`](relatorio-final.md), com o que mudou (problema → o que fizemos → como mostrar), o que dizer sobre o JSON, o que validar e com quem, os limites e os próximos passos.
+
+**Feito em 08/11 (etapa E, blocos 1 e 2, a partir da comparação com outro prontuário):** branch `melhorias-bloco-1-2`.
+
+- Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
+- Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
+- Falta: bloco 3 (sala na agenda e gráfico no painel) e bloco 4 (revisão de design, nome Vinculum, mais dados de exemplo).
 
 Ficou **de fora, por decisão do grupo**:
 

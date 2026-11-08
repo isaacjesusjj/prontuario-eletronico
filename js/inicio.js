@@ -26,7 +26,7 @@ PEP.app = (function () {
     agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Acesso do paciente', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
     'meu-plano': 'Meu plano de segurança',
     auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes e contas', paciente: 'Editar cadastro',
-    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas', busca: 'Busca de paciente'
+    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas', busca: 'Busca de paciente', documento: 'Documento psicológico'
   };
 
   function lerRota() {
@@ -36,14 +36,15 @@ PEP.app = (function () {
 
   // Registra na auditoria cada abertura de prontuário (uma vez por navegação)
   function auditarAbertura(u, rota) {
-    if (!navegou || rota.nome !== 'caso') return;
+    if (!navegou || (rota.nome !== 'caso' && rota.nome !== 'documento')) return;
     if (rota.p1 === ultimaRotaAuditada) return;
     ultimaRotaAuditada = rota.p1;
-    var c = PEP.util.porId(PEP.db.casos, rota.p1);
+    var doc = rota.nome === 'documento' ? PEP.util.porId(PEP.db.documentos, rota.p1) : null;
+    var c = PEP.util.porId(PEP.db.casos, doc ? doc.casoId : rota.p1);
     if (!c) return;
     // A técnica sem motivo vê só a capa do caso: o evento é registrado quando ela informa o motivo
     if (PEP.regras.podeVerCaso(u, c) && PEP.regras.precisaJustificar(u, c)) { ultimaRotaAuditada = ''; return; }
-    PEP.estado.registrarAuditoria(PEP.regras.podeVerCaso(u, c) ? 'Abriu o prontuário' : 'Tentativa de acesso negada ao prontuário', c.id);
+    PEP.estado.registrarAuditoria(PEP.regras.podeVerCaso(u, c) ? 'Abriu o prontuário' + (doc ? ' (documento psicológico)' : '') : 'Tentativa de acesso negada ao prontuário', c.id);
   }
 
   function conteudo(u, rota) {
@@ -63,6 +64,7 @@ PEP.app = (function () {
       case 'configurar-mfa': return T.configurarMfa(u);
       case 'painel': return T.painel(u);
       case 'busca': return T.busca(u);
+      case 'documento': return T.documento(u, rota.p1);
       case 'casos': return T.casos(u);
       case 'caso': return T.caso(u, rota.p1, rota.p2 || 'resumo');
       case 'imprimir': return T.imprimir(u, rota.p1);
@@ -98,7 +100,7 @@ PEP.app = (function () {
     if (pendencia && rota.nome !== pendencia && !INFORMATIVAS[rota.nome]) { window.location.hash = '#/' + pendencia; rota = lerRota(); }
     if (!pendencia && (rota.nome === 'trocar-senha' || rota.nome === 'termo' || rota.nome === 'configurar-mfa')) { window.location.hash = '#/painel'; rota = lerRota(); }
 
-    if (rota.nome === 'caso') auditarAbertura(u, rota);
+    if (rota.nome === 'caso' || rota.nome === 'documento') auditarAbertura(u, rota);
     else if (navegou) ultimaRotaAuditada = '';
     if (navegou) carregarDoServidor(u, rota);
 
@@ -178,6 +180,7 @@ PEP.app = (function () {
     if (rota.nome !== 'estudantes') PEP.telas._importacao = null;
     PEP.telas._senhaGerada = null;   // senha provisória: mostrada uma vez, some ao trocar de tela
     if (rota.nome !== 'conta' && rota.nome !== 'configurar-mfa') { PEP.telas._mfaNovo = null; PEP.telas._mfaCodigos = null; }
+    if (rota.nome !== 'caso') PEP.telas._modalidadeDoc = null;   // formulário de documento começa de novo em outro caso
     if (rota.nome !== 'indicadores' && rota.nome !== 'painel') PEP.telas._indicadoresRemotos = null; // ao voltar, busca números novos
     if (rota.nome !== 'meus-dados') PEP.telas._acessosRemotos = null;
     renderizar();

@@ -428,22 +428,38 @@ window.PEP = PEP;
     },
 
     // ----- Documentos, anexos, área restrita e supervisão -----
-    'emitir-declaracao': function (b) {
-      var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (!R().ehEstagiarioDoCaso(u, c)) return negar();
-      var fin = val('dc-fin'), dest = val('dc-dest'), erros = [];
-      if (fin.length < 3) erros.push(['dc-fin', 'Informe a finalidade (Res. CFP 05/2025, art. 12).']);
-      if (dest.length < 3) erros.push(['dc-dest', 'Informe o destinatário.']);
-      if (!PEP.form.aplicar(document, erros)) return;
-      var d = repo().inserir('documentos', { casoId: c.id, tipo: 'Declaração', titulo: 'Declaração de comparecimento', finalidade: fin, destinatario: dest, emitidoEm: U().hoje(), autorId: u.id });
-      assinar('documento', d.id, u, 'estagiario', d.titulo + '|' + fin + '|' + dest);
-      concluir('Declaração criada. Falta a assinatura do supervisor.', 'Emitiu declaração (aguardando supervisor)', c.id);
+    // ----- Documentos psicológicos (Res. CFP 06/2019) -----
+    'escolher-modalidade': function (b) {
+      PEP.telas._modalidadeDoc = b.getAttribute('data-id');
+      PEP.app.renderizar();
+      if (el('dp-solicitante')) el('dp-solicitante').focus();
     },
     'assinar-documento': function (b) {
       var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), c = caso(d.casoId);
-      if (!R().ehSupervisorDoCaso(u, c)) return negar();
-      if (!R().assinadoPeloSupervisor('documento', d.id)) assinar('documento', d.id, u, 'supervisor', d.titulo + '|' + d.finalidade + '|' + d.destinatario);
-      concluir('Documento assinado.', 'Assinou documento', c.id);
+      if (!R().ehSupervisorDoCaso(u, c) || R().eventoDoDocumento(d, 'anulacao')) return negar();
+      if (!R().assinadoPeloSupervisor('documento', d.id)) assinar('documento', d.id, u, 'supervisor', R().conteudoAssinadoDocumento(d));
+      concluir('Documento assinado: agora tem validade.', 'Assinou documento psicológico', c.id);
+    },
+    // Entrega (protocolo), devolutiva feita, devolutiva não feita (com motivo) e anulação (com motivo)
+    'registrar-evento-documento': function (b) {
+      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), tipo = b.getAttribute('data-tipo'), c = caso(d.casoId);
+      var pode = tipo === 'anulacao' ? R().podeAnularDocumento(u, d) : R().podeRegistrarEntrega(u, d) && (tipo === 'entrega' || R().devolutivaPendente(d));
+      if (!pode) return negar();
+      var ev = { documentoId: d.id, casoId: c.id, tipo: tipo, em: U().agora(), para: '', observacao: '', registradoPor: u.id }, erros = [];
+      if (tipo === 'entrega') { ev.para = val('ev-para'); if (ev.para.length < 3) erros.push(['ev-para', 'Informe a quem o documento foi entregue.']); }
+      if (tipo === 'sem-devolutiva') { ev.observacao = val('ev-motivo-dev'); if (ev.observacao.length < 10) erros.push(['ev-motivo-dev', 'Explique por que a devolutiva não foi feita (pelo menos 10 caracteres).']); }
+      if (tipo === 'anulacao') { ev.observacao = val('ev-motivo-anul'); if (ev.observacao.length < 10) erros.push(['ev-motivo-anul', 'Explique o motivo da anulação (pelo menos 10 caracteres).']); }
+      if (!PEP.form.aplicar(document, erros)) return;
+      repo().inserir('eventosDocumento', ev);
+      var textos = { entrega: ['Entrega registrada.', 'Registrou a entrega de documento psicológico'], devolutiva: ['Devolutiva registrada.', 'Registrou a devolutiva de documento psicológico'],
+        'sem-devolutiva': ['Motivo registrado.', 'Registrou que a devolutiva não foi feita'], anulacao: ['Documento anulado: continua no prontuário, sem validade.', 'Anulou documento psicológico'] };
+      concluir(textos[tipo][0], textos[tipo][1], c.id);
+    },
+    'imprimir-documento': function (b) {
+      var d = repo().porId('documentos', b.getAttribute('data-id'));
+      if (!d || !R().documentoValido(d)) return negar();
+      PEP.estado.registrarAuditoria('Gerou cópia de documento psicológico (impressão ou PDF)', d.casoId);
+      if (typeof window.print === 'function') window.print();
     },
     anexar: function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
@@ -1007,6 +1023,52 @@ window.PEP = PEP;
           concluir('Senha alterada.', 'Trocou a senha', u.id);
         });
       });
+    },
+    // Documento psicológico: campos comuns, seções da modalidade, validade e, na declaração, nada clínico
+    'emitir-documento': function (form) {
+      var u = usuario(), c = caso(form.getAttribute('data-caso')), m = R().modalidadeDocumento(PEP.telas._modalidadeDoc);
+      if (!m || !R().podeEmitirDocumento(u, c)) return negar();
+      var v = function (id) { return el('dp-' + id) ? el('dp-' + id).value.trim() : ''; };
+      var d = { casoId: c.id, tipo: m.id, titulo: v('titulo'), finalidade: v('finalidade'), destinatario: v('destinatario'), solicitante: v('solicitante'),
+        conteudo: {}, validade: m.validade ? v('validade') : '', local: v('local'), emitidoEm: U().hoje(), autorId: u.id };
+      var erros = [];
+      if (d.titulo.length < 3) erros.push(['dp-titulo', 'Informe o título.']);
+      if (d.solicitante.length < 3) erros.push(['dp-solicitante', 'Informe quem solicitou o documento.']);
+      if (d.finalidade.length < 3) erros.push(['dp-finalidade', 'Informe a finalidade (Res. CFP 05/2025, art. 12).']);
+      if (d.destinatario.length < 3) erros.push(['dp-destinatario', 'Informe o destinatário.']);
+      if (m.validade && d.validade.length < 3) erros.push(['dp-validade', 'Informe o prazo de validade do conteúdo (Res. CFP 06/2019).']);
+      m.secoes.forEach(function (sec) {
+        var t = v('s-' + sec.id);
+        if (t) d.conteudo[sec.id] = t;
+        if (sec.obrigatoria && t.length < 10) erros.push(['dp-s-' + sec.id, 'Escreva esta seção (pelo menos 10 caracteres).']);
+      });
+      if (m.id === 'declaracao' && d.conteudo.informacao) {
+        var termos = R().termosClinicosNoTexto(d.conteudo.informacao).map(function (t) { return t.trim(); });
+        if (termos.length) erros.push(['dp-s-informacao', 'Declaração não traz sintoma, diagnóstico nem situação clínica (Res. CFP 06/2019, art. 9º). Revise: ' + termos.join(', ') + '.']);
+      }
+      if (!PEP.form.aplicar(form, erros)) return;
+      var doc = repo().inserir('documentos', d), sup = R().ehSupervisorDoCaso(u, c);
+      assinar('documento', doc.id, u, sup ? 'supervisor' : 'estagiario', R().conteudoAssinadoDocumento(doc));
+      PEP.telas._modalidadeDoc = null;
+      concluir(m.nome + ' emitido' + (sup ? ' e assinado.' : '. Falta a assinatura do supervisor.'), 'Emitiu documento psicológico (' + m.nome + ')', c.id);
+    },
+    // Comunicação a terceiros: o que foi informado, a quem, para quê e com qual fundamento
+    'registrar-comunicacao': function (form) {
+      var u = usuario(), c = caso(form.getAttribute('data-caso')), f = form.elements, t = R().tipoComunicacao(f.tipo.value);
+      if (!t || !R().podeRegistrarComunicacao(u, c, t.id)) return negar();
+      var x = { casoId: c.id, tipo: t.id, data: f.data.value, destinatario: f.destinatario.value.trim(), finalidade: f.finalidade.value.trim(),
+        fundamento: f.fundamento.value.trim(), conteudo: f.conteudo.value.trim(), visivelPaciente: f.visivel.checked,
+        motivoOculto: f.visivel.checked ? '' : f.motivo.value.trim(), registradoPor: u.id, em: U().agora() };
+      var erros = [];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(x.data) || x.data > U().hoje()) erros.push(['cm-data', 'Informe a data da comunicação (até hoje).']);
+      if (x.destinatario.length < 3) erros.push(['cm-dest', 'Informe o destinatário.']);
+      if (x.finalidade.length < 3) erros.push(['cm-fin', 'Informe a finalidade.']);
+      if (t.exigeFundamento && x.fundamento.length < 5) erros.push(['cm-fund', 'Este tipo exige o fundamento (' + t.fundamentoDica + ').']);
+      if (x.conteudo.length < 10) erros.push(['cm-conteudo', 'Descreva o que foi informado (só o necessário).']);
+      if (!x.visivelPaciente && x.motivoOculto.length < 10) erros.push(['cm-motivo', 'Explique por que o paciente não vai ver este registro.']);
+      if (!PEP.form.aplicar(form, erros)) return;
+      repo().inserir('comunicacoes', x);
+      concluir('Comunicação registrada.', 'Registrou comunicação a terceiros (' + t.nome + ')', c.id);
     },
     // Busca de paciente (menu). O termo fica só na memória da página, nunca no endereço: assim nome de
     // paciente não vai para o histórico do navegador

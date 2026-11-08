@@ -359,6 +359,57 @@ PEP.regras = (function () {
     return PEP.db.casos.filter(function (c) { return c.status === 'ativo' && c.subgrupoId === a.subgrupoId; });
   }
 
+  // ---------- Documentos psicológicos (Res. CFP 06/2019) ----------
+  function modalidadeDocumento(id) { return PEP.lista('modalidadesDocumento').filter(function (m) { return m.id === id; })[0] || null; }
+  function eventosDoDocumento(d) { return (PEP.db.eventosDocumento || []).filter(function (e) { return e.documentoId === d.id; }); }
+  function eventoDoDocumento(d, tipo) { return eventosDoDocumento(d).filter(function (e) { return e.tipo === tipo; })[0] || null; }
+  function documentoValido(d) { return assinadoPeloSupervisor('documento', d.id) && !eventoDoDocumento(d, 'anulacao'); }
+  // Relatório e laudo pedem entrevista devolutiva (ou o motivo de não ter feito)
+  function devolutivaPendente(d) {
+    var m = modalidadeDocumento(d.tipo);
+    return !!(m && m.devolutiva && documentoValido(d) && !eventoDoDocumento(d, 'devolutiva') && !eventoDoDocumento(d, 'sem-devolutiva'));
+  }
+  function podeEmitirDocumento(u, caso) { return caso.status === 'ativo' && (ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso)); }
+  function podeAnularDocumento(u, d) {
+    var c = porId(PEP.db.casos, d.casoId);
+    return !!c && !eventoDoDocumento(d, 'anulacao') && !eventoDoDocumento(d, 'entrega') && (d.autorId === u.id || ehSupervisorDoCaso(u, c));
+  }
+  // Entrega e devolutiva: equipe do caso ou técnica (com motivo de acesso), só de documento válido
+  function podeRegistrarEntrega(u, d) {
+    var c = porId(PEP.db.casos, d.casoId);
+    return !!c && documentoValido(d) && podeVerConteudoClinico(u, c);
+  }
+  // Declaração não tem sintoma, diagnóstico nem situação clínica (art. 9º): termos de _config, sem acento
+  function termosClinicosNoTexto(texto) {
+    var n = ' ' + PEP.revisor.normalizar(texto) + ' ';
+    return PEP.lista('termosClinicosDeclaracao').filter(function (t) {
+      return new RegExp('[^a-z0-9]' + PEP.revisor.normalizar(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n);
+    });
+  }
+  // Texto que a assinatura protege: muda uma letra, muda o hash
+  function conteudoAssinadoDocumento(d) {
+    return JSON.stringify([d.tipo, d.titulo, d.finalidade, d.destinatario, d.solicitante || '', d.validade || '', d.local || '', d.conteudo || {}]);
+  }
+
+  // ---------- Comunicações e compartilhamentos ----------
+  function tipoComunicacao(id) { return PEP.lista('tiposComunicacao').filter(function (t) { return t.id === id; })[0] || null; }
+  function comunicacoesDoCaso(caso) {
+    return (PEP.db.comunicacoes || []).filter(function (x) { return x.casoId === caso.id; }).sort(function (a, b) { return b.data.localeCompare(a.data); });
+  }
+  function podeRegistrarComunicacao(u, caso, tipo) {
+    var t = tipoComunicacao(tipo);
+    if (!t || !podeVerConteudoClinico(u, caso) || ['estagiario', 'supervisor', 'tecnico'].indexOf(u.perfil) === -1) return false;
+    return !t.somenteResponsavel || u.perfil === 'supervisor' || u.perfil === 'tecnico';
+  }
+  // O paciente vê com quem os dados dele foram compartilhados (LGPD, art. 18, VII), menos o que a equipe escondeu com motivo
+  function comunicacoesVisiveisAoPaciente(u) {
+    var p = pacienteDoUsuario(u);
+    if (!p) return [];
+    var meus = PEP.db.casos.filter(function (c) { return c.pacienteId === p.id; }).map(function (c) { return c.id; });
+    return (PEP.db.comunicacoes || []).filter(function (x) { return meus.indexOf(x.casoId) !== -1 && x.visivelPaciente; })
+      .sort(function (a, b) { return b.data.localeCompare(a.data); });
+  }
+
   // Sinal de urgência no relato do formulário público (termos de _config.listas.sinaisUrgencia, sem acento)
   function temSinalDeUrgencia(texto) {
     var n = PEP.revisor.normalizar(texto);
@@ -468,6 +519,11 @@ PEP.regras = (function () {
     semDuplaAtiva: semDuplaAtiva, casosSemDuplaAtiva: casosSemDuplaAtiva, transferenciasDoCaso: transferenciasDoCaso,
     resumosDaPassagem: resumosDaPassagem, resumoValidado: resumoValidado, podePassarCaso: podePassarCaso, duplasDestino: duplasDestino,
     checklistPassagem: checklistPassagem, modeloResumoTransferencia: modeloResumoTransferencia, secoesFaltandoNoResumo: secoesFaltandoNoResumo,
-    casosQueFicamSemDupla: casosQueFicamSemDupla
+    casosQueFicamSemDupla: casosQueFicamSemDupla,
+    modalidadeDocumento: modalidadeDocumento, eventosDoDocumento: eventosDoDocumento, eventoDoDocumento: eventoDoDocumento, documentoValido: documentoValido,
+    devolutivaPendente: devolutivaPendente, podeEmitirDocumento: podeEmitirDocumento, podeAnularDocumento: podeAnularDocumento, podeRegistrarEntrega: podeRegistrarEntrega,
+    termosClinicosNoTexto: termosClinicosNoTexto, conteudoAssinadoDocumento: conteudoAssinadoDocumento,
+    tipoComunicacao: tipoComunicacao, comunicacoesDoCaso: comunicacoesDoCaso, podeRegistrarComunicacao: podeRegistrarComunicacao,
+    comunicacoesVisiveisAoPaciente: comunicacoesVisiveisAoPaciente
   };
 })();

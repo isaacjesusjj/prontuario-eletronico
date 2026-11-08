@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 08/11/2026 20:10, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), com axe-core 4.14.0.
 
-**304 de 304 verificações passaram.** Acessibilidade: 62 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**326 de 326 verificações passaram.** Acessibilidade: 65 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 69 | 0 |
+| Acessibilidade | 72 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -44,6 +44,8 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:10, no Chrome (Playwright), 
 | Transição | 15 | 0 |
 | Acesso | 3 | 0 |
 | Busca | 2 | 0 |
+| Documentos | 12 | 0 |
+| Comunicações | 7 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
@@ -329,7 +331,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:10, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 17:10. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 17:25. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -341,13 +343,35 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:10, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Auditoria com filtro: sem violações WCAG A/AA |  |
 | ✓ | Auditoria | a planilha (CSV) sai com o filtro, separador ponto e vírgula e a fórmula neutralizada (apóstrofo na frente) | ﻿"Clínica-Escola de Psicologia (fictícia, para o protótipo) · Vínculo · trilha d |
 | ✓ | Auditoria | a exportação também fica na auditoria |  |
+| ✓ | Documentos | declaração com termo clínico é recusada e o campo diz qual termo revisar (Res. CFP 06/2019, art. 9º) | Declaração não traz sintoma, diagnóstico nem situação clínica (Res. CFP 06/2019, art. 9º). Revise: ansiedade, crise. |
+| ✓ | Documentos | declaração sem termo clínico é emitida e assinada pela estagiária (falta o supervisor) |  |
+| ✓ | Documentos | laudo sem avaliação psicológica registrada no caso não pode ser emitido |  |
+| ✓ | Acessibilidade | Documentos e comunicações · Documentos · emitir relatório: sem violações WCAG A/AA |  |
+| ✓ | Documentos | relatório vazio: cada seção obrigatória e o prazo de validade são cobrados |  |
+| ✓ | Documentos | relatório completo é emitido com as seções da Res. CFP 06/2019 |  |
+| ✓ | Documentos | sem a assinatura do supervisor, o documento não é impresso |  |
+| ✓ | Documentos | assinado pelo supervisor, o documento tem validade, cabeçalho, seções, validade no último parágrafo, local e data por extenso e protocolo de entrega |  |
+| ✓ | Acessibilidade | Documentos e comunicações · Documento psicológico (leitura e impressão): sem violações WCAG A/AA |  |
+| ✓ | Documentos | na impressão, o protocolo de entrega sai em página separada |  |
+| ✓ | Documentos | entrega sem dizer a quem é recusada |  |
+| ✓ | Documentos | a entrega fica registrada (protocolo) e o relatório mostra a devolutiva pendente |  |
+| ✓ | Documentos | devolutiva registrada; documento entregue não pode mais ser anulado |  |
+| ✓ | Comunicações | a supervisão tem a opção de quebra de sigilo |  |
+| ✓ | Documentos | a estagiária anula a própria declaração ainda não entregue, com motivo (continua no prontuário, sem validade) |  |
+| ✓ | Comunicações | a estagiária não tem a opção de quebra de sigilo |  |
+| ✓ | Comunicações | comunicação autorizada sem o fundamento é recusada |  |
+| ✓ | Comunicações | esconder do paciente exige o motivo |  |
+| ✓ | Comunicações | as duas comunicações ficam registradas no caso |  |
+| ✓ | Acessibilidade | Documentos e comunicações · Documentos · comunicações registradas: sem violações WCAG A/AA |  |
+| ✓ | Comunicações | a cópia do prontuário leva as comunicações visíveis, e não a escondida |  |
+| ✓ | Comunicações | a paciente vê com quem os dados foram compartilhados (LGPD, art. 18, VII), menos o que a equipe escondeu com motivo |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T20:10:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T20:25:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw89nz03nqjt |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw8a7pqkcdrh |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

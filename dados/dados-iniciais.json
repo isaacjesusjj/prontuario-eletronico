@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.11",
+    "versao": "2026-11-06.12",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -52,7 +52,9 @@
       "riscoDescricaoMaxCaracteres": 1000,
       "planoCampoMaxCaracteres": 1000,
       "resumoSecaoMinCaracteres": 10,
-      "guardaMenorDesde18": true
+      "guardaMenorDesde18": true,
+      "comunicacaoMaxCaracteres": 1000,
+      "documentoSecaoMaxCaracteres": 3000
     },
     "listas": {
       "motivosAbandono": [
@@ -506,6 +508,194 @@
           "id": "acolhimento",
           "nome": "Acolhimento",
           "texto": "Demanda trazida: \nContrato combinado (horário, faltas, sigilo e seus limites): \nImpressões iniciais: \nPlano: "
+        }
+      ],
+      "modalidadesDocumento": [
+        {
+          "id": "declaracao",
+          "nome": "Declaração",
+          "artigo": "Res. CFP 06/2019, art. 9º",
+          "validade": false,
+          "devolutiva": false,
+          "orientacao": "Registra só informações objetivas do serviço: comparecimento, acompanhamento em andamento, dias e horários. Não pode conter sintomas, diagnóstico nem situação clínica.",
+          "secoes": [
+            {
+              "id": "informacao",
+              "nome": "Informações sobre o atendimento",
+              "obrigatoria": true
+            }
+          ]
+        },
+        {
+          "id": "atestado",
+          "nome": "Atestado psicológico",
+          "artigo": "Res. CFP 06/2019, art. 10",
+          "validade": true,
+          "devolutiva": false,
+          "orientacao": "Certifica uma condição psicológica para uma finalidade (justificar falta ou impedimento, por exemplo), com base no que foi avaliado. Informe só o necessário para a finalidade.",
+          "secoes": [
+            {
+              "id": "fundamentacao",
+              "nome": "Condição atestada e fundamentação",
+              "obrigatoria": true
+            }
+          ]
+        },
+        {
+          "id": "relatorio",
+          "nome": "Relatório psicológico",
+          "artigo": "Res. CFP 06/2019, art. 11",
+          "validade": true,
+          "devolutiva": true,
+          "orientacao": "Comunica a atuação profissional no processo de trabalho. A entrega vem com entrevista devolutiva.",
+          "secoes": [
+            {
+              "id": "demanda",
+              "nome": "Descrição da demanda",
+              "obrigatoria": true
+            },
+            {
+              "id": "procedimento",
+              "nome": "Procedimento",
+              "obrigatoria": true
+            },
+            {
+              "id": "analise",
+              "nome": "Análise",
+              "obrigatoria": true
+            },
+            {
+              "id": "conclusao",
+              "nome": "Conclusão",
+              "obrigatoria": true
+            },
+            {
+              "id": "referencias",
+              "nome": "Referências",
+              "obrigatoria": false
+            }
+          ]
+        },
+        {
+          "id": "laudo",
+          "nome": "Laudo psicológico",
+          "artigo": "Res. CFP 06/2019, art. 13",
+          "validade": true,
+          "devolutiva": true,
+          "exigeAvaliacao": true,
+          "orientacao": "Resultado de avaliação psicológica: só com instrumento registrado na área restrita do caso. A entrega vem com entrevista devolutiva.",
+          "secoes": [
+            {
+              "id": "demanda",
+              "nome": "Descrição da demanda",
+              "obrigatoria": true
+            },
+            {
+              "id": "procedimento",
+              "nome": "Procedimento (instrumentos e técnicas)",
+              "obrigatoria": true
+            },
+            {
+              "id": "analise",
+              "nome": "Análise",
+              "obrigatoria": true
+            },
+            {
+              "id": "conclusao",
+              "nome": "Conclusão",
+              "obrigatoria": true
+            },
+            {
+              "id": "referencias",
+              "nome": "Referências",
+              "obrigatoria": true
+            }
+          ]
+        },
+        {
+          "id": "parecer",
+          "nome": "Parecer psicológico",
+          "artigo": "Res. CFP 06/2019, art. 14",
+          "validade": true,
+          "devolutiva": false,
+          "orientacao": "Responde a uma consulta técnica sobre uma questão específica do campo da Psicologia.",
+          "secoes": [
+            {
+              "id": "demanda",
+              "nome": "Descrição da questão (consulta)",
+              "obrigatoria": true
+            },
+            {
+              "id": "analise",
+              "nome": "Análise",
+              "obrigatoria": true
+            },
+            {
+              "id": "conclusao",
+              "nome": "Conclusão",
+              "obrigatoria": true
+            },
+            {
+              "id": "referencias",
+              "nome": "Referências",
+              "obrigatoria": true
+            }
+          ]
+        }
+      ],
+      "termosClinicosDeclaracao": [
+        "sintoma",
+        "diagnostic",
+        "cid-",
+        "cid ",
+        "transtorno",
+        "ansiedade",
+        "ansios",
+        "depress",
+        "crise",
+        "panico",
+        "fobia",
+        "trauma",
+        "surto",
+        "ideacao",
+        "suicid",
+        "hipotese",
+        "psicopatolog",
+        "luto",
+        "compulsao",
+        "dependencia quimica"
+      ],
+      "tiposComunicacao": [
+        {
+          "id": "autorizada",
+          "nome": "Comunicação autorizada pelo paciente ou responsável",
+          "exigeFundamento": true,
+          "fundamentoDica": "Ex.: autorização escrita do paciente em 05/11/2026"
+        },
+        {
+          "id": "encaminhamento",
+          "nome": "Encaminhamento a outro serviço",
+          "exigeFundamento": false,
+          "fundamentoDica": "Ex.: combinado com o paciente na sessão"
+        },
+        {
+          "id": "responsaveis",
+          "nome": "Comunicação aos responsáveis (criança ou adolescente)",
+          "exigeFundamento": false,
+          "fundamentoDica": "Só o essencial para o cuidado (Código de Ética, art. 13)"
+        },
+        {
+          "id": "requisicao",
+          "nome": "Resposta a requisição judicial ou de órgão público",
+          "exigeFundamento": true,
+          "fundamentoDica": "Número do ofício ou do processo. Responda por documento psicológico, não com cópia do prontuário"
+        },
+        {
+          "id": "quebra-sigilo",
+          "nome": "Quebra de sigilo (Código de Ética, art. 10)",
+          "exigeFundamento": true,
+          "somenteResponsavel": true,
+          "fundamentoDica": "Motivo e base da decisão, buscando o menor prejuízo"
         }
       ]
     },
@@ -3251,14 +3441,21 @@
     {
       "id": "doc01",
       "casoId": "c01",
-      "tipo": "Declaração",
+      "tipo": "declaracao",
       "titulo": "Declaração de comparecimento",
       "finalidade": "Justificar ausência no trabalho",
       "destinatario": "A própria paciente",
+      "solicitante": "A própria paciente",
       "emitidoEm": "2026-09-09",
-      "autorId": "u-est1"
+      "autorId": "u-est1",
+      "conteudo": {
+        "informacao": "Declaro, para os devidos fins, que a paciente está em acompanhamento psicológico neste Serviço-Escola, às quartas-feiras, das 14h às 14h50, e compareceu à sessão na data desta declaração."
+      },
+      "validade": "",
+      "local": "São Paulo"
     }
   ],
+  "eventosDocumento": [],
   "anexos": [
     {
       "id": "a01",
@@ -3335,6 +3532,7 @@
       "observacao": "Comunicação feita pela supervisão, só com o necessário."
     }
   ],
+  "comunicacoes": [],
   "planosSeguranca": [
     {
       "id": "ps01",

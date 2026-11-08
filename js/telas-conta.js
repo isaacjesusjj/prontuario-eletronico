@@ -167,6 +167,14 @@ PEP.telas = PEP.telas || {};
       (p.emergenciaNome ? '<br><strong>Contato de emergência:</strong> ' + esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
         ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone)) : '') + '</p>' +
       '<p class="suave pequeno">O conteúdo clínico (evoluções, anamnese) fica no prontuário: peça a cópia em <a href="#/meu-prontuario">Meu prontuário</a>.</p></div>' +
+      (function () {   // LGPD, art. 18, VII: com quem a clínica compartilhou dados seus
+        var l = PEP.regras.comunicacoesVisiveisAoPaciente(u);
+        return '<div class="cartao" id="compartilhamentos"><h2>Com quem seus dados foram compartilhados</h2>' + (l.length ? '<ul>' + l.map(function (x) {
+          var t = PEP.regras.tipoComunicacao(x.tipo);
+          return '<li>' + data(x.data) + ' · ' + esc(t ? t.nome : x.tipo) + ' · para <strong>' + esc(x.destinatario) + '</strong> · ' + esc(x.finalidade) + '</li>';
+        }).join('') + '</ul>' : '<p class="vazio">Nenhum compartilhamento registrado.</p>') +
+          '<p class="suave pequeno">Você tem direito de saber com quem seus dados foram compartilhados (LGPD, art. 18, VII). Dúvidas: faça um pedido abaixo.</p></div>';
+      })() +
       (caso ? '<div class="cartao"><h2>Minhas autorizações</h2><div class="tabela-rolagem"><table><thead><tr><th scope="col">Finalidade</th><th scope="col">Situação</th><th scope="col"></th></tr></thead><tbody>' + consent +
         '</tbody></table></div><p class="suave pequeno">Revogar não apaga o que foi feito antes com a sua autorização (LGPD, art. 8º, § 5º); vale daqui para frente.</p></div>' : '') +
       '<div class="cartao" id="form-titular"><h2>Fazer um pedido sobre meus dados</h2>' +

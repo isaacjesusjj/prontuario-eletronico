@@ -1209,6 +1209,108 @@ def cadastro_busca_e_auditoria(nav, base):
     s.fechar()
 
 
+def documentos_e_comunicacoes(nav, base):
+    s = Sessao(nav, base, "Documentos e comunicações")
+    s.entrar("bia.estagiaria")
+    s.ir("#/caso/c01/documentos")
+    s.clicar("#emitir-documento summary")
+    s.clicar('[data-acao="escolher-modalidade"][data-id="declaracao"]')
+    for campo, valor in (("solicitante", "A própria paciente"), ("finalidade", "Justificar ausência no trabalho"), ("destinatario", "Empresa Exemplo")):
+        s.p.fill(f"#dp-{campo}", valor)
+    s.p.fill("#dp-s-informacao", "Declaro que a paciente está em acompanhamento por crise de ansiedade, às quartas-feiras.")
+    s.clicar("#form-documento button[type=submit]")
+    erro = s.p.locator("#dp-s-informacao-erro").inner_text() if s.p.locator("#dp-s-informacao-erro").count() else ""
+    conferir("Documentos", "declaração com termo clínico é recusada e o campo diz qual termo revisar (Res. CFP 06/2019, art. 9º)",
+             "crise" in erro and "ansiedade" in erro and len(s.js("PEP.db.documentos")) == len(DADOS["documentos"]), erro[:120])
+    s.p.fill("#dp-s-informacao", "Declaro que a paciente está em acompanhamento psicológico neste serviço, às quartas-feiras, das 14h às 14h50.")
+    s.clicar("#form-documento button[type=submit]")
+    dec = s.js("PEP.db.documentos[PEP.db.documentos.length - 1]")
+    conferir("Documentos", "declaração sem termo clínico é emitida e assinada pela estagiária (falta o supervisor)",
+             dec["tipo"] == "declaracao" and "às quartas-feiras" in dec["conteudo"]["informacao"] and not s.js(f"PEP.regras.documentoValido(PEP.util.porId(PEP.db.documentos, '{dec['id']}'))"))
+    s.clicar("#emitir-documento summary")
+    s.clicar('[data-acao="escolher-modalidade"][data-id="laudo"]')
+    conferir("Documentos", "laudo sem avaliação psicológica registrada no caso não pode ser emitido", s.p.locator("#form-documento").count() == 0
+             and "não tem avaliação psicológica" in s.p.locator("#emitir-documento").inner_text())
+    s.clicar('[data-acao="escolher-modalidade"][data-id="relatorio"]')
+    s.axe("Documentos · emitir relatório")
+    s.clicar("#form-documento button[type=submit]")
+    conferir("Documentos", "relatório vazio: cada seção obrigatória e o prazo de validade são cobrados",
+             all(s.p.locator(f"#dp-{c}").get_attribute("aria-invalid") == "true" for c in ("s-demanda", "s-procedimento", "s-analise", "s-conclusao", "validade", "solicitante")))
+    for campo, valor in (("solicitante", "Escola Exemplo"), ("finalidade", "Acompanhamento escolar"), ("destinatario", "Coordenação da Escola Exemplo"), ("validade", "6 meses"),
+                         ("s-demanda", "Encaminhada pela escola por dificuldade de concentração."), ("s-procedimento", "Doze sessões de psicoterapia e entrevista com a família."),
+                         ("s-analise", "Melhora da organização da rotina e da participação nas aulas."), ("s-conclusao", "Recomenda-se manter o acompanhamento no semestre.")):
+        s.p.fill(f"#dp-{campo}", valor)
+    s.clicar("#form-documento button[type=submit]")
+    rel = s.js("PEP.db.documentos[PEP.db.documentos.length - 1]")
+    conferir("Documentos", "relatório completo é emitido com as seções da Res. CFP 06/2019", rel["tipo"] == "relatorio" and rel["validade"] == "6 meses" and len(rel["conteudo"]) == 4)
+    s.ir(f"#/documento/{rel['id']}")
+    conferir("Documentos", "sem a assinatura do supervisor, o documento não é impresso", s.p.locator('[data-acao="imprimir-documento"]').count() == 0
+             and "Sem validade" in s.p.locator("#app").inner_text())
+    s.sair()
+    s.entrar("helena.supervisora")
+    s.ir(f"#/documento/{rel['id']}")
+    s.clicar(f'[data-acao="assinar-documento"][data-id="{rel["id"]}"]')
+    texto = s.p.locator("#app").text_content()
+    conferir("Documentos", "assinado pelo supervisor, o documento tem validade, cabeçalho, seções, validade no último parágrafo, local e data por extenso e protocolo de entrega",
+             s.p.locator('[data-acao="imprimir-documento"]').count() == 1 and "Relatório psicológico" in texto and "Análise" in texto
+             and "validade de 6 meses, a contar da data de emissão" in texto and "Protocolo de entrega" in texto and " de 20" in texto)
+    s.axe("Documento psicológico (leitura e impressão)")
+    pdf = s.p.pdf(format="A4")
+    conferir("Documentos", "na impressão, o protocolo de entrega sai em página separada", pdf.count(b"/Type /Page") - pdf.count(b"/Type /Pages") >= 2)
+    s.clicar(f'[data-acao="registrar-evento-documento"][data-tipo="entrega"][data-id="{rel["id"]}"]')
+    conferir("Documentos", "entrega sem dizer a quem é recusada", s.p.locator("#ev-para").get_attribute("aria-invalid") == "true")
+    s.p.fill("#ev-para", "Responsável pela paciente")
+    s.clicar(f'[data-acao="registrar-evento-documento"][data-tipo="entrega"][data-id="{rel["id"]}"]')
+    conferir("Documentos", "a entrega fica registrada (protocolo) e o relatório mostra a devolutiva pendente",
+             s.js(f"!!PEP.regras.eventoDoDocumento(PEP.util.porId(PEP.db.documentos, '{rel['id']}'), 'entrega')") and "devolutiva pendente" in s.p.locator("#app").text_content())
+    s.clicar(f'[data-acao="registrar-evento-documento"][data-tipo="devolutiva"][data-id="{rel["id"]}"]')
+    conferir("Documentos", "devolutiva registrada; documento entregue não pode mais ser anulado",
+             not s.js(f"PEP.regras.devolutivaPendente(PEP.util.porId(PEP.db.documentos, '{rel['id']}'))") and s.p.locator('[data-tipo="anulacao"]').count() == 0)
+    # Comunicações: a supervisão pode registrar quebra de sigilo; a estagiária não
+    s.ir("#/caso/c01/documentos")
+    conferir("Comunicações", "a supervisão tem a opção de quebra de sigilo", s.p.locator('#cm-tipo option[value="quebra-sigilo"]').count() == 1)
+    s.sair()
+    s.entrar("bia.estagiaria")
+    s.ir(f"#/documento/{dec['id']}")
+    s.clicar("details:has(#ev-motivo-anul) summary")
+    s.p.fill("#ev-motivo-anul", "Dia da semana errado na declaração.")
+    s.clicar(f'[data-acao="registrar-evento-documento"][data-tipo="anulacao"][data-id="{dec["id"]}"]')
+    conferir("Documentos", "a estagiária anula a própria declaração ainda não entregue, com motivo (continua no prontuário, sem validade)",
+             "anulado" in s.p.locator("#app").text_content() and s.js(f"!!PEP.util.porId(PEP.db.documentos, '{dec['id']}')"))
+    s.ir("#/caso/c01/documentos")
+    s.clicar("#comunicacoes details summary")
+    conferir("Comunicações", "a estagiária não tem a opção de quebra de sigilo", s.p.locator('#cm-tipo option[value="quebra-sigilo"]').count() == 0)
+    s.p.select_option("#cm-tipo", "autorizada")
+    s.p.fill("#cm-dest", "Escola Exemplo")
+    s.p.fill("#cm-fin", "Combinar adaptações em sala de aula")
+    s.p.fill("#cm-conteudo", "Informado que a paciente está em acompanhamento e precisa de pausas curtas.")
+    s.clicar("#form-comunicacao button[type=submit]")
+    conferir("Comunicações", "comunicação autorizada sem o fundamento é recusada", s.p.locator("#cm-fund").get_attribute("aria-invalid") == "true")
+    s.p.fill("#cm-fund", "Autorização escrita da paciente")
+    s.clicar("#form-comunicacao button[type=submit]")
+    s.clicar("#comunicacoes details summary")
+    s.p.select_option("#cm-tipo", "encaminhamento")
+    s.p.fill("#cm-dest", "CAPS Exemplo")
+    s.p.fill("#cm-fin", "Avaliação no CAPS")
+    s.p.fill("#cm-conteudo", "Encaminhada para avaliação, com a concordância da paciente.")
+    s.p.uncheck("#cm-visivel")
+    s.clicar("#form-comunicacao button[type=submit]")
+    conferir("Comunicações", "esconder do paciente exige o motivo", s.p.locator("#cm-motivo").get_attribute("aria-invalid") == "true")
+    s.p.fill("#cm-motivo", "Combinado com a supervisão contar na próxima sessão.")
+    s.clicar("#form-comunicacao button[type=submit]")
+    conferir("Comunicações", "as duas comunicações ficam registradas no caso", len(s.js("PEP.db.comunicacoes.filter(x => x.casoId === 'c01')")) == 2)
+    s.axe("Documentos · comunicações registradas")
+    copia = s.js("PEP.telas.copiaProntuario(PEP.util.porId(PEP.db.casos, 'c01'), '')")
+    conferir("Comunicações", "a cópia do prontuário leva as comunicações visíveis, e não a escondida", "Escola Exemplo" in copia and "CAPS Exemplo" not in copia)
+    s.sair()
+    s.entrar("paciente01")
+    s.ir("#/meus-dados")
+    texto = s.p.locator("#compartilhamentos").inner_text()
+    conferir("Comunicações", "a paciente vê com quem os dados foram compartilhados (LGPD, art. 18, VII), menos o que a equipe escondeu com motivo",
+             "Escola Exemplo" in texto and "CAPS Exemplo" not in texto)
+    s.fechar()
+
+
 def verificacao_duas_etapas(nav, base):
     s = Sessao(nav, base, "Duas etapas")
     t0 = datetime(2026, 11, 6, 10, 0, 0)
@@ -1387,7 +1489,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

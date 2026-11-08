@@ -27,7 +27,7 @@ except json.JSONDecodeError as e:
 
 COLECOES = ["usuarios", "grupos", "subgrupos", "alocacoes", "pacientes", "inscricoes", "casos", "anamneses", "consentimentos",
             "encerramentos", "sessoes", "evolucoes", "assinaturas", "adendos", "orientacoes", "documentos", "anexos", "avaliacoes",
-            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "acessosJustificados", "transferencias", "auditoria"]
+            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "acessosJustificados", "transferencias", "eventosDocumento", "comunicacoes", "auditoria"]
 for c in COLECOES:
     if c not in db:
         p(f"coleção ausente: {c}")
@@ -106,7 +106,9 @@ for col, campo, dest, nulo in [
     ("acessosJustificados", "usuarioId", "usuarios", False), ("acessosJustificados", "casoId", "casos", False),
     ("transferencias", "casoId", "casos", False), ("transferencias", "deGrupoId", "grupos", True), ("transferencias", "deSubgrupoId", "subgrupos", True),
     ("transferencias", "paraGrupoId", "grupos", False), ("transferencias", "paraSubgrupoId", "subgrupos", False),
-    ("transferencias", "resumoId", "evolucoes", True), ("transferencias", "registradoPor", "usuarios", False)]:
+    ("transferencias", "resumoId", "evolucoes", True), ("transferencias", "registradoPor", "usuarios", False),
+    ("eventosDocumento", "documentoId", "documentos", False), ("eventosDocumento", "casoId", "casos", False), ("eventosDocumento", "registradoPor", "usuarios", False),
+    ("comunicacoes", "casoId", "casos", False), ("comunicacoes", "registradoPor", "usuarios", False)]:
     fk(col, campo, dest, nulo)
 
 # ---------- usuários e senhas ----------
@@ -299,9 +301,47 @@ for s in db["sessoes"]:
 for o in db["orientacoes"]:
     if o["supervisorId"] not in supervisores_possiveis(C[o["casoId"]]):
         p(f"orientação {o['id']}: supervisor não é o do caso")
+MODALIDADES = {m["id"]: m for m in cfg["listas"]["modalidadesDocumento"]}
+TERMOS_CLINICOS = cfg["listas"]["termosClinicosDeclaracao"]
+def sem_acento(t):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", str(t).lower()) if unicodedata.category(c) != "Mn")
 for d in db["documentos"]:
+    onde = f"documento {d['id']}"
     if not d.get("finalidade") or not d.get("destinatario"):
-        p(f"documento {d['id']}: sem finalidade ou destinatário (Res. CFP 05/2025, art. 12)")
+        p(f"{onde}: sem finalidade ou destinatário (Res. CFP 05/2025, art. 12)")
+    m = MODALIDADES.get(d.get("tipo"))
+    if not m:
+        p(f"{onde}: modalidade fora de _config.listas.modalidadesDocumento"); continue
+    for s in m["secoes"]:
+        if s["obrigatoria"] and len(str(d.get("conteudo", {}).get(s["id"], ""))) < 10:
+            p(f"{onde}: falta a seção '{s['nome']}' ({m['nome']})")
+    if m["validade"] and len(d.get("validade", "")) < 3:
+        p(f"{onde}: {m['nome']} sem prazo de validade")
+    if m.get("exigeAvaliacao") and not any(a["casoId"] == d["casoId"] for a in db["avaliacoes"]):
+        p(f"{onde}: laudo sem avaliação psicológica registrada no caso")
+    if d["tipo"] == "declaracao":
+        texto = sem_acento(" ".join(str(v) for v in d.get("conteudo", {}).values()))
+        if any(re.search(r"\b" + re.escape(sem_acento(t)), texto) for t in TERMOS_CLINICOS):
+            p(f"{onde}: declaração com termo clínico (Res. CFP 06/2019, art. 9º)")
+for e in db["eventosDocumento"]:
+    doc = next((x for x in db["documentos"] if x["id"] == e["documentoId"]), None)
+    if doc and e["tipo"] in ("devolutiva", "sem-devolutiva") and doc["tipo"] not in ("relatorio", "laudo"):
+        p(f"evento {e['id']}: devolutiva só de relatório ou laudo")
+    if e["tipo"] in ("entrega", "devolutiva", "sem-devolutiva") and not any(a["alvoTipo"] == "documento" and a["alvoId"] == e["documentoId"] and a["papel"] == "supervisor" for a in db["assinaturas"]):
+        p(f"evento {e['id']}: documento entregue sem a assinatura do supervisor")
+TIPOS_COM = {t["id"]: t for t in cfg["listas"]["tiposComunicacao"]}
+for c in db["comunicacoes"]:
+    onde = f"comunicação {c['id']}"
+    t = TIPOS_COM.get(c["tipo"])
+    if not t:
+        p(f"{onde}: tipo fora de _config.listas.tiposComunicacao"); continue
+    if t["exigeFundamento"] and len(c.get("fundamento", "")) < 5:
+        p(f"{onde}: {t['nome']} exige o fundamento")
+    if t.get("somenteResponsavel") and U[c["registradoPor"]]["perfil"] not in ("supervisor", "tecnico"):
+        p(f"{onde}: quebra de sigilo só pela supervisão ou pela técnica")
+    if not c.get("visivelPaciente", True) and len(c.get("motivoOculto", "")) < 10:
+        p(f"{onde}: oculto do paciente sem o motivo")
 for x in db["anexos"]:
     if x["tipo"] not in [t["mime"] for t in cfg["listas"]["tiposArquivo"]] or x["tamanho"] > cfg["regras"]["uploadMaxMB"] * 1048576:
         p(f"anexo {x['id']}: tipo ou tamanho fora da regra")
