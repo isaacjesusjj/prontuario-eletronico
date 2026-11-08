@@ -2,7 +2,7 @@
 
 Última atualização: 08/11/2026 (etapas A, B e D concluídas; a C ficou de fora por decisão do grupo). Pausa anterior: 06/11/2026, 22h30.
 
-Branch: `andamento-06-11`. A `main` (que publica o site) **não foi alterada**: o site no ar continua igual.
+**Publicado em 08/11/2026:** o branch `andamento-06-11` foi juntado à `main`, e o site no ar tem todas as melhorias.
 
 Pedido em andamento: "deixar o prontuário profissional, com todas as regras de segurança de dados, login e validações, e com diferenciais". Este arquivo diz onde o trabalho parou e como continuar.
 
@@ -76,7 +76,7 @@ Ficou **de fora, por decisão do grupo**:
 1. Revisão do grupo: cada integrante percorre o passo 9 do roteiro (lista em `relatorio-final.md`).
 2. Validar com a supervisão e o jurídico (lista abaixo e no relatório).
 3. Atualizar o Figma com as telas novas, se a Etapa 3 for cobrada junto.
-4. Com a aprovação do grupo: juntar o branch na `main` (publica o site), depois de rodar os três testes.
+4. Próximas conversas: comparar com o prontuário favorito do professor de Psicologia, passo a passo do banco de dados, versão em aplicativo, revisão do design e mudança do nome para Vinculum.
 
 ## Para validar com quem é de fora do grupo
 

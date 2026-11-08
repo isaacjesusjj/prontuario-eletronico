@@ -68,7 +68,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 
 ## Pendências
 
-- O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. O trabalho em curso fica no branch `andamento-06-11`.
+- O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. As melhorias de novembro (branch `andamento-06-11`) foram publicadas na `main` em 08/11/2026.
 - Validar com o cliente: perda de vaga também com 3 faltas intercaladas (`regras.faltasIntercaladasSugestao`), as mudanças nos requisitos da Etapa 1 (tabela no README) e "800 usuários simultâneos" × "800 estudantes".
 - Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`.
 - O grupo decidiu deixar as escalas PHQ-9 e GAD-7 para depois (se entrarem, só com as pontuações). O Figma (Etapa 3) ainda não tem as telas novas.

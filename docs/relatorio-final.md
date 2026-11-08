@@ -6,9 +6,9 @@ Este relatório resume o que mudou no prontuário, por quê, como mostrar na ban
 
 ## Onde está o trabalho
 
-- Tudo está no branch **`andamento-06-11`** do GitHub: https://github.com/isaacjesusjj/prontuario-eletronico/tree/andamento-06-11
-- A **`main` não mudou**: o site publicado continua com a versão antiga. As melhorias só vão ao ar quando o grupo aprovar e juntar o branch na `main`. No GitHub, isso é um *pull request*: https://github.com/isaacjesusjj/prontuario-eletronico/pull/new/andamento-06-11
-- Para ver antes de publicar: baixe o branch e rode `python -m http.server 8000` na pasta do projeto (detalhes no `CLAUDE.md`).
+- **Publicado em 08/11/2026**: as melhorias foram feitas no branch `andamento-06-11` e juntadas à `main`, que publica o site: https://isaacjesusjj.github.io/prontuario-eletronico/
+- Quem já tinha aberto o site recebe os dados novos sozinho (a versão do JSON mudou). Se algo parecer estranho, use "Restaurar dados de demonstração" na tela de entrada.
+- Para rodar no computador: `python -m http.server 8000` na pasta do projeto (detalhes no `CLAUDE.md`).
 
 ## Em números
 
@@ -90,7 +90,7 @@ Diga isso na banca antes que perguntem: mostra maturidade.
 1. Cada integrante abre o branch, percorre o passo 9 do roteiro e anota dúvidas.
 2. Levar a lista "O que validar" à supervisão e, se possível, ao jurídico.
 3. Atualizar o Figma com as telas novas, se o professor for cobrar a Etapa 3 junto.
-4. Quando o grupo aprovar: juntar o branch na `main` pelo *pull request* (isso publica o site). Antes, rodar os três testes.
+4. Mudanças novas: fazer num branch, rodar os três testes e só então juntar na `main` (isso publica o site).
 5. Depois do PIC: ligar o banco seguindo o `banco/README.md`.
 
 ## Glossário rápido
