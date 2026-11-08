@@ -1,0 +1,44 @@
+# Roda os três testes do Vínculo a cada envio (push) e a cada pedido de junção (pull request).
+# O resultado aparece na aba "Actions" do GitHub e no selo do README.
+name: testes
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validador do JSON
+        run: python ferramentas/validar_json.py
+
+      - name: Teste do banco (PostgreSQL de verdade, no PGlite)
+        working-directory: banco
+        run: |
+          npm ci
+          python3 migrar_json.py
+          node testar_banco.mjs
+
+      - name: Preparar o teste do site (Playwright + axe-core)
+        run: |
+          pip install playwright==1.63.0
+          python -m playwright install --with-deps chromium
+          cd testes && npm ci
+
+      - name: Teste do site (interface, regras e acessibilidade)
+        run: python testes/testar_site.py
