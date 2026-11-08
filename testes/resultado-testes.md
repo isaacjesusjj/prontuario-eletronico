@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 07/11/2026 01:31, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 08/11/2026 19:09, no Chrome (Playwright), com axe-core 4.14.0.
 
-**270 de 270 verificações passaram.** Acessibilidade: 57 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**287 de 287 verificações passaram.** Acessibilidade: 59 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 64 | 0 |
+| Acessibilidade | 66 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -41,6 +41,7 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:31, no Chrome (Playwright), 
 | Prazo | 1 | 0 |
 | Contas | 7 | 0 |
 | Duas etapas | 20 | 0 |
+| Transição | 15 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
@@ -304,13 +305,30 @@ Gerado por `testes/testar_site.py` em 07/11/2026 01:31, no Chrome (Playwright), 
 | ✓ | Duas etapas | configurou: os códigos de recuperação aparecem antes de seguir, e não há botão de desativar (é obrigatória) |  |
 | ✓ | Duas etapas | ... e só depois de "Já guardei" segue para o termo de sigilo | #/termo |
 | ✓ | Duas etapas | para o paciente, não é obrigatória (o portal precisa ser simples) |  |
+| ✓ | Transição | o resumo de transferência já vem com período, sessões, demanda e objetivos tirados do prontuário | Período: de 28/08/2026 a 08/11/2026 · 7 sessões com presença · 1 falta(s), 1 justificada(s). Demanda: Dificuldade em lid |
+| ✓ | Acessibilidade | Transição de semestre · Caso · resumo de transferência: sem violações WCAG A/AA |  |
+| ✓ | Transição | sem completar as seções, o resumo não é enviado (o campo diz o que falta) |  |
+| ✓ | Transição | completo, o resumo é assinado e enviado à supervisão (sem sessão vinculada) |  |
+| ✓ | Transição | o quadro da passagem mostra o que falta; evolução esperando a validação impede (botão desligado) |  |
+| ✓ | Transição | a supervisora valida o resumo de transferência como valida uma evolução |  |
+| ✓ | Transição | sem resumo validado, a passagem pede justificativa e a confirmação de que o paciente foi avisado |  |
+| ✓ | Transição | com a justificativa, o caso passa para a outra dupla e a passagem fica registrada |  |
+| ✓ | Transição | ao encerrar o estágio, a direção é avisada de que o caso fica sem dupla ativa (só quando sai o último da dupla) | Encerrar o vínculo de estágio de Lia? O acesso aos casos termina agora.  Fica sem dupla ativa: Paciente Exemplo 02, Paciente Exemplo 03. Combine com a supervisã |
+| ✓ | Transição | a técnica vê os casos sem dupla ativa na alocação |  |
+| ✓ | Transição | o painel da supervisão avisa o caso sem dupla ativa |  |
+| ✓ | Acessibilidade | Transição de semestre · Caso · passagem do caso: sem violações WCAG A/AA |  |
+| ✓ | Transição | com o resumo validado, o caso passa para a nova dupla sem pedir justificativa |  |
+| ✓ | Transição | depois da passagem, o caso sai do aviso |  |
+| ✓ | Transição | a nova dupla lê o resumo de transferência no prontuário |  |
+| ✓ | Transição | e vê de onde o caso veio |  |
+| ✓ | Transição | o resumo entra na cópia do prontuário, com o nome |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-07T01:31:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T19:09:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw5q9qigle5n |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw87i2nd8o7m |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

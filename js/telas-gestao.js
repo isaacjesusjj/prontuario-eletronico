@@ -183,12 +183,12 @@ PEP.telas = PEP.telas || {};
       return html + listaGrupos(u);
     }
     if (u.perfil === 'supervisor') {
-      return '<h1>Duplas e trios</h1><p class="suave">Organize seus estagiários e atribua os casos alocados ao seu grupo.</p>' + listaGrupos(u);
+      return '<h1>Duplas e trios</h1><p class="suave">Organize seus estagiários e atribua os casos alocados ao seu grupo.</p>' + PEP.telas.alertaSemDupla(u) + listaGrupos(u);
     }
     if (u.perfil === 'tecnico') {
       var pendentes = PEP.db.casos.filter(function (c) { return c.status === 'aguardando-alocacao'; });
       var opcoesG = PEP.db.grupos.map(function (g) { return '<option value="' + g.id + '">' + esc(g.nome) + ' · ' + esc(g.foco) + '</option>'; }).join('');
-      html = '<h1>Alocação de pacientes</h1><p class="suave">Você aloca o paciente triado a um grupo; o supervisor define a dupla ou trio.</p>' +
+      html = '<h1>Alocação de pacientes</h1><p class="suave">Você aloca o paciente triado a um grupo; o supervisor define a dupla ou trio.</p>' + PEP.telas.alertaSemDupla(u) +
         '<div class="cartao"><h2>Aguardando alocação</h2>' + (pendentes.length ? pendentes.map(function (c) {
           return '<div class="linha" style="margin-bottom:.4rem"><label for="ag-' + c.id + '">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' →</label><select id="ag-' + c.id + '" style="width:auto">' + opcoesG + '</select>' +
             '<button class="botao pequeno" data-acao="alocar-caso" data-id="' + c.id + '">Alocar</button></div>';

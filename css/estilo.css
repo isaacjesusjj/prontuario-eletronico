@@ -431,6 +431,14 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .previa-paciente .cartao { margin: 0; box-shadow: none; }
 .previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
 
+/* ---------- Passagem do caso (transição de semestre) ---------- */
+.checklist { list-style: none; padding: 0; margin: .4rem 0 .8rem; }
+.checklist li { display: flex; gap: .5rem; align-items: baseline; padding: .25rem 0; border-bottom: 1px dashed var(--borda); }
+.checklist .marca { font-weight: 700; min-width: 1.1rem; text-align: center; }
+.checklist .ok .marca { color: var(--sucesso); }
+.checklist .atencao .marca { color: var(--alerta); }
+.checklist .bloqueia { color: var(--perigo); }
+
 /* ---------- Verificação em duas etapas ---------- */
 .codigos-recuperacao { list-style: none; padding: 0; margin: .5rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .3rem; font-size: 1rem; }
 

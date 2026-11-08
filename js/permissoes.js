@@ -162,6 +162,7 @@ PEP.regras = (function () {
     if (acao.indexOf('Abriu o prontuário') === 0) return 'Abriu o prontuário';
     if (/^(Gerou cópia|Entregou cópia|Paciente leu o prontuário)/.test(acao)) return 'Cópia ou leitura do prontuário';
     if (acao.indexOf('Gerou lembrete') === 0) return 'Enviou lembrete de sessão';
+    if (acao.indexOf('Passou o caso') === 0) return 'Passou o seu atendimento para outra dupla';
     return 'Registrou informações no prontuário';
   }
   function acessosAoProntuario(u) {
@@ -277,6 +278,87 @@ PEP.regras = (function () {
       return !PEP.db.evolucoes.some(function (e) { return e.sessaoId === s.id; });
     });
   }
+  // ---------- Transição de semestre: passagem do caso para outra dupla ----------
+  // O prontuário continua o mesmo; muda quem atende (tabela transferencias, regras em app.transferencia_regras)
+  function subgrupoTemEstagiarioAtivo(subId) { return estagiariosDoSubgrupo(subId).length > 0; }
+  // Caso em andamento cuja dupla ou trio não tem mais ninguém com vínculo ativo (o estágio terminou)
+  function semDuplaAtiva(caso) { return caso.status === 'ativo' && !!caso.subgrupoId && !subgrupoTemEstagiarioAtivo(caso.subgrupoId); }
+  function casosSemDuplaAtiva(u) { return casosVisiveis(u).filter(semDuplaAtiva); }
+  function transferenciasDoCaso(caso) {
+    return (PEP.db.transferencias || []).filter(function (t) { return t.casoId === caso.id; })
+      .sort(function (a, b) { return a.em.localeCompare(b.em); });
+  }
+  // Resumos de transferência desta passagem: escritos depois da última passagem e ainda não usados
+  function resumosDaPassagem(caso) {
+    var passagens = transferenciasDoCaso(caso), ult = passagens[passagens.length - 1], desde = ult ? ult.em.slice(0, 10) : '';
+    var usados = passagens.map(function (t) { return t.resumoId; });
+    return PEP.db.evolucoes.filter(function (e) {
+      return e.casoId === caso.id && e.tipo === 'transferencia' && e.data >= desde && usados.indexOf(e.id) === -1;
+    });
+  }
+  function resumoValidado(caso) { return resumosDaPassagem(caso).filter(function (e) { return e.status === 'validada'; }).pop() || null; }
+  function podePassarCaso(u, caso) { return !!u && !!caso && caso.status === 'ativo' && (u.perfil === 'tecnico' || ehSupervisorDoCaso(u, caso)); }
+  // Duplas que podem receber o caso: com estagiário em vínculo ativo; o supervisor, só as do grupo do caso
+  function duplasDestino(u, caso) {
+    return PEP.db.subgrupos.filter(function (s) {
+      return s.id !== caso.subgrupoId && subgrupoTemEstagiarioAtivo(s.id) && (u.perfil === 'tecnico' || s.grupoId === caso.grupoId);
+    });
+  }
+  // O que conferir antes da passagem. bloqueia = impede passar (o banco recusa); os outros itens são avisos
+  function checklistPassagem(caso) {
+    var evs = PEP.db.evolucoes.filter(function (e) { return e.casoId === caso.id; });
+    var enviadas = evs.filter(function (e) { return e.status === 'enviada'; }).length;
+    var abertas = evs.filter(function (e) { return e.status === 'rascunho' || e.status === 'devolvida'; }).length;
+    var semEvolucao = PEP.db.sessoes.filter(function (s) {
+      return s.casoId === caso.id && s.presenca === 'presente' && !evs.some(function (e) { return e.sessaoId === s.id; });
+    }).length;
+    var riscos = riscosAbertos(caso), semCiencia = riscos.filter(function (r) { return !r.cienciaEm; }).length;
+    var agendadas = PEP.db.sessoes.filter(function (s) { return s.casoId === caso.id && s.presenca === 'agendada' && s.data >= PEP.util.hoje(); }).length;
+    var resumo = resumoValidado(caso), escrito = resumosDaPassagem(caso).filter(function (e) { return e.status !== 'validada'; }).length;
+    return [
+      { id: 'enviadas', ok: !enviadas, bloqueia: true, texto: enviadas ? enviadas + ' evolução(ões) esperando a supervisão: valide ou devolva antes de passar o caso' : 'Nada esperando a validação da supervisão' },
+      { id: 'resumo', ok: !!resumo, bloqueia: false, texto: resumo ? 'Resumo de transferência validado em ' + PEP.util.formatarData(resumo.data) :
+        escrito ? 'Resumo de transferência escrito, falta a validação da supervisão' :
+        semDuplaAtiva(caso) ? 'A dupla saiu sem resumo de transferência: a passagem precisa de justificativa' :
+        'Sem resumo de transferência: o estagiário escreve na aba Evoluções (sem ele, a passagem precisa de justificativa)' },
+      { id: 'abertas', ok: !abertas, bloqueia: false, texto: abertas ? abertas + ' rascunho(s) ou evolução(ões) devolvida(s): ficam fora do prontuário se não forem enviados' : 'Nenhum rascunho ou devolução em aberto' },
+      { id: 'sessoes', ok: !semEvolucao, bloqueia: false, texto: semEvolucao ? semEvolucao + ' sessão(ões) com presença e sem evolução' : 'Toda sessão com presença tem evolução' },
+      { id: 'risco', ok: !semCiencia, bloqueia: false, texto: !riscos.length ? 'Sem risco em acompanhamento' : semCiencia ? 'Risco em acompanhamento ainda sem a ciência da supervisão' :
+        'Risco em acompanhamento, com ciência: a nova dupla retoma na primeira sessão (aba Risco e segurança)' },
+      { id: 'agenda', ok: !agendadas, bloqueia: false, texto: agendadas ? agendadas + ' sessão(ões) agendada(s): confira o horário com a nova dupla e avise o paciente' : 'Sem sessões agendadas' }
+    ];
+  }
+  // Rascunho gerado do resumo: dados que o prontuário já tem + as seções que o estagiário completa.
+  // O risco não entra no texto: fica na aba Risco e segurança (que não sai na cópia de criança ou adolescente).
+  function modeloResumoTransferencia(caso) {
+    var a = anamneseAtual(caso), ss = PEP.db.sessoes.filter(function (s) { return s.casoId === caso.id; });
+    var conta = function (p) { return ss.filter(function (s) { return s.presenca === p; }).length; };
+    var faltas = conta('falta') + conta('falta-justificada');
+    return 'Período: de ' + PEP.util.formatarData(caso.inicio) + ' a ' + PEP.util.formatarData(PEP.util.hoje()) + ' · ' + conta('presente') + ' sessões com presença · ' +
+      faltas + ' falta(s), ' + conta('falta-justificada') + ' justificada(s).\n' +
+      'Demanda: ' + (a.demanda || '—') + '\nObjetivos: ' + (a.objetivos || '—') + '\n' +
+      PEP.lista('secoesResumoTransferencia').map(function (nome) { return nome + ': '; }).join('\n');
+  }
+  // Seções do resumo ainda sem conteúdo (cada uma precisa de pelo menos regras.resumoSecaoMinCaracteres)
+  function secoesFaltandoNoResumo(texto) {
+    var secoes = PEP.lista('secoesResumoTransferencia'), min = PEP.regra('resumoSecaoMinCaracteres') || 10, t = String(texto || '');
+    return secoes.filter(function (nome) {
+      var i = t.indexOf(nome + ':');
+      if (i === -1) return true;
+      var resto = t.slice(i + nome.length + 1), fim = resto.length;
+      secoes.forEach(function (outra) { var j = resto.indexOf(outra + ':'); if (j !== -1 && j < fim) fim = j; });
+      return resto.slice(0, fim).trim().length < min;
+    });
+  }
+  // Se a direção encerrar o vínculo deste estagiário, quais casos ficam sem ninguém da dupla
+  function casosQueFicamSemDupla(estagiarioId) {
+    var a = alocacaoDoEstagiario(estagiarioId);
+    if (!a || !a.subgrupoId) return [];
+    var outros = estagiariosDoSubgrupo(a.subgrupoId).filter(function (id) { return id !== estagiarioId; });
+    if (outros.length) return [];
+    return PEP.db.casos.filter(function (c) { return c.status === 'ativo' && c.subgrupoId === a.subgrupoId; });
+  }
+
   // Sinal de urgência no relato do formulário público (termos de _config.listas.sinaisUrgencia, sem acento)
   function temSinalDeUrgencia(texto) {
     var n = PEP.revisor.normalizar(texto);
@@ -375,6 +457,10 @@ PEP.regras = (function () {
     notificacoesSugeridas: notificacoesSugeridas, riscoProtegidoNaCopia: riscoProtegidoNaCopia,
     justificativaValida: justificativaValida, podeVerConteudoClinico: podeVerConteudoClinico, precisaJustificar: precisaJustificar,
     categoriaAcesso: categoriaAcesso, acessosAoProntuario: acessosAoProntuario,
-    podeAvisarFalta: podeAvisarFalta, sessoesSemEvolucao: sessoesSemEvolucao, temSinalDeUrgencia: temSinalDeUrgencia
+    podeAvisarFalta: podeAvisarFalta, sessoesSemEvolucao: sessoesSemEvolucao, temSinalDeUrgencia: temSinalDeUrgencia,
+    semDuplaAtiva: semDuplaAtiva, casosSemDuplaAtiva: casosSemDuplaAtiva, transferenciasDoCaso: transferenciasDoCaso,
+    resumosDaPassagem: resumosDaPassagem, resumoValidado: resumoValidado, podePassarCaso: podePassarCaso, duplasDestino: duplasDestino,
+    checklistPassagem: checklistPassagem, modeloResumoTransferencia: modeloResumoTransferencia, secoesFaltandoNoResumo: secoesFaltandoNoResumo,
+    casosQueFicamSemDupla: casosQueFicamSemDupla
   };
 })();

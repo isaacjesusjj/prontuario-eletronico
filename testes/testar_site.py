@@ -1043,6 +1043,92 @@ def adaptador_supabase(nav, base):
     s.fechar()
 
 
+def transicao_de_semestre(nav, base):
+    s = Sessao(nav, base, "Transição de semestre")
+    mensagens = []
+    s.p.on("dialog", lambda d: mensagens.append(d.message))   # a Sessao já aceita o diálogo; aqui só guarda o texto
+    # Estagiária: resumo de transferência, com o rascunho gerado do prontuário
+    s.entrar("duda.estagiaria")
+    s.ir("#/caso/c03/evolucoes")
+    s.clicar("#resumo-transferencia summary")
+    modelo = s.p.locator("#nova-transf").input_value()
+    conferir("Transição", "o resumo de transferência já vem com período, sessões, demanda e objetivos tirados do prontuário",
+             all(x in modelo for x in ("Período:", "sessões com presença", "Demanda:", "Objetivos:", "O que foi trabalhado:")), modelo[:120].replace("\n", " "))
+    s.axe("Caso · resumo de transferência")
+    s.clicar('#resumo-transferencia [data-acao="nova-evolucao"][data-modo="enviar"]')
+    conferir("Transição", "sem completar as seções, o resumo não é enviado (o campo diz o que falta)",
+             s.p.locator("#nova-transf").get_attribute("aria-invalid") == "true" and "O que foi trabalhado" in s.p.locator("#nova-transf-erro").inner_text())
+    texto = (modelo.replace("O que foi trabalhado: ", "O que foi trabalhado: rotina de sono e estratégias para a ansiedade no trabalho.")
+             .replace("Como o paciente está agora: ", "Como o paciente está agora: mais estável, dorme melhor e ainda evita conflitos.")
+             .replace("Sugestões para a continuidade: ", "Sugestões para a continuidade: retomar o plano de segurança e treinar assertividade."))
+    s.p.fill("#nova-transf", texto)
+    s.clicar('#resumo-transferencia [data-acao="nova-evolucao"][data-modo="enviar"]')
+    resumo = s.js("PEP.db.evolucoes.filter(e => e.casoId === 'c03' && e.tipo === 'transferencia')[0]") or {}
+    conferir("Transição", "completo, o resumo é assinado e enviado à supervisão (sem sessão vinculada)",
+             resumo.get("status") == "enviada" and resumo.get("sessaoId") is None)
+    s.sair()
+    # Supervisora: o que falta para a passagem; valida o resumo; passa outro caso com justificativa
+    s.entrar("helena.supervisora")
+    s.ir("#/caso/c03")
+    conferir("Transição", "o quadro da passagem mostra o que falta; evolução esperando a validação impede (botão desligado)",
+             "esperando a supervisão" in s.p.locator("#passagem .checklist").inner_text() and s.p.locator("#form-passagem button[type=submit]").is_disabled())
+    s.ir("#/caso/c03/evolucoes")
+    s.clicar(f'[data-acao="validar-evolucao"][data-id="{resumo.get("id")}"]')
+    conferir("Transição", "a supervisora valida o resumo de transferência como valida uma evolução",
+             s.js(f"PEP.util.porId(PEP.db.evolucoes, '{resumo.get('id')}').status") == "validada")
+    s.ir("#/caso/c02")
+    s.clicar("#passagem details summary")
+    s.p.select_option("#pc-destino", "d-a2")
+    s.clicar("#form-passagem button[type=submit]")
+    conferir("Transição", "sem resumo validado, a passagem pede justificativa e a confirmação de que o paciente foi avisado",
+             s.p.locator("#pc-justificativa").get_attribute("aria-invalid") == "true" and s.p.locator("#pc-avisado").get_attribute("aria-invalid") == "true"
+             and s.js("PEP.util.porId(PEP.db.casos, 'c02').subgrupoId") == "d-a1")
+    s.p.fill("#pc-justificativa", "Reorganização das duplas do grupo A.")
+    s.p.check("#pc-avisado")
+    s.clicar("#form-passagem button[type=submit]")
+    t2 = s.js("PEP.db.transferencias.filter(t => t.casoId === 'c02')[0]") or {}
+    conferir("Transição", "com a justificativa, o caso passa para a outra dupla e a passagem fica registrada",
+             s.js("PEP.util.porId(PEP.db.casos, 'c02').subgrupoId") == "d-a2" and t2.get("deSubgrupoId") == "d-a1" and t2.get("resumoId") is None)
+    s.sair()
+    # Direção encerra o estágio da dupla 2: o aviso diz quais casos ficam sem dupla
+    s.entrar("marta.direcao")
+    s.ir("#/alocacao")
+    s.clicar('[data-acao="encerrar-estagio"][data-id="u-est3"]')
+    s.clicar('[data-acao="encerrar-estagio"][data-id="u-est4"]')
+    conferir("Transição", "ao encerrar o estágio, a direção é avisada de que o caso fica sem dupla ativa (só quando sai o último da dupla)",
+             len(mensagens) >= 2 and "Fica sem dupla ativa" not in mensagens[-2] and "Fica sem dupla ativa" in mensagens[-1] and "Paciente Exemplo 03" in mensagens[-1],
+             (mensagens[-1] if mensagens else "").replace("\n", " ")[:160])
+    s.sair()
+    s.entrar("ana.tecnica")
+    s.ir("#/alocacao")
+    conferir("Transição", "a técnica vê os casos sem dupla ativa na alocação", "Caso sem dupla ativa" in s.p.locator("#app").inner_text()
+             and s.p.locator('#app .aviso a[href="#/caso/c03"]').count() == 1)
+    s.sair()
+    # Supervisora: passa o caso com o resumo validado para a dupla 1
+    s.entrar("helena.supervisora")
+    conferir("Transição", "o painel da supervisão avisa o caso sem dupla ativa", s.p.locator('#app .aviso a[href="#/caso/c03"]').count() == 1)
+    s.ir("#/caso/c03")
+    s.axe("Caso · passagem do caso")
+    s.p.select_option("#pc-destino", "d-a1")
+    s.p.check("#pc-avisado")
+    s.clicar("#form-passagem button[type=submit]")
+    t3 = s.js("PEP.db.transferencias.filter(t => t.casoId === 'c03')[0]") or {}
+    conferir("Transição", "com o resumo validado, o caso passa para a nova dupla sem pedir justificativa",
+             s.js("PEP.util.porId(PEP.db.casos, 'c03').subgrupoId") == "d-a1" and t3.get("resumoId") == resumo.get("id") and t3.get("pacienteAvisado") is True)
+    s.ir("#/painel")
+    conferir("Transição", "depois da passagem, o caso sai do aviso", s.p.locator('#app .aviso a[href="#/caso/c03"]').count() == 0)
+    s.sair()
+    # Nova dupla: vê o caso inteiro, com o resumo e a passagem
+    s.entrar("bia.estagiaria")
+    s.ir("#/caso/c03/evolucoes")
+    conferir("Transição", "a nova dupla lê o resumo de transferência no prontuário", "Resumo de transferência" in s.p.locator("#app").inner_text()
+             and "rotina de sono" in s.p.locator("#app").inner_text())
+    s.ir("#/caso/c03")
+    conferir("Transição", "e vê de onde o caso veio", "com resumo de transferência validado" in s.p.locator("#passagem").inner_text())
+    conferir("Transição", "o resumo entra na cópia do prontuário, com o nome", s.js("PEP.telas.copiaProntuario(PEP.util.porId(PEP.db.casos, 'c03'), '').indexOf('Resumo de transferência') !== -1"))
+    s.fechar()
+
+
 def verificacao_duas_etapas(nav, base):
     s = Sessao(nav, base, "Duas etapas")
     t0 = datetime(2026, 11, 6, 10, 0, 0)
@@ -1221,7 +1307,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras
@@ -1241,7 +1327,7 @@ def main():
               f"Gerado por `testes/testar_site.py` em {datetime.now().strftime('%d/%m/%Y %H:%M')}, no Chrome (Playwright), com axe-core {json.loads((RAIZ / 'testes/node_modules/axe-core/package.json').read_text())['version'] if AXE.exists() else '—'}.", "",
               f"**{ok} de {len(resultados)} verificações passaram.** Acessibilidade: {telas_axe} telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).", "",
               "| Área | Passaram | Falharam |", "|---|---|---|"] + [f"| {g} | {v[0]} | {v[1]} |" for g, v in grupos.items()] + ["", "## Todas as verificações", "", "| | Área | Verificação | Detalhe |", "|---|---|---|---|"]
-    linhas += [f"| {'✓' if k else '✗'} | {g} | {n} | {d.replace('|', '/')[:160]} |" for g, n, k, d in resultados]
+    linhas += [f"| {'✓' if k else '✗'} | {g} | {n} | {d.replace('|', '/').replace(chr(10), ' ')[:160]} |" for g, n, k, d in resultados]
     (RAIZ / "testes" / "resultado-testes.md").write_text("\n".join(linhas) + "\n", encoding="utf-8")
     sys.exit(0 if ok == len(resultados) else 1)
 

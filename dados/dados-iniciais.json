@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.9",
+    "versao": "2026-11-06.10",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -50,7 +50,8 @@
       "prazoRespostaTitularDias": 15,
       "maxEstagiariosPorGrupo": 10,
       "riscoDescricaoMaxCaracteres": 1000,
-      "planoCampoMaxCaracteres": 1000
+      "planoCampoMaxCaracteres": 1000,
+      "resumoSecaoMinCaracteres": 10
     },
     "listas": {
       "motivosAbandono": [
@@ -488,7 +489,12 @@
         "estagiario": "Estagiário(a)",
         "paciente": "Paciente",
         "direcao": "Direção do curso"
-      }
+      },
+      "secoesResumoTransferencia": [
+        "O que foi trabalhado",
+        "Como o paciente está agora",
+        "Sugestões para a continuidade"
+      ]
     },
     "revisorEscrita": {
       "sobre": "Regras do revisor de escrita clínica: ele aponta, não corrige nem bloqueia. Os termos são palavras ou expressões inteiras, comparadas sem acento e sem diferença de maiúsculas. A supervisão pode ajustar esta lista sem mexer no código.",
@@ -2268,7 +2274,8 @@
       "data": "2026-08-19",
       "status": "validada",
       "texto": "Sessão 1. Acolhimento e contrato terapêutico (horário, faltas, sigilo e seus limites). Paciente relata preocupação constante com o trabalho e dificuldade para dormir. Objetivo inicial combinado: compreender os gatilhos da ansiedade.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e02",
@@ -2278,7 +2285,8 @@
       "data": "2026-08-26",
       "status": "validada",
       "texto": "Sessão 2. Exploração das situações que disparam a ansiedade no trabalho. Introduzido registro diário de situações, pensamentos e reações.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e03",
@@ -2288,7 +2296,8 @@
       "data": "2026-09-09",
       "status": "validada",
       "texto": "Sessão 3. Revisão do registro diário: paciente identifica reuniões com a chefia como principal gatilho. Trabalhadas estratégias de respiração e preparação prévia para reuniões.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e14",
@@ -2298,7 +2307,8 @@
       "data": "2026-09-23",
       "status": "validada",
       "texto": "Sessão 4. Retomado o registro diário. Paciente percebe que a ansiedade aumenta nas reuniões de segunda-feira. Intervenção: psicoeducação sobre ansiedade e respiração diafragmática. Plano: praticar a respiração antes das reuniões.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e15",
@@ -2308,7 +2318,8 @@
       "data": "2026-10-07",
       "status": "validada",
       "texto": "Sessão 5. Paciente relata uso da respiração em duas reuniões, com alívio parcial. Trabalhada a relação entre pensamentos de cobrança e o sono. Plano: revisar os objetivos na próxima sessão.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e16",
@@ -2318,7 +2329,8 @@
       "data": "2026-10-21",
       "status": "validada",
       "texto": "Sessão 6. Revisão dos objetivos com a paciente: manter o foco no sono e incluir a comunicação com a chefia. Intervenção: ensaio de uma conversa difícil. Plano: observar situações de comunicação na semana.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e17",
@@ -2328,7 +2340,8 @@
       "data": "2026-10-28",
       "status": "validada",
       "texto": "Sessão 7. Paciente conversou com a chefia sobre prazos e relata menos preocupação à noite. Reforçadas as estratégias que funcionaram. Plano: acompanhar o padrão de sono.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e18",
@@ -2338,7 +2351,8 @@
       "data": "2026-11-04",
       "status": "enviada",
       "texto": "Sessão 8. Paciente relata duas noites de sono ruim depois de uma semana com muitas entregas. Trabalhada a antecipação de cenários negativos. Plano: registro de pensamentos nas noites difíceis.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e04",
@@ -2348,7 +2362,8 @@
       "data": "2026-11-05",
       "status": "rascunho",
       "texto": "Rascunho: planejar a revisão dos objetivos na próxima sessão.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e08",
@@ -2358,7 +2373,8 @@
       "data": "2026-09-09",
       "status": "validada",
       "texto": "Sessão 1. Acolhimento. Paciente relata isolamento após mudança de cidade. Combinado contrato e frequência semanal.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e19",
@@ -2368,7 +2384,8 @@
       "data": "2026-09-23",
       "status": "validada",
       "texto": "Sessão 2. Paciente fala da rotina na cidade nova e das poucas oportunidades de convívio. Mapeada a rede de apoio (colegas de trabalho e um primo). Plano: identificar um espaço de convivência para experimentar.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e20",
@@ -2378,7 +2395,8 @@
       "data": "2026-10-07",
       "status": "validada",
       "texto": "Sessão 3. Paciente visitou um grupo de caminhada e relata desconforto inicial e vontade de voltar. Trabalhadas expectativas sobre novas amizades. Plano: manter a participação semanal.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e21",
@@ -2388,7 +2406,8 @@
       "data": "2026-08-26",
       "status": "validada",
       "texto": "Sessão 1. Acolhimento e contrato terapêutico. Paciente relata sofrer com críticas de professores e colegas. Objetivo inicial: compreender como as críticas afetam a autoestima.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e22",
@@ -2398,7 +2417,8 @@
       "data": "2026-09-02",
       "status": "validada",
       "texto": "Sessão 2. Exploradas situações recentes de crítica e as reações da paciente. Intervenção: diferenciar crítica ao trabalho de crítica à pessoa. Plano: registrar uma situação da semana.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e23",
@@ -2408,7 +2428,8 @@
       "data": "2026-09-16",
       "status": "validada",
       "texto": "Sessão 3. Paciente trouxe o registro de uma apresentação em sala. Trabalhada comunicação assertiva com ensaio de respostas. Plano: experimentar uma resposta assertiva.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e24",
@@ -2418,7 +2439,8 @@
       "data": "2026-09-30",
       "status": "validada",
       "texto": "Sessão 4. Paciente relata ter pedido esclarecimento a um professor sem se desculpar em excesso. Reforçado o avanço. Plano: ampliar para situações com colegas.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e25",
@@ -2428,7 +2450,8 @@
       "data": "2026-10-14",
       "status": "validada",
       "texto": "Sessão 5. Trabalhada a autocrítica antes das provas. Intervenção: reestruturação de pensamentos de fracasso. Plano: preparar um plano de estudo realista.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e05",
@@ -2438,7 +2461,8 @@
       "data": "2026-10-28",
       "status": "devolvida",
       "texto": "Sessão 3. Paciente contou com muitos detalhes uma briga com a mãe, que gritou com ela na frente dos vizinhos e a chamou de fracassada.",
-      "comentarioSupervisor": "Registre o tema e a intervenção, não o relato detalhado: o prontuário pode ser lido pela paciente. Ex.: \"Trabalhado conflito familiar e o impacto na autoestima\"."
+      "comentarioSupervisor": "Registre o tema e a intervenção, não o relato detalhado: o prontuário pode ser lido pela paciente. Ex.: \"Trabalhado conflito familiar e o impacto na autoestima\".",
+      "tipo": "sessao"
     },
     {
       "id": "e06",
@@ -2448,7 +2472,8 @@
       "data": "2026-09-02",
       "status": "validada",
       "texto": "Sessão 1 com o adolescente e o responsável. Contrato terapêutico e combinados sobre o sigilo: ao responsável será comunicado apenas o essencial para o cuidado.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e26",
@@ -2458,7 +2483,8 @@
       "data": "2026-09-16",
       "status": "validada",
       "texto": "Sessão 2 individual com o adolescente. Explorados interesses, rotina escolar e relações com os colegas. Plano: conhecer melhor a dinâmica familiar.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e27",
@@ -2468,7 +2494,8 @@
       "data": "2026-09-30",
       "status": "validada",
       "texto": "Sessão 3. Adolescente fala dos conflitos com o responsável sobre horários. Trabalhada a expressão de sentimentos sem agressividade. Plano: sessão de orientação ao responsável.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e28",
@@ -2478,7 +2505,8 @@
       "data": "2026-10-14",
       "status": "validada",
       "texto": "Sessão 4 com o responsável (orientação familiar), com a concordância do adolescente. Combinados horários e um momento semanal de conversa. Preservado o sigilo do conteúdo das sessões individuais.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e07",
@@ -2488,7 +2516,8 @@
       "data": "2026-10-28",
       "status": "enviada",
       "texto": "Sessão 5 individual. Adolescente relata menos brigas em casa e melhora na frequência escolar. Trabalhadas estratégias para as provas. Plano: revisar o combinado familiar.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e09",
@@ -2498,7 +2527,8 @@
       "data": "2026-08-12",
       "status": "validada",
       "texto": "Sessão 1. Acolhimento e contrato terapêutico. Paciente relata insegurança com a escolha profissional. Combinada frequência semanal às 11h.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e10",
@@ -2508,7 +2538,8 @@
       "data": "2026-09-02",
       "status": "validada",
       "texto": "Sessão 1. Acolhimento e contrato terapêutico. Paciente relata perda recente e dificuldade de retomar a rotina. Objetivo combinado: elaboração do luto.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e11",
@@ -2518,7 +2549,8 @@
       "data": "2026-09-09",
       "status": "validada",
       "texto": "Sessão 2. Trabalhadas lembranças e sentimentos ligados à perda. Paciente identifica a rede de apoio familiar.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e12",
@@ -2528,7 +2560,8 @@
       "data": "2026-09-16",
       "status": "validada",
       "texto": "Sessão 3. Paciente relata retomada gradual da rotina. Revisados os objetivos do atendimento.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     },
     {
       "id": "e13",
@@ -2538,7 +2571,8 @@
       "data": "2026-09-23",
       "status": "validada",
       "texto": "Sessão 4. Avaliação conjunta do processo: objetivos alcançados. Combinada a alta para a próxima semana, com orientação sobre a rede de apoio.",
-      "comentarioSupervisor": ""
+      "comentarioSupervisor": "",
+      "tipo": "sessao"
     }
   ],
   "assinaturas": [
@@ -3428,6 +3462,7 @@
     }
   ],
   "acessosJustificados": [],
+  "transferencias": [],
   "auditoria": [
     {
       "id": "au01",

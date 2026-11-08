@@ -81,6 +81,7 @@ Escolha dois ou três, conforme o tempo.
 - **Privacidade:** `ana.tecnica` → abra **Paciente Exemplo 01**: antes do conteúdo clínico, ela registra o **motivo do acesso**. Depois, `paciente01` → **Meus dados** → **Quem acessou o seu prontuário**. No topo, **Discreto** (iniciais no lugar de nomes) e **Cobrir tela**.
 - **Falta avisada:** `paciente01` → próxima sessão → **Não vou poder ir** → motivo da lista. "A falta avisada não conta como abandono, e o motivo vira indicador."
 - **Urgência na fila:** **Entrar na fila de espera** → em "Em poucas palavras, o que te traz aqui?", escreva "Não aguento mais, preciso de ajuda" (um dos sinais de urgência): os contatos de crise aparecem na hora, e a inscrição sobe para o topo da fila da técnica.
+- **Transição de semestre:** `duda.estagiaria` → **Paciente Exemplo 03** → **Evoluções** → **Resumo de transferência**: o rascunho já vem com período, sessões, demanda e objetivos. Complete as três seções e envie; `helena.supervisora` valida. Depois, `marta.direcao` → **Grupos de estágio** → **Encerrar estágio** de Duda e de Lia: o aviso diz que o caso fica sem dupla. `helena.supervisora` → o painel avisa → **Passagem do caso** → **Dupla 1** → paciente avisado → **Passar o caso**. Frase: "O caso não se perde na troca de semestre: a nova dupla lê o resumo, e a anterior perde o acesso na hora."
 - **Contas:** `marta.direcao` → **Estudantes e contas** → **Gerar senha provisória** (aparece uma vez; no banco fica só o hash).
 - **Verificação em duas etapas:** **Minha conta** → **Ativar a verificação em duas etapas** → a chave para o aplicativo autenticador. Se alguém do grupo tiver o app no celular, mostre ao vivo: depois de **Sair**, a senha certa não basta. Ao terminar, use **"Restaurar dados de demonstração"**.
 
@@ -98,11 +99,12 @@ Escolha dois ou três, conforme o tempo.
 - **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
 - **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
 - **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
-- **Como provam que funciona?** 270 verificações automáticas no site (57 telas conferidas no teste de acessibilidade), 133 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
+- **Como provam que funciona?** 287 verificações automáticas no site (59 telas conferidas no teste de acessibilidade), 150 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
 - **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS e triggers): a estagiária só recebe as linhas dos casos dela e não consegue, por exemplo, gravar uma evolução já "validada".
 - **E se roubarem a senha?** Com a verificação em duas etapas, a senha sozinha não abre nada, nem no banco. Em produção, ela é obrigatória para a equipe.
 - **E se o paciente estiver em risco?** O risco é registrado no caso, a supervisão precisa dar ciência, a notificação obrigatória tem órgão e prazo à vista e o plano de segurança fica com o paciente. O sistema não é canal de crise: mostra CVV 188 e SAMU 192.
 - **A técnica vê tudo?** Vê a parte operacional de todos os casos; o conteúdo clínico de um caso que não é da equipe dela só com o motivo registrado, e o paciente vê quem acessou.
+- **E quando o estagiário sai no fim do semestre?** Ele escreve o resumo de transferência, a supervisão valida, e o caso passa para a nova dupla com registro. A dupla anterior perde o acesso na hora; o prontuário continua inteiro.
 - **Usa inteligência artificial?** Não. O revisor de escrita segue regras transparentes que a supervisão ajusta; nenhum texto clínico sai do sistema.
 - **Por que a senha não exige símbolo?** O NIST proibiu regras de composição em 2025: elas levam a senhas previsíveis. Vale o comprimento (15 caracteres) e a lista de senhas comuns.
 - **Os dados são reais?** Não. Tudo é fictício; CPFs gerados por algoritmo.

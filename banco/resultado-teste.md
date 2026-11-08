@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:32 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-08 19:08 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**133 de 133 verificações passaram.**
+**150 de 150 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
-| ✓ | schema.sql roda sem erro | 33 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2757 ms) |
+| ✓ | schema.sql roda sem erro | 34 tabelas |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1739 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -59,7 +59,7 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:32 (UTC), num PostgreSQL 18
 | ✓ | a única coluna da própria conta que muda pela API é "senha provisória" |  |
 | ✓ | evolução não nasce validada (quem valida é o supervisor) | recusado: Evolução nova entra como rascunho ou enviada: quem valida é o supervisor. |
 | ✓ | evolução não se liga a sessão de outro caso | recusado: A sessão da evolução precisa ser do mesmo caso e ter presença registrada. |
-| ✓ | estagiária não muda a dupla do caso | recusado: A dupla ou trio do caso é definida pelo supervisor. |
+| ✓ | estagiária não muda a dupla do caso | recusado: Para trocar a dupla de um caso em andamento, registre a passagem do caso. |
 | ✓ | sessão passada não entra já com presença (presença só no dia) | recusado: Sessão nova entra como agendada: a presença é registrada a partir do dia da sessão. |
 | ✓ | abandono só depois de registrar a tentativa de contato | recusado: Abandono só depois de registrar a tentativa de contato. |
 | ✓ | encaminhamento exige o serviço da rede que vai receber | recusado: new row for relation "encerramentos" violates check constraint "encerramentos_check" |
@@ -131,6 +131,23 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-07 01:32 (UTC), num PostgreSQL 18
 | ✓ | MFA obrigatório (produção): equipe sem o segundo fator não vê nada até configurar |  |
 | ✓ | ... e com o código (aal2), vê de novo |  |
 | ✓ | MFA obrigatório não vale para o paciente (o portal precisa ser simples) |  |
+| ✓ | estagiária não passa o caso para outra dupla | recusado: A passagem é feita pela técnica ou pelo supervisor do caso (para outra dupla do mesmo grup |
+| ✓ | resumo de transferência não é de uma sessão | recusado: new row for relation "evolucoes" violates check constraint "evolucoes_check1" |
+| ✓ | estagiária escreve o resumo de transferência e envia à supervisão |  |
+| ✓ | supervisor de outro grupo não passa o caso | recusado: A passagem é feita pela técnica ou pelo supervisor do caso (para outra dupla do mesmo grup |
+| ✓ | supervisor não passa o caso para outro grupo (é a técnica que muda o grupo) | recusado: A passagem é feita pela técnica ou pelo supervisor do caso (para outra dupla do mesmo grup |
+| ✓ | evolução esperando a supervisão impede a passagem (o resumo enviado ainda não foi validado) | recusado: Há evolução esperando a supervisão: valide ou devolva antes de passar o caso. |
+| ✓ | caso em andamento não troca de dupla direto, sem registrar a passagem | recusado: Para trocar a dupla de um caso em andamento, registre a passagem do caso. |
+| ✓ | sem resumo validado, a passagem exige justificativa | recusado: new row for relation "transferencias" violates check constraint "transferencias_check" |
+| ✓ | a passagem só acontece com o paciente avisado | recusado: new row for relation "transferencias" violates check constraint "transferencias_paciente_a |
+| ✓ | com o resumo validado, o supervisor passa o caso: o banco grava de onde saiu e quem registrou, e muda a dupla | {"de_subgrupo_id":"d-a2","registrado_por":"u-sup1","subgrupo_id":"d-a1"} |
+| ✓ | a dupla anterior perde o acesso na hora |  |
+| ✓ | a nova dupla vê o caso com o prontuário inteiro (as evoluções da dupla anterior e o resumo) | 7 evoluções |
+| ✓ | o mesmo resumo não serve para outra passagem | recusado: O resumo precisa ser o resumo de transferência validado desta passagem (cada resumo vale p |
+| ✓ | passagem registrada não muda (nem pelo administrador do banco) | recusado: A tabela transferencias é só de inserção: UPDATE não é permitido (registro permanente). |
+| ✓ | a técnica passa o caso para outro grupo, com justificativa (sem resumo) |  |
+| ✓ | no outro grupo, o novo supervisor vê o caso e o anterior deixa de ver |  |
+| ✓ | o paciente vê a passagem como "passou o seu atendimento para outra dupla" |  |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |

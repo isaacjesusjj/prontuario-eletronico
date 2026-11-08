@@ -125,6 +125,57 @@ PEP.telas = PEP.telas || {};
       (conta.senhaProvisoria ? ' <span class="etiqueta alerta">senha provisória</span>' : '') + ' <span class="linha" style="display:inline-flex">' + PEP.telas.botoesConta(conta) + '</span></div>';
   }
 
+  // ---------- Passagem do caso (transição de semestre) ----------
+  function nomeDupla(subId) {
+    var s = PEP.util.porId(PEP.db.subgrupos, subId), g = s && PEP.util.porId(PEP.db.grupos, s.grupoId);
+    return s ? (g ? g.nome + ' · ' : '') + s.nome : '—';
+  }
+  function formularioPassagem(u, caso, itens) {
+    var destinos = R().duplasDestino(u, caso), resumo = R().resumoValidado(caso);
+    var bloqueado = itens.some(function (i) { return i.bloqueia && !i.ok; });
+    if (!destinos.length) {
+      return '<p class="vazio">Nenhuma outra dupla ou trio' + (u.perfil === 'tecnico' ? '' : ' do grupo') + ' com estagiário em vínculo ativo. ' +
+        'As duplas do novo semestre são formadas em <a href="#/alocacao">' + (u.perfil === 'tecnico' ? 'Alocação' : 'Duplas e trios') + '</a>.</p>';
+    }
+    return '<details' + (R().semDuplaAtiva(caso) ? ' open' : '') + '><summary><strong>Passar o caso para outra dupla</strong></summary>' +
+      '<form data-form="passar-caso" data-caso="' + caso.id + '" id="form-passagem" novalidate style="margin-top:.6rem">' +
+      '<div class="campo"><label for="pc-destino">Nova dupla ou trio</label><select id="pc-destino" name="destino">' + destinos.map(function (s) {
+        return '<option value="' + s.id + '">' + esc(nomeDupla(s.id)) + ' (' + R().estagiariosDoSubgrupo(s.id).map(function (id) { return esc(PEP.ui.nomeUsuario(id)); }).join(', ') + ')</option>';
+      }).join('') + '</select></div>' +
+      (resumo ? '<p class="pequeno">Vai junto o resumo de transferência validado em ' + data(resumo.data) + '.</p>' :
+        '<div class="campo"><label for="pc-justificativa">Por que passar sem o resumo de transferência validado</label>' +
+        '<textarea id="pc-justificativa" name="justificativa" maxlength="500" style="min-height:70px" aria-describedby="pc-justificativa-dica"></textarea>' +
+        '<span class="dica" id="pc-justificativa-dica">Ex.: a dupla saiu antes do fim do semestre. Sem dados clínicos.</span></div>') +
+      '<label class="check"><input type="checkbox" id="pc-avisado" name="avisado"> <span>O paciente foi avisado da troca de dupla (e do novo horário, se mudar).</span></label>' +
+      '<div class="linha" style="margin-top:.6rem"><button class="botao" type="submit"' + (bloqueado ? ' disabled aria-describedby="pc-bloqueio"' : '') + '>Passar o caso</button></div>' +
+      (bloqueado ? '<p class="pequeno" id="pc-bloqueio">Resolva antes o item marcado com ✗.</p>' : '') + '</form></details>';
+  }
+  function blocoPassagem(u, caso) {
+    var passa = R().podePassarCaso(u, caso), daEquipe = R().ehEstagiarioDoCaso(u, caso), historico = R().transferenciasDoCaso(caso);
+    if (!historico.length && !(caso.status === 'ativo' && (passa || daEquipe))) return '';
+    var html = '<div class="cartao" id="passagem"><h2>Passagem do caso</h2>';
+    if (caso.status === 'ativo' && R().semDuplaAtiva(caso)) {
+      html += '<div class="aviso perigo" role="note">A dupla deste caso não tem mais estagiário com vínculo ativo (o estágio terminou). ' +
+        (passa ? 'Passe o caso para outra dupla para o atendimento continuar.' : 'A supervisão passa o caso para outra dupla.') + '</div>';
+    }
+    if (caso.status === 'ativo' && (passa || daEquipe)) {
+      var itens = R().checklistPassagem(caso);
+      html += '<p class="suave pequeno">Antes de o estágio terminar ou de o caso mudar de dupla, confira:</p><ul class="checklist">' + itens.map(function (i) {
+        var classe = i.ok ? 'ok' : i.bloqueia ? 'bloqueia' : 'atencao';
+        var rotulo = i.ok ? 'Feito' : i.bloqueia ? 'Impede a passagem' : 'Atenção';
+        return '<li class="' + classe + '"><span class="marca" aria-hidden="true">' + (i.ok ? '✓' : i.bloqueia ? '✗' : '!') + '</span><span class="sr-only">' + rotulo + ': </span>' + esc(i.texto) + '</li>';
+      }).join('') + '</ul>';
+      if (passa) html += formularioPassagem(u, caso, itens);
+    }
+    if (historico.length) {
+      html += '<h3>Passagens registradas</h3><ul>' + historico.map(function (t) {
+        return '<li>' + data(t.em) + ' · de ' + esc(nomeDupla(t.deSubgrupoId)) + ' para ' + esc(nomeDupla(t.paraSubgrupoId)) + ' · por ' + esc(PEP.ui.nomeUsuario(t.registradoPor)) +
+          (t.resumoId ? ' · com resumo de transferência validado' : ' · sem resumo: ' + esc(t.justificativa)) + '</li>';
+      }).join('') + '</ul>';
+    }
+    return html + '</div>';
+  }
+
   function abaResumo(u, caso) {
     var p = PEP.ui.pacienteDoCaso(caso);
     var canal = PEP.lista('canaisLembrete').filter(function (c) { return c.valor === p.canalLembrete; })[0];
@@ -140,7 +191,7 @@ PEP.telas = PEP.telas || {};
       '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') + '</p></div>' +
       (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') +
       (u.perfil === 'tecnico' ? blocoPortal(p) : '') + '</div>' +
-      blocoAnamnese(u, caso) + blocoConsentimentos(u, caso);
+      blocoAnamnese(u, caso) + blocoConsentimentos(u, caso) + blocoPassagem(u, caso);
   }
 
   // ---------- Aba: evoluções ----------
@@ -165,8 +216,8 @@ PEP.telas = PEP.telas || {};
   }
 
   function cartaoEvolucao(u, caso, e) {
-    var html = '<div class="cartao evolucao ' + e.status + '"><div class="linha entre"><strong>' + data(e.data) + ' · ' + esc(PEP.ui.nomeUsuario(e.autorId)) + '</strong>' +
-      PEP.ui.etiquetaEvolucao(e.status) + '</div>';
+    var html = '<div class="cartao evolucao ' + e.status + '"><div class="linha entre"><strong>' + data(e.data) + ' · ' + esc(PEP.ui.nomeUsuario(e.autorId)) +
+      (e.tipo === 'transferencia' ? ' · Resumo de transferência' : '') + '</strong>' + PEP.ui.etiquetaEvolucao(e.status) + '</div>';
     var ehAutor = e.autorId === u.id;
 
     if ((e.status === 'rascunho' || e.status === 'devolvida') && ehAutor && R().podeEscreverEvolucao(u, caso)) {
@@ -202,6 +253,23 @@ PEP.telas = PEP.telas || {};
   }
 
 
+  // Resumo de transferência (fim do estágio): rascunho gerado com o que o prontuário já tem; o estagiário
+  // completa as seções de _config.listas.secoesResumoTransferencia e a supervisão valida (Res. CFP 05/2025, art. 19)
+  function cartaoNovoResumo(caso) {
+    if (R().resumosDaPassagem(caso).length) {
+      return '<p class="suave pequeno">O resumo de transferência desta passagem já foi escrito: está na lista abaixo.</p>';
+    }
+    var modelo = R().modeloResumoTransferencia(caso);
+    return '<details class="cartao" id="resumo-transferencia"><summary><strong>Resumo de transferência</strong> <span class="suave pequeno">(fim do estágio: para a próxima dupla)</span></summary>' +
+      '<p class="dica" id="nova-transf-dica">Período, sessões, demanda e objetivos já vêm do prontuário. Complete: ' + PEP.lista('secoesResumoTransferencia').map(esc).join(', ') +
+      '. A supervisão valida e a nova dupla lê antes da primeira sessão. Não repita aqui o relato de risco: ele está na aba Risco e segurança.</p>' +
+      '<div class="campo"><label for="nova-transf">Texto do resumo</label>' +
+      '<textarea id="nova-transf" aria-describedby="nova-transf-dica" style="min-height:220px" ' + atributosLimite('nova-transf') + '>' + esc(modelo) + '</textarea>' +
+      contador('nova-transf', modelo) + ferramentasDeEscrita('nova-transf', '') + '</div>' +
+      '<div class="linha"><button class="botao secundario pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-tipo="transferencia" data-modo="rascunho">Salvar rascunho</button>' +
+      '<button class="botao pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-tipo="transferencia" data-modo="enviar">Assinar e enviar à supervisão</button></div></details>';
+  }
+
   function abaEvolucoes(u, caso) {
     var lista = PEP.db.evolucoes.filter(function (e) {
       if (e.casoId !== caso.id) return false;
@@ -230,6 +298,7 @@ PEP.telas = PEP.telas || {};
         ferramentasDeEscrita('nova-texto', '') + '</div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="rascunho">Salvar rascunho</button>' +
         '<button class="botao pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="enviar">Assinar e enviar à supervisão</button></div></details>';
+      html += cartaoNovoResumo(caso);
     }
 
     if (!lista.length) html += '<p class="vazio">Nenhuma evolução registrada.</p>';

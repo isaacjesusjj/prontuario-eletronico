@@ -331,6 +331,45 @@ conferir('MFA obrigatório não vale para o paciente (o portal precisa ser simpl
 await db.exec('create or replace function app.mfa_obrigatoria() returns boolean language sql stable as $$ select false $$');
 await db.query('delete from auth.mfa_factors');
 
+// ---------- 6h. Transição de semestre: resumo de transferência e passagem do caso ----------
+const passar = (id, para, extra = '') => `insert into transferencias (id, caso_id, para_grupo_id, para_subgrupo_id, paciente_avisado, registrado_por${extra ? ', ' + extra.split('|')[0] : ''})
+  values ('${id}', 'c03', '${para.split('/')[0]}', '${para.split('/')[1]}', true, 'x'${extra ? ', ' + extra.split('|')[1] : ''})`;
+await como('u-est3', async () => {
+  await erroEsperado('estagiária não passa o caso para outra dupla', passar('t-x1', 'g-a/d-a1', "justificativa|'A dupla vai sair do estágio.'"));
+  await erroEsperado('resumo de transferência não é de uma sessão',
+    "insert into evolucoes (id, caso_id, sessao_id, autor_id, status, texto, tipo) values ('e-trx', 'c03', 's40', 'u-est3', 'rascunho', 'Resumo com sessão vinculada.', 'transferencia')");
+  await db.query("insert into evolucoes (id, caso_id, autor_id, status, texto, tipo) values ('e-tr1', 'c03', 'u-est3', 'enviada', 'Período e sessões. O que foi trabalhado: rotina e sono. Como o paciente está agora: mais estável. Sugestões para a continuidade: manter o plano.', 'transferencia')");
+  conferir('estagiária escreve o resumo de transferência e envia à supervisão', true);
+});
+await como('u-sup2', () => erroEsperado('supervisor de outro grupo não passa o caso', passar('t-x2', 'g-b/t-b1', "justificativa|'Reorganização do grupo B.'")));
+await como('u-sup1', async () => {
+  await erroEsperado('supervisor não passa o caso para outro grupo (é a técnica que muda o grupo)', passar('t-x3', 'g-b/t-b1', "justificativa|'A dupla vai sair do estágio.'"));
+  await erroEsperado('evolução esperando a supervisão impede a passagem (o resumo enviado ainda não foi validado)', passar('t-x6', 'g-a/d-a1', "resumo_id|'e-tr1'"));
+  await erroEsperado('caso em andamento não troca de dupla direto, sem registrar a passagem', "update casos set subgrupo_id = 'd-a1' where id = 'c03'");
+  await db.query("update evolucoes set status = 'validada' where id = 'e-tr1'");
+  await erroEsperado('sem resumo validado, a passagem exige justificativa', passar('t-x4', 'g-a/d-a1'));
+  await erroEsperado('a passagem só acontece com o paciente avisado',
+    "insert into transferencias (id, caso_id, para_grupo_id, para_subgrupo_id, justificativa, paciente_avisado, registrado_por) values ('t-x5', 'c03', 'g-a', 'd-a1', 'A dupla vai sair do estágio.', false, 'u-sup1')");
+  await db.query(passar('t-1', 'g-a/d-a1', "resumo_id|'e-tr1'"));
+});
+const [t1] = await valores("select t.de_subgrupo_id, t.registrado_por, c.subgrupo_id from transferencias t join casos c on c.id = t.caso_id where t.id = 't-1'");
+conferir('com o resumo validado, o supervisor passa o caso: o banco grava de onde saiu e quem registrou, e muda a dupla',
+  t1.de_subgrupo_id === 'd-a2' && t1.registrado_por === 'u-sup1' && t1.subgrupo_id === 'd-a1', JSON.stringify(t1));
+conferir('a dupla anterior perde o acesso na hora', !(await como('u-est3', () => ids('casos'))).split(',').includes('c03'));
+const evolucoesNovaDupla = await como('u-est1', async () => (await valores("select count(*)::int as n from evolucoes where caso_id = 'c03'"))[0].n);
+conferir('a nova dupla vê o caso com o prontuário inteiro (as evoluções da dupla anterior e o resumo)',
+  (await como('u-est1', () => ids('casos'))).split(',').includes('c03') && evolucoesNovaDupla >= 2, `${evolucoesNovaDupla} evoluções`);
+await como('u-sup1', () => erroEsperado('o mesmo resumo não serve para outra passagem', passar('t-x7', 'g-a/d-a2', "resumo_id|'e-tr1'")));
+await erroEsperado('passagem registrada não muda (nem pelo administrador do banco)', "update transferencias set justificativa = 'outra' where id = 't-1'");
+await como('u-tec', async () => {
+  await db.query(passar('t-2', 'g-b/t-b1', "justificativa|'Grupo A sem vaga no novo semestre.'"));
+  conferir('a técnica passa o caso para outro grupo, com justificativa (sem resumo)', true);
+});
+conferir('no outro grupo, o novo supervisor vê o caso e o anterior deixa de ver',
+  (await como('u-sup2', () => ids('casos'))).split(',').includes('c03') && !(await como('u-sup1', () => ids('casos'))).split(',').includes('c03'));
+conferir('o paciente vê a passagem como "passou o seu atendimento para outra dupla"',
+  (await valores("select app.categoria_acesso('Passou o caso para outra dupla') as c"))[0].c === 'Passou o seu atendimento para outra dupla');
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {

@@ -205,7 +205,10 @@ create table evolucoes (
   status                text not null check (status in ('rascunho', 'enviada', 'devolvida', 'validada')),
   texto                 text not null check (length(texto) between 10 and 5000),  -- prontuário conciso (o paciente pode ler)
   comentario_supervisor text not null default '',
-  check (status <> 'devolvida' or length(comentario_supervisor) >= 5)
+  -- 'sessao' = evolução de uma sessão; 'transferencia' = resumo de transferência no fim do estágio (sem sessão)
+  tipo                  text not null default 'sessao' check (tipo in ('sessao', 'transferencia')),
+  check (status <> 'devolvida' or length(comentario_supervisor) >= 5),
+  check (tipo = 'sessao' or sessao_id is null)
 );
 
 -- Assinatura eletrônica simples (login). hash = SHA-256 do conteúdo assinado.
@@ -405,6 +408,23 @@ create table acessos_justificados (
   check (motivo <> 'outro' or length(detalhe) >= 5)
 );
 
+-- Passagem do caso para outra dupla ou trio (transição de semestre). O prontuário continua o mesmo;
+-- muda quem atende. Fica registrado de onde para onde, com o resumo validado ou a justificativa.
+create table transferencias (
+  id               text primary key default gen_random_uuid()::text,
+  caso_id          text not null references casos (id),
+  de_grupo_id      text references grupos (id),
+  de_subgrupo_id   text references subgrupos (id),
+  para_grupo_id    text not null references grupos (id),
+  para_subgrupo_id text not null references subgrupos (id),
+  resumo_id        text references evolucoes (id),            -- resumo de transferência validado
+  justificativa    text not null default '' check (length(justificativa) <= 500),
+  paciente_avisado boolean not null check (paciente_avisado),  -- a troca só acontece com o paciente avisado
+  registrado_por   text not null references usuarios (id),
+  em               timestamptz not null default now(),
+  check (resumo_id is not null or length(justificativa) >= 10) -- sem resumo, só com o motivo
+);
+
 -- Auditoria: a maior tabela (cerca de 90% das linhas na projeção), particionada por ano
 create sequence auditoria_seq;
 create table auditoria (
@@ -440,6 +460,7 @@ create index on orientacoes (caso_id);
 create index on riscos (caso_id) where encerrado_em is null;
 create index on notificacoes (risco_id);
 create index on planos_seguranca (caso_id, versao desc);
+create index on transferencias (caso_id, em desc);
 create index on auditoria (seq);
 create index on auditoria (alvo);
 
@@ -574,6 +595,7 @@ create trigger so_insercao before update or delete on auditoria for each row exe
 create trigger so_insercao before update or delete on notificacoes for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on acessos_justificados for each row execute function app.bloquear_alteracao();
 create trigger so_insercao before update or delete on planos_seguranca for each row execute function app.bloquear_alteracao();
+create trigger so_insercao before update or delete on transferencias for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on riscos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on casos for each row execute function app.bloquear_alteracao();
 create trigger sem_exclusao before delete on pacientes for each row execute function app.bloquear_alteracao();
@@ -595,9 +617,9 @@ begin
     return new;
   end if;
   if old.status = 'validada' then raise exception 'Evolução validada é imutável: registre um adendo.'; end if;
-  if (new.caso_id, new.autor_id, new.data) is distinct from (old.caso_id, old.autor_id, old.data)
+  if (new.caso_id, new.autor_id, new.data, new.tipo) is distinct from (old.caso_id, old.autor_id, old.data, old.tipo)
      or new.sessao_id is distinct from old.sessao_id then
-    raise exception 'Caso, autor, data e sessão da evolução não mudam.';
+    raise exception 'Caso, autor, data, tipo e sessão da evolução não mudam.';
   end if;
   if not ((old.status in ('rascunho', 'devolvida') and new.status in (old.status, 'enviada'))
        or (old.status = 'enviada' and new.status in ('validada', 'devolvida'))) then
@@ -664,6 +686,12 @@ begin
   end if;
   if old.status = 'aguardando-alocacao' and new.status = 'ativo' and not app.consentiu(new.id, 'contrato') then
     raise exception 'Para alocar, o contrato terapêutico precisa estar registrado.';
+  end if;
+  -- Caso que já tem dupla só muda de dupla (ou de grupo) pela passagem do caso: fica o registro de onde
+  -- para onde foi e com qual resumo (app.transferencia_aplicar liga a chave app.transferindo)
+  if old.subgrupo_id is not null and (new.subgrupo_id, new.grupo_id) is distinct from (old.subgrupo_id, old.grupo_id)
+     and coalesce(current_setting('app.transferindo', true), '') <> 'on' and not app.eh_admin() then
+    raise exception 'Para trocar a dupla de um caso em andamento, registre a passagem do caso.';
   end if;
   if new.subgrupo_id is distinct from old.subgrupo_id and new.subgrupo_id is not null then
     if perfil = 'estagiario' then raise exception 'A dupla ou trio do caso é definida pelo supervisor.'; end if;
@@ -824,6 +852,55 @@ begin
 end $$;
 create trigger regras before insert on links_acesso for each row execute function app.link_regras();
 
+-- Passagem do caso (transição de semestre). Quem faz: a técnica (para qualquer grupo) ou o supervisor do caso
+-- (para outra dupla do mesmo grupo). Antes de passar: nada esperando a validação da supervisão; o resumo de
+-- transferência validado desta passagem ou, sem ele, a justificativa (check da tabela); a nova dupla com
+-- estagiário em vínculo ativo. De onde o caso sai e quem registra vêm do banco, não do site.
+create or replace function app.transferencia_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare perfil text := coalesce(app.perfil_atual(), ''); c casos%rowtype; ultima timestamptz;
+begin
+  if app.em_migracao() then return new; end if;
+  select * into c from casos where id = new.caso_id;
+  if c.id is null or c.status <> 'ativo' then raise exception 'Só caso em andamento passa para outra dupla.'; end if;
+  if not (perfil = 'tecnico' or (perfil = 'supervisor' and app.eh_supervisor_do_caso(c.id) and new.para_grupo_id = c.grupo_id)) then
+    raise exception 'A passagem é feita pela técnica ou pelo supervisor do caso (para outra dupla do mesmo grupo).';
+  end if;
+  new.de_grupo_id := c.grupo_id;
+  new.de_subgrupo_id := c.subgrupo_id;
+  new.registrado_por := app.usuario_atual();
+  if not exists (select 1 from subgrupos s where s.id = new.para_subgrupo_id and s.grupo_id = new.para_grupo_id) then
+    raise exception 'A dupla ou trio de destino precisa ser do grupo de destino.';
+  end if;
+  if new.para_subgrupo_id is not distinct from c.subgrupo_id then raise exception 'O caso já está nesta dupla ou trio.'; end if;
+  if not exists (select 1 from alocacoes a where a.subgrupo_id = new.para_subgrupo_id and (a.fim is null or a.fim > current_date)) then
+    raise exception 'A dupla ou trio de destino não tem estagiário com vínculo ativo.';
+  end if;
+  if exists (select 1 from evolucoes e where e.caso_id = c.id and e.status = 'enviada') then
+    raise exception 'Há evolução esperando a supervisão: valide ou devolva antes de passar o caso.';
+  end if;
+  select max(t.em) into ultima from transferencias t where t.caso_id = c.id;
+  if new.resumo_id is not null and not exists (select 1 from evolucoes e where e.id = new.resumo_id and e.caso_id = c.id
+       and e.tipo = 'transferencia' and e.status = 'validada' and (ultima is null or e.data >= ultima::date))
+     or exists (select 1 from transferencias t where t.resumo_id = new.resumo_id) then
+    raise exception 'O resumo precisa ser o resumo de transferência validado desta passagem (cada resumo vale para uma passagem).';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on transferencias for each row execute function app.transferencia_regras();
+
+-- Registrada a passagem, o caso muda de dupla: a dupla anterior perde o acesso na hora; o prontuário fica inteiro
+create or replace function app.transferencia_aplicar() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return null; end if;
+  perform set_config('app.transferindo', 'on', true);
+  update casos set grupo_id = new.para_grupo_id, subgrupo_id = new.para_subgrupo_id where id = new.caso_id;
+  perform set_config('app.transferindo', 'off', true);
+  return null;
+end $$;
+create trigger aplicar after insert on transferencias for each row execute function app.transferencia_aplicar();
+
 -- Carimbo de tempo: a data e a hora de cada registro vêm do relógio do servidor, não do computador
 -- de quem registra (ninguém "volta no tempo" para assinar ou registrar). Argumentos: coluna e tipo.
 create or replace function app.carimbo() returns trigger
@@ -855,6 +932,7 @@ create trigger carimbo before insert on links_acesso for each row execute functi
 create trigger carimbo before insert on pedidos_titular for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on aceites for each row execute function app.carimbo('em', 'hora');
 create trigger carimbo before insert on acessos_justificados for each row execute function app.carimbo('em', 'hora');
+create trigger carimbo before insert on transferencias for each row execute function app.carimbo('em', 'hora');
 
 -- ---------------------------------------------------------------------
 -- Auditoria encadeada (mesma fórmula de js/estado.js)
@@ -982,6 +1060,7 @@ language sql immutable as $$
     when p_acao like 'Abriu o prontuário%' then 'Abriu o prontuário'
     when p_acao like 'Gerou cópia%' or p_acao like 'Entregou cópia%' or p_acao like 'Paciente leu o prontuário%' then 'Cópia ou leitura do prontuário'
     when p_acao like 'Gerou lembrete%' then 'Enviou lembrete de sessão'
+    when p_acao like 'Passou o caso%' then 'Passou o seu atendimento para outra dupla'
     else 'Registrou informações no prontuário' end
 $$;
 
@@ -1043,6 +1122,7 @@ alter table links_acesso enable row level security;
 alter table pedidos_titular enable row level security;
 alter table aceites enable row level security;
 alter table acessos_justificados enable row level security;
+alter table transferencias enable row level security;
 alter table auditoria enable row level security;
 
 -- Equipe vê a equipe. Conta de paciente: só o próprio paciente, o técnico e a equipe do caso dele
@@ -1174,6 +1254,10 @@ create policy ver on aceites for select to authenticated using (usuario_id = app
 -- Motivo de acesso: só a técnica registra; ela e o supervisor do caso leem (o paciente vê pela função abaixo)
 create policy ver on acessos_justificados for select to authenticated using (usuario_id = app.usuario_atual() or app.eh_supervisor_do_caso(caso_id));
 create policy justificar on acessos_justificados for insert to authenticated with check (usuario_id = app.usuario_atual() and app.perfil_atual() = 'tecnico');
+-- Passagem do caso: a equipe do caso e a técnica veem; registram a técnica ou o supervisor (as regras ficam no trigger)
+create policy ver on transferencias for select to authenticated using (app.pode_ver_caso(caso_id));
+create policy passar on transferencias for insert to authenticated
+  with check (registrado_por = app.usuario_atual() and app.perfil_atual() in ('tecnico', 'supervisor'));
 create policy aceitar on aceites for insert to authenticated with check (usuario_id = app.usuario_atual());
 
 -- Cada um registra só os próprios eventos. Eventos de visitante vêm do próprio banco (trigger da
@@ -1188,7 +1272,7 @@ revoke all on all tables in schema public from anon;
 grant insert on inscricoes to anon;
 grant select, insert, update on all tables in schema public to authenticated;
 revoke update on assinaturas, adendos, anamneses, consentimentos, encerramentos, orientacoes, documentos, anexos, aceites, lembretes, auditoria,
-  notificacoes, planos_seguranca, acessos_justificados from authenticated;
+  notificacoes, planos_seguranca, acessos_justificados, transferencias from authenticated;
 -- Em usuarios, pela API só mudam "senha provisória" e "ativa" (perfil, CRP e vínculo com paciente ficam com a administração)
 revoke update on usuarios from authenticated;
 grant update (senha_provisoria, ativo) on usuarios to authenticated;

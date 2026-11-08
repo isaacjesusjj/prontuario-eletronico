@@ -214,7 +214,7 @@ PEP.telas = PEP.telas || {};
       '<h2>Anamnese</h2><p>Queixa: ' + esc(a.queixa || '—') + '<br>Sintomas: ' + esc(a.sintomas || '—') + '<br>Histórico familiar: ' + esc(a.historicoFamiliar || '—') +
       '<br>Medicações: ' + esc(a.medicacoes || '—') + '<br>Histórico clínico: ' + esc(a.historicoClinico || '—') + '</p>' +
       '<h2>Evolução</h2>' + (evols.length ? evols.map(function (e) {
-        return '<div style="margin-bottom:.8rem"><strong>' + data(e.data) + '</strong><br>' + esc(e.texto) +
+        return '<div style="margin-bottom:.8rem"><strong>' + data(e.data) + (e.tipo === 'transferencia' ? ' · Resumo de transferência' : '') + '</strong><br>' + esc(e.texto) +
           '<div class="assinaturas">Assinado por: ' + assin('evolucao', e.id) + '</div>' +
           R().adendosDe(e.id).map(function (ad) { return '<div class="adendo">Adendo (' + esc(ad.motivo) + ', ' + data(ad.em) + '): ' + esc(ad.texto) + '</div>'; }).join('') + '</div>';
       }).join('') : '<p class="vazio">Sem evoluções validadas.</p>') +

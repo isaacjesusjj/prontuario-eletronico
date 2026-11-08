@@ -16,8 +16,8 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 270 de 270 (57 telas no axe-core).
-  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 133 de 133.
+  - `python testes/testar_site.py` → hoje 287 de 287 (59 telas no axe-core).
+  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 150 de 150.
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
 
 ## Arquitetura em poucas linhas
@@ -52,6 +52,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Verificação em duas etapas (TOTP): o mesmo código não vale duas vezes; códigos de recuperação de uso único, guardados só como hash. No banco, `app.mfa_ok()` dentro de `app.usuario_atual()`: quem ligou o MFA e entrou só com a senha (aal1) não vê nada. `regras.mfaObrigatoria` fica `false` no protótipo e `true` em produção (junto com `app.mfa_obrigatoria()`).
 - Risco: registrado no caso, não muda depois; a supervisão dá ciência; a notificação compulsória só o supervisor registra. Na cópia ao responsável de criança ou adolescente, relato de violência e notificação ficam de fora.
 - Técnica fora da equipe do caso registra o motivo antes de abrir o conteúdo clínico (vale `justificativaValidadeHoras`). O paciente vê "quem acessou" por categoria; para menor de idade, sem o motivo.
+- Transição de semestre: caso que já tem dupla só muda de dupla pela passagem (tabela `transferencias`, trigger `app.transferencia_regras`): técnica ou supervisor do caso (este, só dentro do grupo), nenhuma evolução esperando a supervisão, paciente avisado e resumo de transferência validado (evolução `tipo: 'transferencia'`, sem sessão) ou justificativa. Cada resumo vale para uma passagem.
 - O paciente só avisa falta de sessão futura, com motivo de lista fechada (sem texto livre: o sistema não é canal de crise).
 - Lembretes nunca têm conteúdo clínico. Não existe chat entre paciente e equipe.
 - Base normativa: Res. CFP 05/2025 e 01/2009, Código de Ética Profissional do Psicólogo e LGPD. Os artigos estão na skill do projeto e na tela "Regras e leis" do site (`#/regras`).
@@ -70,8 +71,8 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. O trabalho em curso fica no branch `andamento-06-11`.
 - Validar com o cliente: perda de vaga também com 3 faltas intercaladas (`regras.faltasIntercaladasSugestao`), as mudanças nos requisitos da Etapa 1 (tabela no README) e "800 usuários simultâneos" × "800 estudantes".
 - Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`.
-- Fazer: transição de semestre (resumo de transferência, checklist, casos sem dupla ativa, realocação). Opcional: escalas PHQ-9 e GAD-7 só com escores.
-- Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita.
+- Opcional (perguntar ao grupo): escalas PHQ-9 e GAD-7 só com escores.
+- Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita e seções do resumo de transferência.
 - Produção: ligar o MFA obrigatório para a equipe, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Functions (link do paciente, convite por e-mail, desligar o MFA de quem perdeu o celular) e backup.
 
 ## Skill do projeto

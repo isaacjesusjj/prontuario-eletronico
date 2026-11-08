@@ -50,6 +50,11 @@ window.PEP = PEP;
     if (texto.length > max) return [[campoId, 'Use no máximo ' + max + ' caracteres: registre tema, intervenção e plano, não o relato detalhado.']];
     return [];
   }
+  // Resumo de transferência: cada seção de _config.listas.secoesResumoTransferencia precisa estar preenchida
+  function erroSecoesResumo(campoId, texto) {
+    var faltam = R().secoesFaltandoNoResumo(texto);
+    return faltam.length ? [[campoId, 'Complete antes de enviar: ' + faltam.join(', ') + '.']] : [];
+  }
 
   function cancelarSessoesFuturas(casoId) {
     PEP.db.sessoes.filter(function (s) { return s.casoId === casoId && s.presenca === 'agendada'; })
@@ -230,20 +235,27 @@ window.PEP = PEP;
     'nova-evolucao': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
       if (!R().podeEscreverEvolucao(u, c)) return negar();
-      var texto = val('nova-texto');
-      if (!PEP.form.aplicar(document, erroTextoEvolucao('nova-texto', texto))) return;
-      var enviar = b.getAttribute('data-modo') === 'enviar';
-      var e = repo().inserir('evolucoes', { casoId: c.id, sessaoId: val('nova-sessao') || null, autorId: u.id, data: U().hoje(),
-        status: enviar ? 'enviada' : 'rascunho', texto: texto, comentarioSupervisor: '' });
+      var resumo = b.getAttribute('data-tipo') === 'transferencia', campo = resumo ? 'nova-transf' : 'nova-texto';
+      var texto = val(campo), enviar = b.getAttribute('data-modo') === 'enviar';
+      var erros = erroTextoEvolucao(campo, texto);
+      if (resumo && enviar && !erros.length) erros = erroSecoesResumo(campo, texto);
+      if (!PEP.form.aplicar(document, erros)) return;
+      if (resumo && R().resumosDaPassagem(c).length) return PEP.ui.toast('O resumo de transferência desta passagem já foi escrito.');
+      var e = repo().inserir('evolucoes', { casoId: c.id, sessaoId: resumo ? null : (val('nova-sessao') || null), autorId: u.id, data: U().hoje(),
+        status: enviar ? 'enviada' : 'rascunho', texto: texto, comentarioSupervisor: '', tipo: resumo ? 'transferencia' : 'sessao' });
       if (enviar) assinar('evolucao', e.id, u, 'estagiario', texto);
-      concluir(enviar ? 'Evolução assinada e enviada à supervisão.' : 'Rascunho salvo.', enviar ? 'Assinou e enviou evolução' : 'Salvou rascunho de evolução', c.id);
+      var nome = resumo ? 'resumo de transferência' : 'evolução';
+      concluir(enviar ? (resumo ? 'Resumo de transferência assinado e enviado à supervisão.' : 'Evolução assinada e enviada à supervisão.') : 'Rascunho salvo.',
+        enviar ? 'Assinou e enviou ' + nome : 'Salvou rascunho de ' + nome, c.id);
     },
     'salvar-evolucao': function (b) {
       var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
       if (e.autorId !== u.id || !R().podeEscreverEvolucao(u, c) || e.status === 'validada' || e.status === 'enviada') return PEP.ui.toast('Esta evolução não pode ser editada.');
-      var texto = val('ev-' + e.id);
-      if (!PEP.form.aplicar(document, erroTextoEvolucao('ev-' + e.id, texto))) return;
-      if (b.getAttribute('data-modo') === 'enviar') {
+      var texto = val('ev-' + e.id), enviar = b.getAttribute('data-modo') === 'enviar';
+      var erros = erroTextoEvolucao('ev-' + e.id, texto);
+      if (e.tipo === 'transferencia' && enviar && !erros.length) erros = erroSecoesResumo('ev-' + e.id, texto);
+      if (!PEP.form.aplicar(document, erros)) return;
+      if (enviar) {
         repo().atualizar('evolucoes', e.id, { texto: texto, status: 'enviada', comentarioSupervisor: '' });
         assinar('evolucao', e.id, u, 'estagiario', texto);
         concluir('Evolução assinada e enviada à supervisão.', 'Assinou e enviou evolução', c.id);
@@ -614,9 +626,13 @@ window.PEP = PEP;
       if (!R().podeGerirEstudantes(usuario())) return negar();
       var id = b.getAttribute('data-id'), a = R().alocacaoDoEstagiario(id);
       if (!a) return;
-      if (typeof window.confirm === 'function' && !window.confirm('Encerrar o vínculo de estágio de ' + PEP.ui.nomeUsuario(id) + '? O acesso aos casos termina agora.')) return;
+      // Transição de semestre: avisa quais casos ficam sem ninguém da dupla (a supervisão faz a passagem)
+      var orfaos = R().casosQueFicamSemDupla(id).map(function (c) { return PEP.ui.nomePacienteDoCaso(c); });
+      var aviso = orfaos.length ? '\n\nFica sem dupla ativa: ' + orfaos.join(', ') + '. Combine com a supervisão a passagem (resumo de transferência e nova dupla).' : '';
+      if (typeof window.confirm === 'function' && !window.confirm('Encerrar o vínculo de estágio de ' + PEP.ui.nomeUsuario(id) + '? O acesso aos casos termina agora.' + aviso)) return;
       repo().atualizar('alocacoes', a.id, { fim: U().hoje() });
-      concluir('Vínculo encerrado. O acesso aos casos terminou; o histórico continua.', 'Encerrou vínculo de estágio', id);
+      concluir('Vínculo encerrado. O acesso aos casos terminou; o histórico continua.' + (orfaos.length ? ' ' + orfaos.length + ' caso(s) aguardam a passagem para outra dupla.' : ''),
+        'Encerrou vínculo de estágio', id);
     },
     'definir-dupla': function (b) {
       var u = usuario(), g = repo().porId('grupos', b.getAttribute('data-grupo')), id = b.getAttribute('data-id');
@@ -953,6 +969,27 @@ window.PEP = PEP;
           concluir('Senha alterada.', 'Trocou a senha', u.id);
         });
       });
+    },
+    // Passagem do caso para outra dupla (transição de semestre). As mesmas regras valem no banco
+    // (app.transferencia_regras), e é ele que muda a dupla do caso quando o banco está ligado.
+    'passar-caso': function (form) {
+      var u = usuario(), c = caso(form.getAttribute('data-caso'));
+      if (!R().podePassarCaso(u, c)) return negar();
+      if (R().checklistPassagem(c).some(function (i) { return i.bloqueia && !i.ok; })) {
+        return PEP.ui.toast('Há evolução esperando a supervisão: valide ou devolva antes de passar o caso.');
+      }
+      var sub = repo().porId('subgrupos', form.elements.destino.value);
+      if (!sub || !R().duplasDestino(u, c).some(function (s) { return s.id === sub.id; })) return negar();
+      var resumo = R().resumoValidado(c), just = form.elements.justificativa ? form.elements.justificativa.value.trim() : '';
+      var erros = [];
+      if (!resumo && just.length < 10) erros.push(['pc-justificativa', 'Sem o resumo de transferência validado, explique o motivo (pelo menos 10 caracteres).']);
+      if (!form.elements.avisado.checked) erros.push(['pc-avisado', 'A passagem só acontece com o paciente avisado da troca.']);
+      if (!PEP.form.aplicar(form, erros)) return;
+      var g = repo().porId('grupos', sub.grupoId);
+      repo().inserir('transferencias', { casoId: c.id, deGrupoId: c.grupoId, deSubgrupoId: c.subgrupoId, paraGrupoId: sub.grupoId, paraSubgrupoId: sub.id,
+        resumoId: resumo ? resumo.id : null, justificativa: resumo ? '' : just, pacienteAvisado: true, registradoPor: u.id, em: U().agora() });
+      repo().atualizar('casos', c.id, { grupoId: sub.grupoId, subgrupoId: sub.id });
+      concluir('Caso passado para ' + g.nome + ' · ' + sub.nome + '. A dupla anterior não acessa mais; o prontuário continua inteiro.', 'Passou o caso para outra dupla', c.id);
     },
     // Segundo passo do login: código do aplicativo ou código de recuperação
     mfa: function (form) {

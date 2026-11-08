@@ -44,6 +44,9 @@ erDiagram
     PLANOS_SEGURANCA ||--o{ ASSINATURAS : "assinado"
     USUARIOS ||--o{ ACESSOS_JUSTIFICADOS : "registra o motivo"
     CASOS ||--o{ ACESSOS_JUSTIFICADOS : "acessado com motivo"
+    CASOS ||--o{ TRANSFERENCIAS : "passa para outra dupla"
+    SUBGRUPOS ||--o{ TRANSFERENCIAS : "recebe o caso"
+    EVOLUCOES |o--o| TRANSFERENCIAS : "resumo de transferência"
 
     PACIENTES {
         text id PK
@@ -155,6 +158,7 @@ erDiagram
         text status
         text texto
         text comentario_supervisor
+        text tipo
     }
     ASSINATURAS {
         text id PK
@@ -264,6 +268,17 @@ erDiagram
         text servicos
         bool revisado_com_paciente
     }
+    TRANSFERENCIAS {
+        text id PK
+        text caso_id FK
+        text de_subgrupo_id FK
+        text para_grupo_id FK
+        text para_subgrupo_id FK
+        text resumo_id FK
+        text justificativa
+        bool paciente_avisado
+        text registrado_por FK
+    }
     ACESSOS_JUSTIFICADOS {
         text id PK
         text usuario_id FK
@@ -323,6 +338,7 @@ flowchart LR
     CA --> R7[Encerramento]
     CA --> R8[Risco e segurança: avaliação, notificação, plano]
     CA -->|técnica fora da equipe| JM[Motivo do acesso] --> CA
+    R1 --> PC[Passagem do caso: conferência e nova dupla]
     R1 --> EC[Editar cadastro - técnico]
 ```
 
@@ -349,10 +365,12 @@ flowchart LR
     ES --- U7[Fluxo de abandono: contato e motivo]
     ES --- U8[Emitir declaração e anexar arquivos]
     ES --- U21[Registrar risco e plano de segurança]
+    ES --- U25[Escrever o resumo de transferência]
     SU --- U9[Validar ou devolver evolução]
     SU --- U10[Registrar orientação de supervisão]
     SU --- U11[Formar duplas e trios]
     SU --- U22[Dar ciência do risco e registrar notificação compulsória]
+    SU --- U26[Validar o resumo e passar o caso para outra dupla]
     TE --- U12[Triar, cadastrar e checar CPF]
     TE --- U13[Alocar caso a grupo]
     TE --- U14[Entregar cópia e gerar link temporário]

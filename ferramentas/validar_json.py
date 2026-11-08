@@ -27,7 +27,7 @@ except json.JSONDecodeError as e:
 
 COLECOES = ["usuarios", "grupos", "subgrupos", "alocacoes", "pacientes", "inscricoes", "casos", "anamneses", "consentimentos",
             "encerramentos", "sessoes", "evolucoes", "assinaturas", "adendos", "orientacoes", "documentos", "anexos", "avaliacoes",
-            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "acessosJustificados", "auditoria"]
+            "riscos", "notificacoes", "planosSeguranca", "contatos", "lembretes", "solicitacoes", "linksAcesso", "pedidosTitular", "aceites", "acessosJustificados", "transferencias", "auditoria"]
 for c in COLECOES:
     if c not in db:
         p(f"coleção ausente: {c}")
@@ -103,7 +103,10 @@ for col, campo, dest, nulo in [
     ("riscos", "cienciaPor", "usuarios", True), ("riscos", "encerradoPor", "usuarios", True), ("notificacoes", "riscoId", "riscos", False),
     ("notificacoes", "casoId", "casos", False), ("notificacoes", "registradoPor", "usuarios", False),
     ("planosSeguranca", "casoId", "casos", False), ("planosSeguranca", "autorId", "usuarios", False),
-    ("acessosJustificados", "usuarioId", "usuarios", False), ("acessosJustificados", "casoId", "casos", False)]:
+    ("acessosJustificados", "usuarioId", "usuarios", False), ("acessosJustificados", "casoId", "casos", False),
+    ("transferencias", "casoId", "casos", False), ("transferencias", "deGrupoId", "grupos", True), ("transferencias", "deSubgrupoId", "subgrupos", True),
+    ("transferencias", "paraGrupoId", "grupos", False), ("transferencias", "paraSubgrupoId", "subgrupos", False),
+    ("transferencias", "resumoId", "evolucoes", True), ("transferencias", "registradoPor", "usuarios", False)]:
     fk(col, campo, dest, nulo)
 
 # ---------- usuários e senhas ----------
@@ -158,6 +161,19 @@ def estagiarios_do_caso(c):
 
 def supervisor_do_caso(c):
     return G[c["grupoId"]]["supervisorId"] if c.get("grupoId") in G else None
+
+
+# Quem já atendeu o caso: a dupla e o supervisor de agora e os de antes de cada passagem (transferências)
+def autores_possiveis(c):
+    passagens = [t for t in db.get("transferencias", []) if t["casoId"] == c["id"]]
+    subs = {t.get("deSubgrupoId") for t in passagens} - {None}
+    antes = [al["estagiarioId"] for al in db["alocacoes"] if al.get("subgrupoId") in subs]
+    return set(estagiarios_do_caso(c)) | set(antes)
+
+
+def supervisores_possiveis(c):
+    passagens = [t for t in db.get("transferencias", []) if t["casoId"] == c["id"]]
+    return {supervisor_do_caso(c)} | {G[t["deGrupoId"]]["supervisorId"] for t in passagens if t.get("deGrupoId") in G}
 
 
 # ---------- pacientes e inscrições (CPF) ----------
@@ -252,12 +268,12 @@ for e in db["evolucoes"]:
     c = C[e["casoId"]]
     if e["status"] not in cfg["listas"]["statusEvolucao"]:
         p(f"{onde}: status inválido")
-    if e["autorId"] not in estagiarios_do_caso(c):
-        p(f"{onde}: autor não é estagiário (com vínculo ativo) do caso")
+    if e["autorId"] not in autores_possiveis(c):
+        p(f"{onde}: autor não é estagiário do caso (da dupla atual, com vínculo ativo, ou de uma dupla anterior)")
     h = hashlib.sha256(e["texto"].encode("utf-8")).hexdigest()
     vig = [x for x in assin.get(("evolucao", e["id"]), []) if not x.get("hash") or x["hash"] == h]
     papeis = {x["papel"]: x for x in vig}
-    if e["status"] == "validada" and not ("estagiario" in papeis and papeis.get("supervisor", {}).get("usuarioId") == supervisor_do_caso(c)):
+    if e["status"] == "validada" and not ("estagiario" in papeis and papeis.get("supervisor", {}).get("usuarioId") in supervisores_possiveis(c)):
         p(f"{onde}: validada sem as assinaturas do estagiário e do supervisor do caso")
     if e["status"] == "enviada" and "estagiario" not in papeis:
         p(f"{onde}: enviada sem a assinatura do estagiário")
@@ -265,6 +281,10 @@ for e in db["evolucoes"]:
         p(f"{onde}: devolvida sem comentário")
     if e.get("sessaoId") and S[e["sessaoId"]]["presenca"] != "presente":
         p(f"{onde}: sessão sem presença")
+    if e.get("tipo") not in ("sessao", "transferencia"):
+        p(f"{onde}: tipo deve ser 'sessao' ou 'transferencia'")
+    if e.get("tipo") == "transferencia" and e.get("sessaoId"):
+        p(f"{onde}: resumo de transferência não é de uma sessão")
 for ad in db["adendos"]:
     if E[ad["evolucaoId"]]["status"] != "validada":
         p(f"adendo {ad['id']}: em evolução não validada")
@@ -273,7 +293,7 @@ for s in db["sessoes"]:
     if s["presenca"] == "presente" and s["id"] not in com_evo:
         (a if C[s["casoId"]]["status"] == "ativo" else p)(f"sessão {s['id']} ({s['casoId']}) com presença e sem evolução")
 for o in db["orientacoes"]:
-    if supervisor_do_caso(C[o["casoId"]]) != o["supervisorId"]:
+    if o["supervisorId"] not in supervisores_possiveis(C[o["casoId"]]):
         p(f"orientação {o['id']}: supervisor não é o do caso")
 for d in db["documentos"]:
     if not d.get("finalidade") or not d.get("destinatario"):
@@ -291,6 +311,26 @@ for j in db["acessosJustificados"]:
         p(f"acesso {j['id']}: só a psicóloga técnica registra motivo de acesso")
     if j["motivo"] == "outro" and len(j.get("detalhe", "")) < 5:
         p(f"acesso {j['id']}: motivo 'outro' sem descrição")
+
+# ---------- passagem do caso (transição de semestre) ----------
+for t in sorted(db["transferencias"], key=lambda x: x["em"]):
+    onde = f"transferência {t['id']}"
+    if SUB[t["paraSubgrupoId"]]["grupoId"] != t["paraGrupoId"]:
+        p(f"{onde}: a dupla de destino não é do grupo de destino")
+    if not t.get("pacienteAvisado"):
+        p(f"{onde}: o paciente precisa ser avisado da troca")
+    if U[t["registradoPor"]]["perfil"] not in ("tecnico", "supervisor"):
+        p(f"{onde}: só a técnica ou o supervisor passa o caso")
+    if t.get("resumoId"):
+        r = E[t["resumoId"]]
+        if r["casoId"] != t["casoId"] or r.get("tipo") != "transferencia" or r["status"] != "validada":
+            p(f"{onde}: o resumo precisa ser um resumo de transferência validado do mesmo caso")
+    elif len(t.get("justificativa", "")) < 10:
+        p(f"{onde}: sem resumo validado, a justificativa é obrigatória")
+for c in db["casos"]:   # o caso fica na dupla da última passagem
+    ultimas = sorted([t for t in db["transferencias"] if t["casoId"] == c["id"]], key=lambda x: x["em"])
+    if ultimas and (c.get("grupoId"), c.get("subgrupoId")) != (ultimas[-1]["paraGrupoId"], ultimas[-1]["paraSubgrupoId"]):
+        p(f"caso {c['id']}: a dupla não é a da última passagem")
 
 # ---------- revisor de escrita ----------
 rev = cfg.get("revisorEscrita", {})

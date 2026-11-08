@@ -4,10 +4,10 @@ O site já está pronto para trocar o JSON pelo banco. Esta pasta tem tudo o que
 
 | Arquivo | Para que serve |
 |---|---|
-| `schema.sql` | Cria as 29 tabelas (mais as partições da auditoria), validações, regras de transição, imutabilidade, auditoria encadeada, verificação em duas etapas e as políticas de acesso (RLS). |
+| `schema.sql` | Cria as 30 tabelas (mais as partições da auditoria), validações, regras de transição, imutabilidade, auditoria encadeada, verificação em duas etapas e as políticas de acesso (RLS). |
 | `migrar_json.py` | Lê `dados/dados-iniciais.json` e gera `dados-demo.sql`: cada coleção vira uma tabela, cada campo vira uma coluna. |
 | `dados-demo.sql` | Os dados fictícios prontos para inserir (gerado pelo script acima). |
-| `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 133 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
+| `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 150 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
 | `teste_stub_supabase.sql` | Simula o que o Supabase já traz (login, papéis, segundo fator e Storage), só para o teste. **Não rodar no Supabase.** |
 | `projecao.py` | Projeção de volume por ano e em 20 anos, em três cenários. |
 
@@ -44,6 +44,7 @@ Para os indicadores da direção e a verificação da auditoria pelo banco, expo
 | Data e hora não são retroagidas | trigger `carimbo`: hora do servidor em cada registro |
 | Conteúdo clínico só para a equipe do caso | `app.pode_ver_clinico()`: a técnica de fora da equipe só abre depois de registrar o motivo (`acessos_justificados`, vale 12 h) |
 | Senha vazada sozinha não abre o prontuário | `app.mfa_ok()` dentro de `app.usuario_atual()`: quem ligou a verificação em duas etapas e entrou só com a senha (`aal1`) não vê nem grava nada |
+| Passagem do caso no fim do estágio | `transferencias` + `app.transferencia_regras`: só técnica ou supervisor do caso, nada esperando a supervisão, paciente avisado, resumo de transferência validado (ou justificativa); o caso só troca de dupla por aqui, e a dupla anterior perde o acesso na hora |
 | Risco acompanhado | `riscos` não é apagado; ciência e encerramento com quem e quando; notificação só pelo supervisor do caso |
 | Assinaturas, consentimentos, anamneses, adendos, auditoria: só inserção | trigger `app.bloquear_alteracao` |
 | Quem vê o quê | políticas RLS com `app.pode_ver_caso()`, `app.eh_estagiario_do_caso()` (vínculo ativo), `app.eh_supervisor_do_caso()` |
@@ -58,7 +59,7 @@ Para os indicadores da direção e a verificação da auditoria pelo banco, expo
 cd banco
 npm install            # baixa o PGlite (PostgreSQL que roda no Node)
 python3 migrar_json.py
-node testar_banco.mjs  # 133 verificações; resultado em resultado-teste.md
+node testar_banco.mjs  # 150 verificações; resultado em resultado-teste.md
 ```
 
 ## Limites conhecidos (próximos passos)

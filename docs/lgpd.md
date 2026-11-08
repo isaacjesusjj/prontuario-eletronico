@@ -32,7 +32,7 @@ Operador: provedor do banco em nuvem (Supabase, região São Paulo), sob contrat
 | Risco | Probabilidade | Impacto | Medidas no Vínculo | Risco residual |
 |---|---|---|---|---|
 | Estagiário acessar caso que não é dele | Média | Alto | Acesso por vínculo ativo (RLS no banco); auditoria de toda abertura e tentativa negada | Baixo |
-| Ex-estagiário continuar acessando | Média | Alto | Vínculo com data de fim; direção encerra no fim do semestre; acesso cai na hora | Baixo |
+| Ex-estagiário continuar acessando | Média | Alto | Vínculo com data de fim; direção encerra no fim do semestre; acesso cai na hora; o caso passa para a nova dupla por registro próprio (a dupla anterior perde o acesso) | Baixo |
 | Alteração de registro clínico depois de assinado | Baixa | Alto | Evolução validada imutável (trigger); correção só por adendo; hash do texto na assinatura | Baixo |
 | Senha fraca ou vazada | Média | Alto | Mínimo de 15 caracteres, lista de senhas comuns, hash PBKDF2/bcrypt, bloqueio progressivo, verificação em duas etapas (com ela, o banco não entrega nada a quem tem só a senha) | Baixo com MFA obrigatório para a equipe |
 | Técnica abrir prontuário sem necessidade | Média | Alto | Motivo registrado antes do conteúdo clínico de caso fora da equipe (vale 12 h, exigido pelo banco); o paciente vê quem acessou | Baixo |

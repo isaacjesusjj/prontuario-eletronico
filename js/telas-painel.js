@@ -53,6 +53,15 @@ PEP.telas = PEP.telas || {};
     return html;
   }
 
+  // Transição de semestre: caso em andamento cuja dupla não tem mais estagiário com vínculo ativo
+  PEP.telas.alertaSemDupla = function (u) {
+    var l = PEP.regras.casosSemDuplaAtiva(u);
+    if (!l.length) return '';
+    return '<div class="aviso perigo" role="note"><strong>Caso sem dupla ativa (o estágio terminou):</strong> ' + l.map(function (c) {
+      return '<a href="#/caso/' + c.id + '">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a>';
+    }).join(', ') + '. Faça a passagem para outra dupla (resumo do caso e quadro "Passagem do caso") para o atendimento continuar.</div>';
+  };
+
   function alertas(casos) {
     var html = '';
     var risco = casos.filter(PEP.regras.emRiscoDeAbandono);
@@ -132,7 +141,7 @@ PEP.telas = PEP.telas || {};
     var cheios = grupos.filter(function (g) { return PEP.regras.estagiariosDoGrupo(g.id).length > max; });
 
     var html = '<h1>Olá, ' + esc(u.nome) + '</h1><p class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + ' · ' + esc(u.crp) + '</p>' +
-      alertasRisco(ativos, true) + alertas(ativos) +
+      alertasRisco(ativos, true) + PEP.telas.alertaSemDupla(u) + alertas(ativos) +
       (cheios.length ? '<div class="aviso alerta pequeno">Grupo com mais de ' + max + ' estagiários: ' + cheios.map(function (g) { return esc(g.nome); }).join(', ') + '. Referência da Res. CFP 05/2025, art. 5º (hoje suspenso por liminar do STF).</div>' : '') +
       '<div class="grade">' + PEP.ui.numero(fila.length, 'evoluções para validar') +
       PEP.ui.numero(ativos.length, 'casos ativos nos meus grupos') + PEP.ui.numero(nEst, 'estagiários supervisionados') + '</div>' +
@@ -163,7 +172,7 @@ PEP.telas = PEP.telas || {};
       }).join(', ') + '. Aloque com prioridade e avise a supervisão.</div>' : '') +
       (abertos.length ? '<div class="aviso alerta pequeno">' + abertos.length + ' avaliação(ões) de risco em aberto na clínica, ' +
         abertos.filter(function (r) { return !r.cienciaEm; }).length + ' aguardando a ciência da supervisão.</div>' : '') +
-      alertas(ativos) +
+      PEP.telas.alertaSemDupla(u) + alertas(ativos) +
       (fila.some(function (i) { return i.sinalUrgencia; }) ? '<div class="aviso perigo" role="note"><strong>' + fila.filter(function (i) { return i.sinalUrgencia; }).length +
         ' inscrição(ões) com sinal de urgência no relato.</strong> <a href="#/fila">Contatar hoje</a>: urgência não espera a fila.</div>' : '') +
       (dup.length ? '<div class="aviso alerta pequeno"><strong>' + dup.length + ' inscrição(ões) com CPF já cadastrado.</strong> <a href="#/fila">Conferir na fila</a> antes de triar.</div>' : '') +
