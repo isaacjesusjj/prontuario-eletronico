@@ -71,7 +71,8 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. O trabalho em curso fica no branch `andamento-06-11`.
 - Validar com o cliente: perda de vaga também com 3 faltas intercaladas (`regras.faltasIntercaladasSugestao`), as mudanças nos requisitos da Etapa 1 (tabela no README) e "800 usuários simultâneos" × "800 estudantes".
 - Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`.
-- Opcional (perguntar ao grupo): escalas PHQ-9 e GAD-7 só com escores.
+- O grupo decidiu deixar as escalas PHQ-9 e GAD-7 para depois (se entrarem, só com as pontuações). O Figma (Etapa 3) ainda não tem as telas novas.
+- O resumo para a banca e a lista do que validar, e com quem, estão em `docs/relatorio-final.md`.
 - Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita e seções do resumo de transferência.
 - Produção: ligar o MFA obrigatório para a equipe, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Functions (link do paciente, convite por e-mail, desligar o MFA de quem perdeu o celular) e backup.
 

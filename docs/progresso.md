@@ -1,6 +1,6 @@
 # Progresso do trabalho
 
-Última atualização: 08/11/2026 (etapas A, documentação, e B, transição de semestre, concluídas). Pausa anterior: 06/11/2026, 22h30.
+Última atualização: 08/11/2026 (etapas A, B e D concluídas; a C ficou de fora por decisão do grupo). Pausa anterior: 06/11/2026, 22h30.
 
 Branch: `andamento-06-11`. A `main` (que publica o site) **não foi alterada**: o site no ar continua igual.
 
@@ -65,15 +65,18 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 - **Banco**: tabela `transferencias`, triggers `app.transferencia_regras` e `app.transferencia_aplicar`; caso com dupla só muda de dupla pela passagem. O paciente vê "passou o seu atendimento para outra dupla" em "quem acessou".
 - Testes novos: 17 no site e 17 no banco.
 
-Ficou **por fazer**:
+**Feito em 08/11 (etapa D, relatório final):** [`relatorio-final.md`](relatorio-final.md), com o que mudou (problema → o que fizemos → como mostrar), o que dizer sobre o JSON, o que validar e com quem, os limites e os próximos passos.
+
+Ficou **de fora, por decisão do grupo**:
 
 1. **Escalas PHQ-9 e GAD-7** (opcional): só o lançamento do escore, com gráfico, e o item 9 abrindo a avaliação de risco. O texto oficial em português não pôde ser conferido nesta sessão, porque os sites estavam bloqueados. Por isso o plano é não reproduzir os itens, só os escores.
 
 ## Próximo passo
 
-1. Etapa C (opcional, perguntar ao grupo antes): escalas PHQ-9 e GAD-7 só com escores.
-2. Etapa D: relatório final para o grupo (o que dizer na banca e o que validar).
-3. Revisão do grupo. Só depois de aprovado, abrir o PR para a `main` (o merge publica o site).
+1. Revisão do grupo: cada integrante percorre o passo 9 do roteiro (lista em `relatorio-final.md`).
+2. Validar com a supervisão e o jurídico (lista abaixo e no relatório).
+3. Atualizar o Figma com as telas novas, se a Etapa 3 for cobrada junto.
+4. Com a aprovação do grupo: juntar o branch na `main` (publica o site), depois de rodar os três testes.
 
 ## Para validar com quem é de fora do grupo
 
@@ -83,5 +86,5 @@ Ficou **por fazer**:
 
 ## Observação sobre os branches
 
-- `andamento-06-11` tem tudo e está no GitHub: os 8 commits de trabalho, os deste documento, o da documentação e o da transição de semestre.
+- `andamento-06-11` tem tudo e está no GitHub: os 8 commits de trabalho, os deste documento, o da documentação, o da transição de semestre e o do relatório final.
 - `melhorias-prontuario` existia só nesta máquina e tem os 7 primeiros commits. Não precisa ser usado: o `andamento-06-11` o substitui.

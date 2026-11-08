@@ -62,7 +62,7 @@ Também existem `caio.estagiario`, `lia.estagiaria`, `fabio.estagiario`, `gabi.e
 
 **Datas da demonstração:** os dados foram escritos como se hoje fosse 06/11/2026 (`_meta.dataBase`). O site desloca todas as datas para que esse dia vire o dia de hoje; assim, no dia da apresentação, a sessão "de hoje" e as próximas sessões continuam corretas.
 
-O roteiro da apresentação está em [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md).
+O roteiro da apresentação está em [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md). O resumo das melhorias de novembro, com o que validar e com quem, está em [`docs/relatorio-final.md`](docs/relatorio-final.md).
 
 ## Estrutura
 
