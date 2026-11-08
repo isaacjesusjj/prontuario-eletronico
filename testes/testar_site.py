@@ -272,6 +272,9 @@ def estagiaria(nav, base):
     s.p.fill("#ag-data", s31["data"])
     s.p.fill("#ag-hora", s31["hora"])
     s.clicar('[data-acao="agendar-sessao"]')
+    conferir("Sala", "agendamento sem sala é recusado", s.p.locator("#ag-sala").get_attribute("aria-invalid") == "true")
+    s.p.select_option("#ag-sala", "Sala 4")
+    s.clicar('[data-acao="agendar-sessao"]')
     conferir("Sessões", "agendamento no mesmo horário da dupla é recusado", "já tem sessão" in s.p.locator("#ag-hora-erro").inner_text())
     h31 = int(s31["hora"][:2]) * 60 + int(s31["hora"][3:])
     s.p.fill("#ag-hora", f"{(h31 + 30) // 60:02d}:{(h31 + 30) % 60:02d}")
@@ -280,9 +283,14 @@ def estagiaria(nav, base):
     s.p.fill("#ag-hora", "06:00")
     s.clicar('[data-acao="agendar-sessao"]')
     conferir("Validadores", "horário fora do funcionamento é recusado", s.p.locator("#ag-hora-erro").count() == 1)
-    s.p.fill("#ag-hora", "15:30")
+    s.p.fill("#ag-hora", "16:30")   # c03 (outra dupla) está na Sala 1 às 16h nesse dia
+    s.p.select_option("#ag-sala", "Sala 1")
     s.clicar('[data-acao="agendar-sessao"]')
-    conferir("Sessões", "agendamento válido", "Sessão agendada" in s.toast())
+    conferir("Sala", "a mesma sala não recebe duas sessões que se sobrepõem, mesmo de duplas diferentes", "já está ocupada" in s.p.locator("#ag-sala-erro").inner_text())
+    s.p.fill("#ag-hora", "15:30")
+    s.p.select_option("#ag-sala", "Sala 4")
+    s.clicar('[data-acao="agendar-sessao"]')
+    conferir("Sessões", "agendamento válido (com a sala)", "Sessão agendada" in s.toast() and s.js("PEP.db.sessoes[PEP.db.sessoes.length - 1].sala") == "Sala 4")
     with s.p.expect_popup() as aba:
         s.clicar('[data-acao="lembrete"][data-canal="whatsapp"][data-id="s31"]')
     url = aba.value.url
@@ -1311,6 +1319,51 @@ def documentos_e_comunicacoes(nav, base):
     s.fechar()
 
 
+def grafico_e_salas(nav, base):
+    s = Sessao(nav, base, "Gráfico e salas")
+    s.entrar("helena.supervisora")
+    fig = s.p.locator("figure.grafico").first
+    esperado = s.js("PEP.regras.indicadores(PEP.estado.usuarioAtual()).porMes")
+    colunas = fig.locator(".grafico-coluna")
+    rotulos = [colunas.nth(i).get_attribute("aria-label") for i in range(colunas.count())]
+    conferir("Gráfico", "o painel da supervisão mostra os 6 meses, com a legenda das três séries e o total no topo das colunas",
+             colunas.count() == 6 and fig.locator(".grafico-legenda li").count() == 3
+             and fig.locator(".grafico-total").count() == sum(1 for m in esperado if m["presente"] + m["faltaJustificada"] + m["falta"]))
+    i = max(range(6), key=lambda k: esperado[k]["presente"])
+    m = esperado[i]
+    conferir("Gráfico", "cada coluna diz, para quem usa leitor de tela, o mês e os três números", f"{m['presente']} presença" in rotulos[i] and f"{m['falta']} falta sem justificativa" in rotulos[i], rotulos[i])
+    colunas.nth(i).focus()
+    dica = fig.locator(".grafico-dica")
+    conferir("Gráfico", "com o teclado (Tab), a coluna mostra o detalhe do mês", dica.is_visible() and str(m["presente"]) in dica.inner_text())
+    s.p.keyboard.press("Escape")
+    conferir("Gráfico", "Esc fecha o detalhe", not dica.is_visible())
+    fig.locator(".grafico-tabela summary").click()
+    linhas = fig.locator(".grafico-tabela tbody tr")
+    conferir("Gráfico", "\"Ver os números\" abre a tabela com todos os valores", linhas.count() == 6 and str(m["presente"]) in linhas.nth(i).inner_text())
+    s.axe("Painel com gráfico")
+    s.clicar('[data-acao="alto-contraste"]')
+    s.axe("Painel com gráfico no alto contraste")
+    conferir("Acessibilidade", "no alto contraste, o aviso flutuante fica legível (antes era branco no branco)",
+             s.js("getComputedStyle(document.getElementById('toast')).backgroundColor") != s.js("getComputedStyle(document.getElementById('toast')).color"))
+    s.clicar('[data-acao="alto-contraste"]')
+    s.sair()
+    # Direção: o gráfico vem dos números agregados
+    s.entrar("marta.direcao")
+    conferir("Gráfico", "a direção vê o gráfico só com os totais (sem nomes)", s.p.locator("figure.grafico").count() == 1 and "Paciente" not in s.p.locator("figure.grafico").inner_text())
+    s.ir("#/indicadores")
+    conferir("Gráfico", "o gráfico também aparece em Indicadores", s.p.locator("figure.grafico").count() == 1)
+    s.sair()
+    # Técnica: ocupação de uma sala na agenda
+    s.entrar("ana.tecnica")
+    s.ir("#/agenda/lista/" + s.js("PEP.util.hoje()"))
+    s.p.select_option("#ag-filtro-sala", "Sala 1")
+    s.clicar('form[data-form="filtrar-sala"] button[type=submit]')
+    salas = s.js("Array.from(document.querySelectorAll('.lista-sessoes .sessao-item')).map(li => li.textContent)")
+    conferir("Sala", "o filtro da agenda mostra só a ocupação da sala escolhida", salas and all("Sala 1" in t for t in salas), f"{len(salas)} sessões")
+    s.axe("Agenda filtrada por sala")
+    s.fechar()
+
+
 def verificacao_duas_etapas(nav, base):
     s = Sessao(nav, base, "Duas etapas")
     t0 = datetime(2026, 11, 6, 10, 0, 0)
@@ -1489,7 +1542,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

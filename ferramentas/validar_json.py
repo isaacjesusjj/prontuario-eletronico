@@ -298,6 +298,21 @@ com_evo = {e.get("sessaoId") for e in db["evolucoes"]}
 for s in db["sessoes"]:
     if s["presenca"] == "presente" and s["id"] not in com_evo:
         (a if C[s["casoId"]]["status"] == "ativo" else p)(f"sessão {s['id']} ({s['casoId']}) com presença e sem evolução")
+# Salas: da lista do _config e sem duas sessões (não canceladas) sobrepostas na mesma sala
+SALAS = set(cfg["listas"]["salas"])
+DUR = cfg["regras"].get("duracaoSessaoMinutos", 50)
+def minutos(h): return int(h[:2]) * 60 + int(h[3:5])
+ocupacao = defaultdict(list)
+for s in db["sessoes"]:
+    if s.get("sala") and s["sala"] not in SALAS:
+        p(f"sessão {s['id']}: sala fora de _config.listas.salas")
+    if not s.get("sala") and s["presenca"] == "agendada":
+        p(f"sessão {s['id']}: agendada sem sala")
+    if s.get("sala") and s["presenca"] != "cancelada":
+        for outra in ocupacao[(s["data"], s["sala"])]:
+            if abs(minutos(outra["hora"]) - minutos(s["hora"])) < DUR:
+                p(f"sessões {outra['id']} e {s['id']}: mesma sala ({s['sala']}) em horários que se sobrepõem")
+        ocupacao[(s["data"], s["sala"])].append(s)
 for o in db["orientacoes"]:
     if o["supervisorId"] not in supervisores_possiveis(C[o["casoId"]]):
         p(f"orientação {o['id']}: supervisor não é o do caso")

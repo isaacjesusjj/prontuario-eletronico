@@ -16,8 +16,8 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 326 de 326 (65 telas no axe-core).
-  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 168 de 168.
+  - `python testes/testar_site.py` → hoje 340 de 340 (68 telas no axe-core).
+  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 174 de 174.
   - No GitHub, os três rodam sozinhos a cada envio (`.github/workflows/testes.yml`, aba Actions).
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
 
@@ -57,6 +57,8 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Documento psicológico (Res. CFP 06/2019): modalidade e seções obrigatórias em `_config.listas.modalidadesDocumento` (o banco confere as mesmas em `app.documento_regras`); só vale com a assinatura do supervisor; o documento nunca muda: entrega, devolutiva e anulação vão em `eventos_documento`. Declaração sem termo clínico (`listas.termosClinicosDeclaracao`, orientação no site).
 - Comunicação a terceiros (`comunicacoes`): fundamento obrigatório em comunicação autorizada, requisição e quebra de sigilo; quebra de sigilo só supervisor ou técnica; o paciente vê o que ficou visível, e esconder exige motivo.
 - Busca de paciente: só nos casos visíveis, e o termo nunca vai para o endereço da página.
+- Sala: toda sessão nova tem sala (`_config.listas.salas`); duas sessões agendadas não ocupam a mesma sala em horários sobrepostos (o banco confere em `app.sessao_regras`); o paciente não troca a sala.
+- Gráfico (`js/grafico.js`): atendimentos por mês vêm de `indicadores().porMes`, a mesma conta de `app.indicadores`; cores em `--grafico-1..3` (validadas para daltonismo, com versão para o alto contraste).
 - O paciente só avisa falta de sessão futura, com motivo de lista fechada (sem texto livre: o sistema não é canal de crise).
 - Lembretes nunca têm conteúdo clínico. Não existe chat entre paciente e equipe.
 - Base normativa: Res. CFP 05/2025 e 01/2009, Código de Ética Profissional do Psicólogo e LGPD. Os artigos estão na skill do projeto e na tela "Regras e leis" do site (`#/regras`).

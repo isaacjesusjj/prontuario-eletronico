@@ -46,6 +46,7 @@ PEP.telas = PEP.telas || {};
       '<div class="grade">' + PEP.ui.numero(ind.atendidos, 'pacientes atendidos') + PEP.ui.numero(ind.taxaRetorno + '%', 'voltaram após a 1ª sessão') +
       PEP.ui.numero(media, 'sessões por paciente (média)') + PEP.ui.numero(ind.emRisco, 'casos em risco de abandono agora') +
       (u.perfil !== 'supervisor' ? PEP.ui.numero(ind.esperaMediaDias + ' dias', 'espera média na fila') : '') + '</div>' +
+      (ind.porMes ? '<div class="cartao">' + PEP.grafico.atendimentosPorMes(ind.porMes) + '</div>' : '') +
       '<div class="grade-2"><div class="cartao"><h2>Motivos de abandono</h2>' + barras(motivos) +
       '<p class="suave pequeno">Vem do fluxo de contato: é o dado que faltava para entender por que o paciente não volta.</p></div>' +
       '<div class="cartao"><h2>Presenças e faltas</h2>' + barras(faltas) + '</div>' +

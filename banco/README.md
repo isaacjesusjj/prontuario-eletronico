@@ -7,7 +7,7 @@ O site já está pronto para trocar o JSON pelo banco. Esta pasta tem tudo o que
 | `schema.sql` | Cria as 32 tabelas (mais as partições da auditoria), validações, regras de transição, imutabilidade, auditoria encadeada, verificação em duas etapas e as políticas de acesso (RLS). |
 | `migrar_json.py` | Lê `dados/dados-iniciais.json` e gera `dados-demo.sql`: cada coleção vira uma tabela, cada campo vira uma coluna. |
 | `dados-demo.sql` | Os dados fictícios prontos para inserir (gerado pelo script acima). |
-| `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 168 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
+| `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 174 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
 | `teste_stub_supabase.sql` | Simula o que o Supabase já traz (login, papéis, segundo fator e Storage), só para o teste. **Não rodar no Supabase.** |
 | `projecao.py` | Projeção de volume por ano e em 20 anos, em três cenários. |
 
@@ -47,6 +47,7 @@ Para os indicadores da direção e a verificação da auditoria pelo banco, expo
 | Passagem do caso no fim do estágio | `transferencias` + `app.transferencia_regras`: só técnica ou supervisor do caso, nada esperando a supervisão, paciente avisado, resumo de transferência validado (ou justificativa); o caso só troca de dupla por aqui, e a dupla anterior perde o acesso na hora |
 | Documento psicológico completo | `app.documento_regras`: seções obrigatórias de cada modalidade, prazo de validade e laudo só com avaliação; `app.evento_documento_regras`: entrega e devolutiva só de documento assinado pelo supervisor, uma vez cada, anulação só antes da entrega |
 | Comunicação a terceiros registrada | `comunicacoes` + `app.comunicacao_regras`: fundamento obrigatório quando a lei pede, quebra de sigilo só pela supervisão ou técnica; o paciente lê só o que ficou visível para ele |
+| Sala sem choque de horário | `app.sessao_regras`: sessão nova com sala; a mesma sala não recebe duas sessões agendadas sobrepostas (50 min), entre todas as duplas |
 | Contato de emergência coerente | nome e telefone juntos ou nenhum; telefone com DDD |
 | Risco acompanhado | `riscos` não é apagado; ciência e encerramento com quem e quando; notificação só pelo supervisor do caso |
 | Assinaturas, consentimentos, anamneses, adendos, auditoria: só inserção | trigger `app.bloquear_alteracao` |
@@ -62,7 +63,7 @@ Para os indicadores da direção e a verificação da auditoria pelo banco, expo
 cd banco
 npm install            # baixa o PGlite (PostgreSQL que roda no Node)
 python3 migrar_json.py
-node testar_banco.mjs  # 168 verificações; resultado em resultado-teste.md
+node testar_banco.mjs  # 174 verificações; resultado em resultado-teste.md
 ```
 
 ## Limites conhecidos (próximos passos)
@@ -71,5 +72,6 @@ node testar_banco.mjs  # 168 verificações; resultado em resultado-teste.md
 - Ações que gravam em mais de uma tabela (validar = mudar status + assinar) vão em duas requisições. Em produção, viram funções no banco (RPC) para gravar numa transação só.
 - A leitura do prontuário por link temporário, com o banco ligado, deve passar por uma Edge Function que confere token e data de nascimento no servidor.
 - Também viram Edge Function (com a chave `service_role`, que nunca vai para o site): o convite por e-mail do paciente novo e desligar a verificação em duas etapas de quem perdeu o celular (`DELETE /auth/v1/admin/users/{id}/factors/{fator}`).
+- Com o banco ligado, a estagiária não vê as sessões das outras duplas: se escolher uma sala ocupada, quem recusa é o banco, e o site mostra a mensagem genérica de erro. Próximo passo: uma função que liste os horários ocupados por sala, sem dados do paciente.
 - Os erros de código da verificação em duas etapas, com o banco ligado, ficam no registro do Supabase Auth (*Authentication* → *Logs*), não na tabela `auditoria`: antes do código a conta não grava nada.
 - A política de conteúdo (CSP) está numa tag `<meta>`; no GitHub Pages não dá para enviar cabeçalhos HTTP (como proteção contra *clickjacking*). Com hospedagem própria, vira cabeçalho.

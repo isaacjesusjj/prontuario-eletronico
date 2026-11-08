@@ -192,6 +192,7 @@ create table sessoes (
   hora                    time not null check (hora between '07:00' and '21:00'),
   presenca                text not null default 'agendada' check (presenca in ('agendada', 'presente', 'falta', 'falta-justificada', 'cancelada')),
   confirmada              boolean not null default false,
+  sala                    text not null default '' check (length(sala) <= 40),   -- sala de atendimento (_config.listas.salas)
   -- "Não vou poder ir": o paciente avisa pelo portal, com motivo de uma lista fechada (sem texto livre:
   -- o sistema não é canal de crise). Vira falta justificada, que não conta para o abandono.
   aviso_paciente          boolean not null default false,
@@ -692,10 +693,20 @@ begin
     if new.presenca <> 'agendada' or new.confirmada then raise exception 'Sessão nova entra como agendada: a presença é registrada a partir do dia da sessão.'; end if;
     if new.data < current_date then raise exception 'Agendamento só de hoje em diante.'; end if;
     if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso ativo recebe agendamento.'; end if;
+    if new.sala = '' then raise exception 'Escolha a sala da sessão.'; end if;
     new.presenca_registrada_por := null;
-    return new;
   end if;
+  -- Sala: duas sessões agendadas não ocupam a mesma sala em horários que se sobrepõem (cada uma, 50 min,
+  -- como regras.duracaoSessaoMinutos). Vale ao agendar e ao trocar a sala, a data ou a hora.
+  if new.presenca = 'agendada' and new.sala <> '' and not app.em_migracao()
+     and (tg_op = 'INSERT' or (new.sala, new.data, new.hora) is distinct from (old.sala, old.data, old.hora))
+     and exists (select 1 from sessoes s where s.id <> new.id and s.data = new.data and s.sala = new.sala and s.presenca = 'agendada'
+                 and abs(extract(epoch from (s.hora - new.hora))) < 50 * 60) then
+    raise exception 'A sala % já está ocupada nesse horário (cada sessão ocupa 50 minutos).', new.sala;
+  end if;
+  if tg_op = 'INSERT' then return new; end if;
   if new.caso_id <> old.caso_id then raise exception 'A sessão não muda de caso.'; end if;
+  if app.perfil_atual() = 'paciente' and new.sala is distinct from old.sala then raise exception 'A sala é definida pela equipe.'; end if;
   if app.perfil_atual() = 'paciente' and (new.presenca, new.data, new.hora, new.aviso_paciente, new.motivo_falta)
      is distinct from (old.presenca, old.data, old.hora, old.aviso_paciente, old.motivo_falta) then
     -- o paciente só confirma presença ou avisa, antes da sessão, que não vai (com motivo da lista)
@@ -1170,6 +1181,12 @@ begin
       where aviso_paciente and caso_id = any (escopo) group by motivo_falta) m), '{}'::jsonb),
     'casosAtivos', (select count(*) from casos where status = 'ativo' and id = any (escopo)),
     'naFila', (select count(*) from inscricoes where status = 'aguardando'),
+    -- Últimos 6 meses (o atual incluído): a mesma conta de atendimentosPorMes em js/permissoes.js
+    'porMes', (select jsonb_agg(jsonb_build_object('mes', to_char(m.mes, 'YYYY-MM'),
+        'presente', (select count(*) from sessoes s where s.caso_id = any (escopo) and s.presenca = 'presente' and date_trunc('month', s.data) = m.mes),
+        'faltaJustificada', (select count(*) from sessoes s where s.caso_id = any (escopo) and s.presenca = 'falta-justificada' and date_trunc('month', s.data) = m.mes),
+        'falta', (select count(*) from sessoes s where s.caso_id = any (escopo) and s.presenca = 'falta' and date_trunc('month', s.data) = m.mes)) order by m.mes)
+      from generate_series(date_trunc('month', current_date) - interval '5 months', date_trunc('month', current_date), interval '1 month') as m(mes)),
     'esperaMediaDias', coalesce((select round(avg(current_date - data)) from inscricoes where status = 'aguardando'), 0)
   ) into resultado;
   return resultado;

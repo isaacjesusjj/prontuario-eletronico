@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:23 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-08 23:33 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**168 de 168 verificações passaram.**
+**174 de 174 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 36 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (2057 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1617 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -166,6 +166,11 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:23 (UTC), num PostgreSQL 18
 | ✓ | a supervisão registra quebra de sigilo com fundamento |  |
 | ✓ | o paciente vê as comunicações visíveis para ele, e não as escondidas com motivo (LGPD, art. 18, VII) |  |
 | ✓ | estagiária de outra dupla não vê as comunicações do caso |  |
+| ✓ | sessão nova sem sala é recusada | recusado: Escolha a sala da sessão. |
+| ✓ | estagiária agenda a sessão numa sala livre |  |
+| ✓ | outra dupla não agenda a mesma sala em horário que se sobrepõe (sessão de 50 min) | recusado: A sala Sala 4 já está ocupada nesse horário (cada sessão ocupa 50 minutos). |
+| ✓ | a mesma sala vale logo depois que a sessão anterior termina (50 min) |  |
+| ✓ | o paciente não troca a sala da sessão | recusado: A sala é definida pela equipe. |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -173,6 +178,7 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:23 (UTC), num PostgreSQL 18
 | ✓ | a inscrição gerou evento de auditoria e a cadeia continua íntegra |  |
 | ✓ | indicadores do banco = indicadores da tela | atendidos 6, retorno 83%, em risco 1, ativos 4, na fila 6, motivos {"Horário incompatível":1} |
 | ✓ | caso com 2 faltas seguidas aparece em risco de abandono (c02) |  |
+| ✓ | atendimentos por mês do banco = contagem direta das sessões (6 meses, presença e os dois tipos de falta) | 2026-06: 0/0/0 · 2026-07: 0/0/0 · 2026-08: 4/0/2 · 2026-09: 14/1/0 · 2026-10: 9/1/2 · 2026-11: 1/3/0 |
 | ✓ | indicadores trazem os motivos das faltas avisadas pelo paciente | {"transporte":1,"trabalho-estudo":1} |
 
 Tamanho do banco de demonstração: 10.2 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, auditoria_2026 64 KB, casos 64 KB, alocacoes 64 KB.

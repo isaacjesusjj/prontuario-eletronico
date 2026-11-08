@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.12",
+    "versao": "2026-11-06.13",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -697,6 +697,14 @@
           "somenteResponsavel": true,
           "fundamentoDica": "Motivo e base da decisão, buscando o menor prejuízo"
         }
+      ],
+      "salas": [
+        "Sala 1",
+        "Sala 2",
+        "Sala 3",
+        "Sala 4",
+        "Sala de ludoterapia",
+        "Sala com espelho (supervisão)"
       ]
     },
     "revisorEscrita": {
@@ -1967,6 +1975,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -1978,6 +1987,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -1989,6 +1999,7 @@
       "hora": "14:00",
       "presenca": "falta-justificada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2000,6 +2011,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2011,6 +2023,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2022,6 +2035,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2033,6 +2047,7 @@
       "hora": "14:00",
       "presenca": "falta-justificada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2044,6 +2059,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2055,6 +2071,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2066,6 +2083,7 @@
       "hora": "14:00",
       "presenca": "presente",
       "confirmada": true,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2077,6 +2095,7 @@
       "hora": "14:00",
       "presenca": "agendada",
       "confirmada": true,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2088,6 +2107,7 @@
       "hora": "14:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2099,6 +2119,7 @@
       "hora": "14:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2110,6 +2131,7 @@
       "hora": "14:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2121,6 +2143,7 @@
       "hora": "14:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2132,6 +2155,7 @@
       "hora": "14:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2143,6 +2167,7 @@
       "hora": "10:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2154,6 +2179,7 @@
       "hora": "10:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2165,6 +2191,7 @@
       "hora": "10:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2176,6 +2203,7 @@
       "hora": "10:00",
       "presenca": "falta",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2187,6 +2215,7 @@
       "hora": "10:00",
       "presenca": "falta",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2198,6 +2227,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2209,6 +2239,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2220,6 +2251,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2231,6 +2263,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2242,6 +2275,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2253,6 +2287,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2264,6 +2299,7 @@
       "hora": "16:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2275,6 +2311,7 @@
       "hora": "16:00",
       "presenca": "falta-justificada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2286,6 +2323,7 @@
       "hora": "16:00",
       "presenca": "agendada",
       "confirmada": true,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2297,6 +2335,7 @@
       "hora": "16:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2308,6 +2347,7 @@
       "hora": "16:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2319,6 +2359,7 @@
       "hora": "16:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 1",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2330,6 +2371,7 @@
       "hora": "09:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2341,6 +2383,7 @@
       "hora": "09:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2352,6 +2395,7 @@
       "hora": "09:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2363,6 +2407,7 @@
       "hora": "09:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2374,6 +2419,7 @@
       "hora": "09:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2385,6 +2431,7 @@
       "hora": "09:00",
       "presenca": "falta-justificada",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": true,
       "motivoFalta": "transporte",
       "avisadoEm": "2026-11-05T20:15"
@@ -2396,6 +2443,7 @@
       "hora": "09:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2407,6 +2455,7 @@
       "hora": "09:00",
       "presenca": "agendada",
       "confirmada": false,
+      "sala": "Sala 3",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2418,6 +2467,7 @@
       "hora": "11:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2429,6 +2479,7 @@
       "hora": "11:00",
       "presenca": "falta",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2440,6 +2491,7 @@
       "hora": "11:00",
       "presenca": "falta",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2451,6 +2503,7 @@
       "hora": "15:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2462,6 +2515,7 @@
       "hora": "15:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2473,6 +2527,7 @@
       "hora": "15:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null
@@ -2484,6 +2539,7 @@
       "hora": "15:00",
       "presenca": "presente",
       "confirmada": false,
+      "sala": "Sala 2",
       "avisoPaciente": false,
       "motivoFalta": "",
       "avisadoEm": null

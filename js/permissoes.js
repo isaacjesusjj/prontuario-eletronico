@@ -456,6 +456,21 @@ PEP.regras = (function () {
   // Mesmo formato da função app.indicadores() do banco: com o banco ligado, a tela recebe esse
   // objeto pronto do servidor (a direção não lê as tabelas clínicas). Escopo: supervisor vê os
   // próprios grupos; direção e técnico veem tudo.
+  // Atendimentos dos últimos 6 meses (o atual incluído), por mês: presença, falta justificada e falta
+  // sem justificativa. A mesma conta de app.indicadores no banco (campo porMes).
+  function atendimentosPorMes(sessoes) {
+    var h = PEP.util.hoje().split('-').map(Number), lista = [];
+    for (var i = 5; i >= 0; i--) {
+      var ano = h[0], mes = h[1] - i;
+      while (mes < 1) { mes += 12; ano--; }
+      var chave = ano + '-' + (mes < 10 ? '0' : '') + mes;
+      var doMes = sessoes.filter(function (s) { return s.data.slice(0, 7) === chave; });
+      var conta = function (p) { return doMes.filter(function (s) { return s.presenca === p; }).length; };
+      lista.push({ mes: chave, presente: conta('presente'), faltaJustificada: conta('falta-justificada'), falta: conta('falta') });
+    }
+    return lista;
+  }
+
   function indicadores(u) {
     var casos = u.perfil === 'supervisor' ? casosVisiveis(u) : PEP.db.casos;
     var ids = casos.map(function (c) { return c.id; });
@@ -485,6 +500,7 @@ PEP.regras = (function () {
       motivosFaltaAvisada: avisadas,
       casosAtivos: casos.filter(function (c) { return c.status === 'ativo'; }).length,
       naFila: fila.length,
+      porMes: atendimentosPorMes(sessoes),
       esperaMediaDias: fila.length ? Math.round(fila.reduce(function (t, i) { return t + PEP.util.diasEntre(i.data, PEP.util.hoje()); }, 0) / fila.length) : 0
     };
   }

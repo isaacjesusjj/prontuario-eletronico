@@ -344,8 +344,9 @@ window.PEP = PEP;
     'agendar-sessao': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
       if (!R().podeRegistrarPresenca(u, c)) return negar();
-      var d = val('ag-data'), h = val('ag-hora');
+      var d = val('ag-data'), h = val('ag-hora'), sala = val('ag-sala');
       var erros = [];
+      if (PEP.lista('salas').indexOf(sala) === -1) erros.push(['ag-sala', 'Escolha a sala.']);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) erros.push(['ag-data', 'Informe a data.']);
       else if (d < U().hoje()) erros.push(['ag-data', 'Escolha uma data a partir de hoje.']);
       if (!/^\d{2}:\d{2}$/.test(h)) erros.push(['ag-hora', 'Informe a hora.']);
@@ -360,9 +361,14 @@ window.PEP = PEP;
         return mesmaEquipe && Math.abs(minutos(s.hora) - minutos(h)) < duracao;
       });
       if (conflito) erros.push(['ag-hora', 'A dupla ou trio já tem sessão nesse horário (cada sessão ocupa ' + duracao + ' minutos).']);
+      // Sala: a mesma sala não recebe duas sessões que se sobreponham (o banco confere o mesmo, entre todas as duplas)
+      var salaOcupada = !erros.length && PEP.db.sessoes.some(function (s) {
+        return s.data === d && s.presenca === 'agendada' && s.sala === sala && Math.abs(minutos(s.hora) - minutos(h)) < duracao;
+      });
+      if (salaOcupada) erros.push(['ag-sala', 'A ' + sala + ' já está ocupada nesse horário. Escolha outra sala ou outro horário.']);
       if (!PEP.form.aplicar(document, erros)) return;
-      repo().inserir('sessoes', { casoId: c.id, data: d, hora: h, presenca: 'agendada', confirmada: false });
-      concluir('Sessão agendada para ' + U().formatarData(d) + ' às ' + h + '.', 'Agendou sessão', c.id);
+      repo().inserir('sessoes', { casoId: c.id, data: d, hora: h, sala: sala, presenca: 'agendada', confirmada: false });
+      concluir('Sessão agendada para ' + U().formatarData(d) + ' às ' + h + ' na ' + sala + '.', 'Agendou sessão', c.id);
     },
     lembrete: function (b) {
       var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
@@ -1069,6 +1075,11 @@ window.PEP = PEP;
       if (!PEP.form.aplicar(form, erros)) return;
       repo().inserir('comunicacoes', x);
       concluir('Comunicação registrada.', 'Registrou comunicação a terceiros (' + t.nome + ')', c.id);
+    },
+    // Agenda: filtro por sala (para ver a ocupação). Fica na memória da página
+    'filtrar-sala': function (form) {
+      PEP.telas._salaAgenda = form.elements.sala.value;
+      PEP.app.renderizar();
     },
     // Busca de paciente (menu). O termo fica só na memória da página, nunca no endereço: assim nome de
     // paciente não vai para o histórico do navegador

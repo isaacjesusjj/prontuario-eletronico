@@ -21,7 +21,10 @@ PEP.telas = PEP.telas || {};
 
   function sessoesEntre(u, inicio, fim) {
     var ids = casosDaAgenda(u).map(function (c) { return c.id; });
-    return PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.data >= inicio && s.data <= fim && s.presenca !== 'cancelada'; })
+    var sala = u.perfil === 'paciente' ? '' : PEP.telas._salaAgenda;
+    return PEP.db.sessoes.filter(function (s) {
+      return ids.indexOf(s.casoId) !== -1 && s.data >= inicio && s.data <= fim && s.presenca !== 'cancelada' && (!sala || s.sala === sala);
+    })
       .sort(function (a, b) { return (a.data + a.hora).localeCompare(b.data + b.hora); });
   }
 
@@ -41,7 +44,7 @@ PEP.telas = PEP.telas || {};
       else extra = s.confirmada ? ' <span class="etiqueta validada">confirmada</span>' : ' <span class="etiqueta rascunho">a confirmar</span>';
       if (PEP.regras.podeAvisarFalta(u, s)) extra += PEP.telas.avisoFaltaPaciente(s);
     }
-    return '<li class="sessao-item"><span class="hora">' + esc(s.hora) + '</span> ' + link + ' <span class="etiqueta ' + CLASSE[s.presenca] + '">' + esc(status) + '</span>' + extra + '</li>';
+    return '<li class="sessao-item"><span class="hora">' + esc(s.hora) + '</span> ' + link + (s.sala ? ' <span class="suave pequeno">' + esc(s.sala) + '</span>' : '') + ' <span class="etiqueta ' + CLASSE[s.presenca] + '">' + esc(status) + '</span>' + extra + '</li>';
   }
 
   function inicioDaSemana(iso) { return U().somarDias(iso, -((U().diaDaSemana(iso) + 6) % 7)); } // segunda-feira
@@ -127,6 +130,15 @@ PEP.telas = PEP.telas || {};
     if (!/^\d{4}-\d{2}-\d{2}$/.test(ref || '')) ref = U().hoje();
     visao = visao || (u.perfil === 'paciente' ? 'lista' : 'semana');
     var titulo = '<h1>' + (u.perfil === 'paciente' ? 'Minhas sessões' : 'Agenda') + '</h1>';
+    // Filtro por sala: mostra a ocupação de uma sala (para quem atende; o paciente vê só as próprias sessões)
+    if (u.perfil !== 'paciente') {
+      var atual = PEP.telas._salaAgenda || '';
+      titulo += '<form class="linha filtro-sala" data-form="filtrar-sala" novalidate><label for="ag-filtro-sala" class="suave">Sala</label>' +
+        '<select id="ag-filtro-sala" name="sala" style="width:auto"><option value="">Todas</option>' + PEP.lista('salas').map(function (x) {
+          return '<option' + (x === atual ? ' selected' : '') + '>' + esc(x) + '</option>';
+        }).join('') + '</select><button class="botao secundario pequeno" type="submit">Mostrar</button>' +
+        (atual ? '<span class="suave pequeno" role="status">Mostrando só a ' + esc(atual) + (u.perfil === 'tecnico' ? '' : ', entre os seus casos') + '.</span>' : '') + '</form>';
+    }
     if (visao === 'dia') return titulo + visaoDia(u, ref);
     if (visao === 'mes') return titulo + visaoMes(u, ref);
     if (visao === 'lista') return titulo + visaoLista(u, ref);

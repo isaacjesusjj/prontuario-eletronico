@@ -151,6 +151,7 @@ erDiagram
         time hora
         text presenca
         bool confirmada
+        text sala
         bool aviso_paciente
         text motivo_falta
     }

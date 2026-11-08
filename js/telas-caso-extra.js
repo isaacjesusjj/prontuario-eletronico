@@ -49,7 +49,7 @@ PEP.telas = PEP.telas || {};
         }).join('') + '</tbody></table></div></div>';
     }
 
-    html += '<div class="cartao"><h2>Sessões</h2><div class="tabela-rolagem"><table><thead><tr><th scope="col">Data</th><th scope="col">Hora</th><th scope="col">Presença</th><th scope="col">Ações</th></tr></thead><tbody>' +
+    html += '<div class="cartao"><h2>Sessões</h2><div class="tabela-rolagem"><table><thead><tr><th scope="col">Data</th><th scope="col">Hora</th><th scope="col">Sala</th><th scope="col">Presença</th><th scope="col">Ações</th></tr></thead><tbody>' +
       sessoes.map(function (s) {
         var acoes = '';
         if (pode && s.presenca === 'agendada') {
@@ -62,7 +62,7 @@ PEP.telas = PEP.telas || {};
           }
         }
         var enviados = PEP.db.lembretes.filter(function (l) { return l.sessaoId === s.id; }).length;
-        return '<tr><td>' + data(s.data) + '</td><td>' + esc(s.hora) + '</td><td><span class="etiqueta ' + CLASSE_PRESENCA[s.presenca] + '">' + nomePresenca(s.presenca) + '</span>' +
+        return '<tr><td>' + data(s.data) + '</td><td>' + esc(s.hora) + '</td><td>' + esc(s.sala || '—') + '</td><td><span class="etiqueta ' + CLASSE_PRESENCA[s.presenca] + '">' + nomePresenca(s.presenca) + '</span>' +
           (s.presenca === 'agendada' && s.confirmada ? ' <span class="suave pequeno">confirmada pelo paciente</span>' : '') +
           (s.avisoPaciente ? ' <span class="suave pequeno">avisada pelo paciente em ' + data(s.avisadoEm) + ': ' + esc(nomeMotivoFalta(s.motivoFalta)) + '</span>' : '') +
           (s.presenca === 'agendada' && s.data < hoje ? ' <span class="etiqueta alerta">presença pendente</span>' : '') +
@@ -74,6 +74,8 @@ PEP.telas = PEP.telas || {};
       html += '<h3 style="margin-top:1rem">Agendar sessão</h3><div class="linha">' +
         '<label class="suave" for="ag-data">Data</label><input id="ag-data" type="date" min="' + hoje + '" style="width:auto">' +
         '<label class="suave" for="ag-hora">Hora</label><input id="ag-hora" type="time" value="14:00" style="width:auto">' +
+        '<label class="suave" for="ag-sala">Sala</label><select id="ag-sala" style="width:auto"><option value="">Escolha</option>' +
+        PEP.lista('salas').map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>' +
         '<button class="botao pequeno" data-acao="agendar-sessao" data-caso="' + caso.id + '">Agendar</button></div>';
     }
     return html + '<p class="suave pequeno" style="margin-top:.8rem">Falta justificada (avisada com antecedência) não conta para o fluxo de abandono. ' +

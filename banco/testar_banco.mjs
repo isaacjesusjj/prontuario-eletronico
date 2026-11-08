@@ -410,6 +410,20 @@ await como('u-sup1', async () => {
 conferir('o paciente vê as comunicações visíveis para ele, e não as escondidas com motivo (LGPD, art. 18, VII)', (await como('u-pac1', () => ids('comunicacoes'))) === 'cm-1');
 conferir('estagiária de outra dupla não vê as comunicações do caso', (await como('u-est3', () => ids('comunicacoes'))) === '');
 
+// ---------- 6j. Sala de atendimento na agenda ----------
+const sessao = (id, caso, hora, sala) => `insert into sessoes (id, caso_id, data, hora, sala) values ('${id}', '${caso}', current_date + 40, '${hora}', '${sala}')`;
+await como('u-est1', async () => {
+  await erroEsperado('sessão nova sem sala é recusada', `insert into sessoes (caso_id, data, hora) values ('c01', current_date + 40, '10:00')`);
+  await db.query(sessao('s-sala-1', 'c01', '10:00', 'Sala 4'));
+  conferir('estagiária agenda a sessão numa sala livre', true);
+});
+await como('u-est5', async () => {
+  await erroEsperado('outra dupla não agenda a mesma sala em horário que se sobrepõe (sessão de 50 min)', sessao('s-sala-2', 'c04', '10:30', 'Sala 4'));
+  await db.query(sessao('s-sala-3', 'c04', '10:50', 'Sala 4'));
+  conferir('a mesma sala vale logo depois que a sessão anterior termina (50 min)', true);
+});
+await como('u-pac1', () => erroEsperado('o paciente não troca a sala da sessão', "update sessoes set sala = 'Sala 2' where id = 's31'"));
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {
@@ -436,6 +450,17 @@ conferir('indicadores do banco = indicadores da tela', ind.atendidos === esperad
   && ind.casosAtivos === esperadoInd.ativos && ind.naFila === esperadoInd.fila,
   `atendidos ${ind.atendidos}, retorno ${ind.taxaRetorno}%, em risco ${ind.emRisco}, ativos ${ind.casosAtivos}, na fila ${ind.naFila}, motivos ${JSON.stringify(ind.motivosAbandono)}`);
 conferir('caso com 2 faltas seguidas aparece em risco de abandono (c02)', ind.emRisco === 1);
+// Atendimentos por mês (gráfico do painel): os 6 meses até o mês atual do banco, contados por outro caminho
+// (agrupando a tabela de sessões aqui, já com as sessões criadas pelos testes acima)
+const [{ hoje }] = await valores("select to_char(current_date, 'YYYY-MM') as hoje");
+const meses = [...Array(6)].map((_, i) => { const [a, m] = hoje.split('-').map(Number); const d = new Date(Date.UTC(a, m - 1 - (5 - i), 1)); return d.toISOString().slice(0, 7); });
+const esperadoMes = meses.map((mes) => ({ mes, presente: 0, faltaJustificada: 0, falta: 0 }));
+const campo = { presente: 'presente', 'falta-justificada': 'faltaJustificada', falta: 'falta' };
+(await valores("select to_char(data, 'YYYY-MM') as mes, presenca, count(*)::int as n from sessoes group by 1, 2")).forEach((l) => {
+  const x = esperadoMes.find((e) => e.mes === l.mes); if (x && campo[l.presenca]) x[campo[l.presenca]] += l.n; });
+const igualMes = (x, y) => x.mes === y.mes && x.presente === y.presente && x.faltaJustificada === y.faltaJustificada && x.falta === y.falta;   // jsonb reordena as chaves
+conferir('atendimentos por mês do banco = contagem direta das sessões (6 meses, presença e os dois tipos de falta)', ind.porMes.length === 6 && ind.porMes.every((x, i) => igualMes(x, esperadoMes[i])),
+  ind.porMes.map((x) => `${x.mes}: ${x.presente}/${x.faltaJustificada}/${x.falta}`).join(' · '));
 conferir('indicadores trazem os motivos das faltas avisadas pelo paciente', ind.motivosFaltaAvisada.transporte === 1 && ind.motivosFaltaAvisada['trabalho-estudo'] === 1,
   JSON.stringify(ind.motivosFaltaAvisada));
 

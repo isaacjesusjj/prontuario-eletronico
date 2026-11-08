@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), com axe-core 4.14.0.
 
-**326 de 326 verificações passaram.** Acessibilidade: 65 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**340 de 340 verificações passaram.** Acessibilidade: 68 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 72 | 0 |
+| Acessibilidade | 76 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -17,6 +17,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), 
 | Evolução | 8 | 0 |
 | Anamnese | 1 | 0 |
 | Sessões | 5 | 0 |
+| Sala | 3 | 0 |
 | Lembretes | 3 | 0 |
 | Encerramento | 5 | 0 |
 | Abandono | 2 | 0 |
@@ -46,6 +47,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), 
 | Busca | 2 | 0 |
 | Documentos | 12 | 0 |
 | Comunicações | 7 | 0 |
+| Gráfico | 7 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
@@ -109,10 +111,12 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), 
 | ✓ | Anamnese | editar cria a versão 3 e guarda as anteriores |  |
 | ✓ | Sessões | presença registrada na sessão de hoje |  |
 | ✓ | Sessões | presença em sessão futura é recusada |  |
+| ✓ | Sala | agendamento sem sala é recusado |  |
 | ✓ | Sessões | agendamento no mesmo horário da dupla é recusado |  |
 | ✓ | Sessões | sessão que se sobrepõe a outra da dupla (cada uma ocupa 50 min) é recusada |  |
 | ✓ | Validadores | horário fora do funcionamento é recusado |  |
-| ✓ | Sessões | agendamento válido |  |
+| ✓ | Sala | a mesma sala não recebe duas sessões que se sobrepõem, mesmo de duplas diferentes |  |
+| ✓ | Sessões | agendamento válido (com a sala) |  |
 | ✓ | Lembretes | lembrete abre o WhatsApp com o número do paciente | https://wa.me/5511900000001?text=Ol%C3%A1!%20Lembrete%3A%20v |
 | ✓ | Lembretes | a mensagem não tem nome do paciente, do serviço nem conteúdo clínico |  |
 | ✓ | Lembretes | lembrete registrado (quem, quando, canal) |  |
@@ -331,7 +335,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 17:25. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 20:34. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -365,13 +369,25 @@ Gerado por `testes/testar_site.py` em 08/11/2026 20:25, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Documentos e comunicações · Documentos · comunicações registradas: sem violações WCAG A/AA |  |
 | ✓ | Comunicações | a cópia do prontuário leva as comunicações visíveis, e não a escondida |  |
 | ✓ | Comunicações | a paciente vê com quem os dados foram compartilhados (LGPD, art. 18, VII), menos o que a equipe escondeu com motivo |  |
+| ✓ | Gráfico | o painel da supervisão mostra os 6 meses, com a legenda das três séries e o total no topo das colunas |  |
+| ✓ | Gráfico | cada coluna diz, para quem usa leitor de tela, o mês e os três números | outubro de 2026: 8 presença, 1 falta justificada, 2 falta sem justificativa |
+| ✓ | Gráfico | com o teclado (Tab), a coluna mostra o detalhe do mês |  |
+| ✓ | Gráfico | Esc fecha o detalhe |  |
+| ✓ | Gráfico | "Ver os números" abre a tabela com todos os valores |  |
+| ✓ | Acessibilidade | Gráfico e salas · Painel com gráfico: sem violações WCAG A/AA |  |
+| ✓ | Acessibilidade | Gráfico e salas · Painel com gráfico no alto contraste: sem violações WCAG A/AA |  |
+| ✓ | Acessibilidade | no alto contraste, o aviso flutuante fica legível (antes era branco no branco) |  |
+| ✓ | Gráfico | a direção vê o gráfico só com os totais (sem nomes) |  |
+| ✓ | Gráfico | o gráfico também aparece em Indicadores |  |
+| ✓ | Sala | o filtro da agenda mostra só a ocupação da sala escolhida | 10 sessões |
+| ✓ | Acessibilidade | Gráfico e salas · Agenda filtrada por sala: sem violações WCAG A/AA |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T20:25:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T23:35:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw8a7pqkcdrh |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw8gzrbm6kgc |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

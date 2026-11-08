@@ -1,6 +1,6 @@
 # Progresso do trabalho
 
-Última atualização: 08/11/2026 (etapas A, B, D e os blocos 1 e 2 da etapa E concluídos). Pausa anterior: 06/11/2026, 22h30.
+Última atualização: 08/11/2026 (etapas A, B, D e os blocos 1, 2 e 3 da etapa E concluídos). Pausa anterior: 06/11/2026, 22h30.
 
 **Publicado em 08/11/2026:** o branch `andamento-06-11` foi juntado à `main`, e o site no ar tem todas as melhorias.
 
@@ -25,8 +25,8 @@ Depois, rode os três testes (comandos no `CLAUDE.md`) antes de mexer em qualque
 | Teste | Comando | Resultado |
 |---|---|---|
 | Validador do JSON | `python ferramentas/validar_json.py` | **0 problemas**. 1 aviso de propósito: a sessão s40 do caso c03 está sem evolução, para mostrar o alerta de 48 h |
-| Site | `python testes/testar_site.py` | **326 de 326** (65 telas conferidas com axe-core, WCAG 2.2 AA) |
-| Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **168 de 168** |
+| Site | `python testes/testar_site.py` | **340 de 340** (68 telas conferidas com axe-core, WCAG 2.2 AA) |
+| Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **174 de 174** |
 
 Antes deste trabalho eram 154 verificações no site e 56 no banco.
 
@@ -71,7 +71,8 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
-- Falta: bloco 3 (sala na agenda e gráfico no painel) e bloco 4 (revisão de design, nome Vinculum, mais dados de exemplo).
+- Bloco 3 (branch `melhorias-bloco-3`): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
+- Falta: bloco 4 (revisão de design, nome Vinculum, mais dados de exemplo), que o grupo vai revisar antes.
 
 Ficou **de fora, por decisão do grupo**:
 

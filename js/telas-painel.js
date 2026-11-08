@@ -28,7 +28,7 @@ PEP.telas = PEP.telas || {};
     if (!sessoes.length) return '<p class="vazio">Nenhuma sessão agendada.</p>';
     return '<ul>' + sessoes.slice(0, 6).map(function (s) {
       var caso = PEP.util.porId(PEP.db.casos, s.casoId);
-      return '<li>' + data(s.data) + ' às ' + esc(s.hora) +
+      return '<li>' + data(s.data) + ' às ' + esc(s.hora) + (s.sala ? ' · ' + esc(s.sala) : '') +
         (mostrarPaciente ? ' — <a href="#/caso/' + caso.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</a>' : '') +
         (s.confirmada ? ' <span class="etiqueta validada">confirmada</span>' : ' <span class="etiqueta rascunho">a confirmar</span>') + '</li>';
     }).join('') + '</ul><a class="pequeno" href="#/agenda">Ver agenda completa</a>';
@@ -145,6 +145,7 @@ PEP.telas = PEP.telas || {};
       (cheios.length ? '<div class="aviso alerta pequeno">Grupo com mais de ' + max + ' estagiários: ' + cheios.map(function (g) { return esc(g.nome); }).join(', ') + '. Referência da Res. CFP 05/2025, art. 5º (hoje suspenso por liminar do STF).</div>' : '') +
       '<div class="grade">' + PEP.ui.numero(fila.length, 'evoluções para validar') +
       PEP.ui.numero(ativos.length, 'casos ativos nos meus grupos') + PEP.ui.numero(nEst, 'estagiários supervisionados') + '</div>' +
+      '<div class="cartao">' + PEP.grafico.atendimentosPorMes(PEP.regras.indicadores(u).porMes, 'Atendimentos por mês nos meus grupos') + '</div>' +
       '<div class="cartao"><div class="linha entre"><h2>Fila de validação</h2><a class="botao pequeno" href="#/supervisao">Abrir validação</a></div>';
     if (!fila.length) html += '<p class="vazio">Nenhuma evolução aguardando.</p>';
     fila.forEach(function (e) {
@@ -180,6 +181,7 @@ PEP.telas = PEP.telas || {};
       PEP.ui.numero(semGrupo.length, 'casos aguardando alocação') +
       PEP.ui.numero(pedidos.length, 'pedidos de acesso ao prontuário') +
       PEP.ui.numero(lgpd.length, 'pedidos LGPD em aberto') + '</div>' +
+      '<div class="cartao">' + PEP.grafico.atendimentosPorMes(PEP.regras.indicadores(u).porMes, 'Atendimentos por mês no Serviço-Escola') + '</div>' +
       '<div class="grade-2">' +
       '<div class="cartao"><h2>Fila de espera</h2>' + (fila.length ? '<ul>' + fila.slice(0, 5).map(function (i) {
         return '<li>' + esc(PEP.ui.nomeInscricao(i)) + ' · desde ' + data(i.data) + (i.duplicidade ? ' <span class="etiqueta alerta">CPF já cadastrado</span>' : '') + '</li>';
@@ -208,7 +210,7 @@ PEP.telas = PEP.telas || {};
       '<div class="cartao"><h2>Próximas sessões</h2>';
     if (!sessoes.length) html += '<p class="vazio">Nenhuma sessão agendada.</p>';
     sessoes.forEach(function (s) {
-      html += '<div class="sessao-paciente"><div class="linha entre"><span>' + data(s.data) + ' às ' + esc(s.hora) + '</span>' +
+      html += '<div class="sessao-paciente"><div class="linha entre"><span>' + data(s.data) + ' às ' + esc(s.hora) + (s.sala ? ' · ' + esc(s.sala) : '') + '</span>' +
         (s.confirmada ? '<span class="etiqueta validada">Presença confirmada</span>' :
           '<button class="botao pequeno" data-acao="confirmar-sessao" data-id="' + s.id + '">Confirmar presença</button>') + '</div>' +
         PEP.telas.avisoFaltaPaciente(s) + '</div>';
@@ -239,6 +241,7 @@ PEP.telas = PEP.telas || {};
       '<div class="aviso info">Seu perfil vê só <strong>dados agregados</strong>. Prontuários e nomes de pacientes ficam restritos à equipe de cada caso, por sigilo.</div>' +
       '<div class="grade">' + PEP.ui.numero(ativos, 'casos ativos') + PEP.ui.numero(fila, 'pessoas na fila') +
       PEP.ui.numero(alocados, 'estagiários alocados') + PEP.ui.numero(semGrupo, 'estudantes sem grupo') + '</div>' +
+      (ind.porMes ? '<div class="cartao">' + PEP.grafico.atendimentosPorMes(ind.porMes, 'Atendimentos por mês no Serviço-Escola') + '</div>' : '') +
       '<div class="linha"><a class="botao" href="#/indicadores">Ver indicadores</a><a class="botao secundario" href="#/alocacao">Grupos de estágio</a>' +
       '<a class="botao secundario" href="#/estudantes">Importar estudantes</a></div>';
   }

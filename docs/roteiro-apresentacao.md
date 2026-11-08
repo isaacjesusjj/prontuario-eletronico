@@ -85,6 +85,7 @@ Escolha dois ou três, conforme o tempo.
 - **Documentos psicológicos:** `bia.estagiaria` → **Paciente Exemplo 01** → **Documentos e anexos** → **Emitir documento psicológico** → **Declaração** → escreva "crise de ansiedade" no texto: o sistema recusa (declaração não leva situação clínica). Depois, **Relatório psicológico**: as seções da Res. CFP 06/2019 aparecem sozinhas. `helena.supervisora` → **Abrir** → **Assinar como supervisor** → **Imprimir**: páginas numeradas e protocolo de entrega.
 - **Comunicações:** na mesma aba, **Registrar comunicação** (encaminhamento, requisição, quebra de sigilo). `paciente01` → **Meus dados** → "Com quem seus dados foram compartilhados".
 - **Busca e contato de emergência:** campo **Buscar paciente** no menu (procura só nos casos da pessoa). No cadastro, o contato de emergência aparece na aba Risco e segurança.
+- **Gráfico e salas:** no painel de `helena.supervisora`, o gráfico de atendimentos por mês: passe o mouse ou use Tab numa coluna; "Ver os números" abre a tabela. Em **Sessões e faltas**, agende escolhendo a sala: a sala ocupada é recusada. Em **Agenda**, o filtro **Sala** mostra a ocupação.
 - **Contas:** `marta.direcao` → **Estudantes e contas** → **Gerar senha provisória** (aparece uma vez; no banco fica só o hash).
 - **Verificação em duas etapas:** **Minha conta** → **Ativar a verificação em duas etapas** → a chave para o aplicativo autenticador. Se alguém do grupo tiver o app no celular, mostre ao vivo: depois de **Sair**, a senha certa não basta. Ao terminar, use **"Restaurar dados de demonstração"**.
 
@@ -102,7 +103,7 @@ Escolha dois ou três, conforme o tempo.
 - **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
 - **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
 - **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
-- **Como provam que funciona?** 326 verificações automáticas no site (65 telas conferidas no teste de acessibilidade), 168 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
+- **Como provam que funciona?** 340 verificações automáticas no site (68 telas conferidas no teste de acessibilidade), 174 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
 - **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS e triggers): a estagiária só recebe as linhas dos casos dela e não consegue, por exemplo, gravar uma evolução já "validada".
 - **E se roubarem a senha?** Com a verificação em duas etapas, a senha sozinha não abre nada, nem no banco. Em produção, ela é obrigatória para a equipe.
 - **E se o paciente estiver em risco?** O risco é registrado no caso, a supervisão precisa dar ciência, a notificação obrigatória tem órgão e prazo à vista e o plano de segurança fica com o paciente. O sistema não é canal de crise: mostra CVV 188 e SAMU 192.

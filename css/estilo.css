@@ -27,6 +27,10 @@
   --lilas-200: #ddd1ee;
   --lilas-100: #f1ecf8;
   --dourado: #b08d4a;     /* detalhe de brasão */
+  /* Gráfico (presença, falta justificada, falta sem justificativa): conferidas para daltonismo e contraste */
+  --grafico-1: #7652b0;
+  --grafico-2: #b07a14;
+  --grafico-3: #00839c;
   --dourado-claro: #e8d9b5;
   --fundo: #faf8f5;       /* papel */
   --superficie: #ffffff;
@@ -431,6 +435,38 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .previa-paciente .cartao { margin: 0; box-shadow: none; }
 .previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
 
+/* ---------- Gráfico de colunas empilhadas (js/grafico.js) ---------- */
+.grafico { position: relative; margin: 0; }
+.grafico figcaption { margin-bottom: .4rem; }
+.grafico-legenda { list-style: none; padding: 0; margin: 0 0 .9rem; display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .85rem; color: var(--texto-suave); }
+.grafico-legenda li { display: flex; align-items: center; gap: .35rem; }
+.chave { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; }
+.s1 { background: var(--grafico-1); }
+.s2 { background: var(--grafico-2); }
+.s3 { background: var(--grafico-3); }
+.grafico-area { display: grid; grid-template-columns: auto 1fr; gap: .5rem; margin-top: 1.2rem; }
+.grafico-eixo { display: flex; flex-direction: column; justify-content: space-between; height: 160px; font-size: .75rem; color: var(--texto-suave); text-align: right; font-variant-numeric: tabular-nums; }
+.grafico-eixo span { height: 0; display: flex; align-items: center; justify-content: flex-end; }
+.grafico-plot { position: relative; height: 160px; border-bottom: 1px solid var(--borda-forte); margin-bottom: 1.7rem; }
+.grafico-grade { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.grafico-grade span { height: 0; border-top: 1px solid var(--borda); }
+.grafico-grade span:last-child { border-top: 0; }
+.grafico-colunas { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; display: flex; }
+.grafico-coluna { position: relative; flex: 1 1 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-radius: 4px; }
+.grafico-coluna:focus-visible { outline: 2px solid var(--lilas-700); outline-offset: 2px; }
+.grafico-pilha { position: relative; width: 22px; display: flex; flex-direction: column-reverse; gap: 2px; }
+.grafico-pilha .seg { min-height: 3px; }
+.grafico-pilha .seg:last-child { border-radius: 4px 4px 0 0; }
+.grafico-coluna:hover .grafico-pilha, .grafico-coluna:focus-visible .grafico-pilha { filter: brightness(1.12); }
+.grafico-total { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: .15rem; font-size: .8rem; font-weight: 600; color: var(--texto); font-variant-numeric: tabular-nums; }
+.grafico-mes { position: absolute; top: 100%; padding-top: .3rem; font-size: .78rem; color: var(--texto-suave); }
+.grafico-dica { position: absolute; z-index: 5; min-width: 11.5rem; padding: .45rem .65rem; background: var(--superficie); color: var(--texto); border: 1px solid var(--borda-forte); border-radius: var(--raio); box-shadow: var(--sombra); font-size: .82rem; pointer-events: none; }
+.grafico-dica .dica-titulo { color: var(--texto-suave); margin-bottom: .2rem; }
+.grafico-dica .dica-linha { display: flex; align-items: center; gap: .45rem; }
+.grafico-dica .traco { display: inline-block; width: .9rem; height: 2px; }
+.grafico-dica strong { min-width: 1.4rem; text-align: right; font-variant-numeric: tabular-nums; }
+.grafico-tabela table td, .grafico-tabela table th[scope="row"] { font-variant-numeric: tabular-nums; }
+
 /* ---------- Documento psicológico (tela e impressão) ---------- */
 .documento-psicologico { background: var(--superficie); border: 1px solid var(--borda); padding: 2rem 2.2rem; margin: 0 0 1.2rem; max-width: 46rem; font-family: var(--serifa); }
 .doc-cabecalho { text-align: center; font-family: var(--fonte); font-size: .9rem; border-bottom: 1px solid var(--borda-forte); padding-bottom: .6rem; margin-bottom: 1rem; }
@@ -479,8 +515,11 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .cortina strong { font-family: var(--serifa); font-size: 1.6rem; }
 .cortina span#cortina-texto { color: #ddd1ee; max-width: 32rem; }
 html.contraste .cortina { background: #000; }
+/* Aviso flutuante no alto contraste: antes ficava branco no branco (texto invisível) */
+html.contraste .toast { background: #000; color: #fff; border: 2px solid #ffeb3b; }
 
 /* ---------- Alto contraste ---------- */
+html.contraste { --grafico-1: #8f70cf; --grafico-2: #be8618; --grafico-3: #0a9ab3; }
 html.contraste { --fundo: #000; --superficie: #000; --texto: #fff; --texto-suave: #f0f0f0; --borda: #fff; --borda-forte: #fff;
   --lilas-950: #fff; --lilas-900: #fff; --lilas-800: #ffeb3b; --lilas-700: #ffeb3b; --lilas-500: #ffeb3b; --lilas-300: #fff; --lilas-200: #fff; --lilas-100: #1a1a1a;
   --info: #9fd4ff; --info-fundo: #000; --alerta: #ffd54f; --alerta-fundo: #000; --perigo: #ff8a80; --perigo-fundo: #000; --sucesso: #b9f6ca; --sucesso-fundo: #000; --sombra: none; }
