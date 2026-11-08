@@ -28,9 +28,14 @@ O Vínculo acompanha o paciente da fila de espera até o encerramento, com a sup
 - **Agenda em calendário** (dia, semana, mês e lista) e **lembretes** por WhatsApp ou e-mail, sem conteúdo clínico e só com autorização.
 - **Acesso do paciente:** pedido de cópia, conferência de identidade e **link de leitura temporário** (72 h, confirma a data de nascimento, o sistema guarda só o hash).
 - **LGPD:** aviso de privacidade, termos de uso, termo de sigilo no primeiro acesso, "Meus dados" do paciente (direitos do art. 18) e fila de pedidos com prazo.
-- **Segurança:** senhas só como hash (PBKDF2, 600 mil iterações), política de senha do NIST (15 caracteres, sem regra de símbolo), senha provisória com troca obrigatória, bloqueio por tentativas, sessão que encerra por inatividade com aviso, auditoria com cadeia de hash verificável.
-- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras, erros ligados aos campos, títulos por tela. 45 telas conferidas com axe-core, sem violações.
-- **Indicadores agregados:** pacientes atendidos, taxa de retorno, média de sessões, motivos de abandono e espera na fila.
+- **Risco e segurança:** avaliação de risco no caso (tipo, nível e condutas), com ciência da supervisão; notificação compulsória registrada pelo supervisor, com órgão, lei e prazo à vista; plano de segurança feito com o paciente, que ele lê no portal. Na cópia ao responsável de criança ou adolescente, o relato de violência fica de fora.
+- **Revisor de escrita clínica** (sem inteligência artificial; o texto não sai do navegador): aponta juízo de valor, linguagem estigmatizante, dado que identifica alguém e falta de plano. "Ver como o paciente lê" mostra o registro como sai na cópia.
+- **Privacidade:** a técnica registra o motivo antes de abrir o conteúdo clínico de caso que não é da equipe dela; o paciente vê "quem acessou o seu prontuário"; modo discreto (iniciais no lugar de nomes) e "Cobrir tela".
+- **Faltas avisadas pelo paciente** pelo portal, com motivo de lista fechada, que viram indicador. Relato urgente no formulário público mostra os contatos de crise e sobe na fila. Evolução atrasada (mais de 48 h) aparece no painel.
+- **Contas:** a direção gera senha provisória e desativa ou reativa contas da equipe; a técnica cria e cuida do acesso do paciente ao portal.
+- **Segurança:** senhas só como hash (PBKDF2, 600 mil iterações), política de senha do NIST (15 caracteres, sem regra de símbolo), senha provisória com troca obrigatória, bloqueio progressivo por tentativas (30 s até 15 min), **verificação em duas etapas** (código do aplicativo autenticador e códigos de recuperação), sessão que encerra por inatividade com aviso (o texto em edição vira rascunho), auditoria com cadeia de hash verificável. No banco, as mesmas regras valem para quem chamar a API direto.
+- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras, erros ligados aos campos, títulos por tela. 57 telas conferidas com axe-core, sem violações.
+- **Indicadores agregados:** pacientes atendidos, taxa de retorno, média de sessões, motivos de abandono e de falta avisada, casos ativos e espera na fila.
 
 As regras e as normas de onde elas vêm estão no próprio site, em **Regras e leis** (`#/regras`).
 
@@ -47,7 +52,7 @@ Senha de todas: **`demonstracao2026`** (no JSON só existe o hash). Na tela de l
 | Perfil | Quem | Usuário | O que mostrar |
 |---|---|---|---|
 | Estagiário(a) | Bia · Duda · Enzo | `bia.estagiaria` · `duda.estagiaria` · `enzo.estagiario` | Bia ainda não aceitou o termo de sigilo: mostra o primeiro acesso |
-| Supervisor(a) | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; orientações fora do prontuário |
+| Supervisor(a) | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; orientações fora do prontuário; risco e notificação (casos c03 e c04) |
 | Psicólogo(a) técnico(a) | Ana Lúcia | `ana.tecnica` | Fila (inscrição i05 com CPF já cadastrado), triagem, acesso do paciente, pedidos LGPD, auditoria |
 | Paciente | Paciente Exemplo 01 | `paciente01` | Confirma sessão, pede cópia, "Meus dados" |
 | Direção do curso | Marta | `marta.direcao` | Indicadores, grupos, importar estudantes, encerrar vínculo |
@@ -69,13 +74,15 @@ js/config-banco.js          ÚNICO lugar para trocar o JSON pelo banco
 js/repositorio.js           camada de dados: toda gravação passa por aqui
 js/adaptador-supabase.js    adaptador do PostgreSQL/Supabase (desligado até a migração)
 js/dados.js                 lê o JSON, configuração e datas relativas
-js/seguranca.js             SHA-256, hash de senha (PBKDF2), política de senha, tokens
-js/estado.js                sessão, login, bloqueio e auditoria encadeada
+js/seguranca.js             SHA-256, hash de senha (PBKDF2), política de senha, tokens, código da verificação em duas etapas
+js/estado.js                sessão, login (com duas etapas), bloqueio progressivo e auditoria encadeada
 js/validadores.js           CPF, telefone, e-mail, datas, arquivos, máscaras e erros acessíveis
 js/arquivos.js              upload real (IndexedDB hoje; Supabase Storage com o banco)
 js/permissoes.js            regras de acesso e de negócio (iguais às políticas RLS do banco)
 js/ui.js, acessibilidade.js topo, menu, rodapé, A−/A+, contraste, VLibras
-js/telas-*.js               telas (entrada, painéis, prontuário, gestão, agenda, conta, LGPD)
+js/privacidade.js           modo discreto e "Cobrir tela"
+js/revisor.js               revisor de escrita clínica (regras em _config.revisorEscrita)
+js/telas-*.js               telas (entrada, painéis, prontuário, risco e segurança, gestão, agenda, conta, LGPD)
 js/acoes.js                 o que cada botão e formulário faz
 js/inicio.js                rotas (#/rota), primeiro acesso, inatividade e inicialização
 banco/                      schema PostgreSQL, migração JSON → banco, testes e projeção
@@ -94,8 +101,8 @@ PostgreSQL no Supabase (região São Paulo). Projeção: ~84 MB por ano no cená
 
 | O quê | Como rodar | Resultado |
 |---|---|---|
-| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 154 de 154 |
-| Banco: schema, migração, imutabilidade, RLS por perfil, auditoria | `cd banco && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 56 de 56 |
+| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 270 de 270 |
+| Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 133 de 133 |
 | JSON antes de migrar | `python ferramentas/validar_json.py` | 0 problemas |
 
 Preparação: `pip install playwright`, `cd testes && npm install` e `cd banco && npm install`.
@@ -121,6 +128,21 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 
 **Sugestão para validar com o cliente:** perda de vaga também com 3 faltas intercaladas sem justificativa (regra comum em clínicas-escola).
 
+## Registro de correções do protótipo (novembro de 2026)
+
+Falhas encontradas na revisão do protótipo e corrigidas. Os commits do branch `andamento-06-11` detalham cada uma.
+
+| O que estava | O que ficou | Por quê |
+|---|---|---|
+| Pela API, sem passar pelas telas, dava para mudar o próprio perfil para técnico, gravar evolução já "validada", pedir a cópia de outro paciente e retroagir datas | O banco recusa: triggers com as regras de transição, só a coluna `senha_provisoria` muda na própria conta, hora carimbada pelo servidor, hash da assinatura conferido | A regra precisa valer no banco, não só na tela (o site pode ser contornado) |
+| Encerramento manual deixava encerrar por abandono sem a tentativa de contato | Abandono só pelo fluxo de faltas; encaminhamento exige o serviço de destino; evolução pendente impede encerrar | O motivo do abandono é o dado que o cliente mais quer |
+| Conflito de agenda só com a mesma hora exata | Conflito pela duração da sessão (50 min) | Duas sessões às 14h e 14h30 se sobrepunham |
+| Bloqueio de login sempre de 30 s | Bloqueio progressivo (30 s, 60 s, 2 min... até 15 min) | Dificulta adivinhar senha sem atrapalhar quem só errou uma vez |
+| Adaptador do Supabase com 8 falhas que só apareceriam com o banco ligado (inclusão sempre falhava, hora sem fuso, token sem renovação, erro com dados no console...) | Corrigido e testado contra um servidor simulado | O banco precisa funcionar na primeira vez que for ligado |
+| Risco identificado na triagem virava só um texto na auditoria | Avaliação de risco no caso, com ciência da supervisão, notificação e plano de segurança | Ninguém era avisado nem acompanhava o risco |
+| A tela de login prometia senha provisória, mas não havia como gerar | Direção e técnica geram senha provisória e cuidam das contas | Promessa da tela sem função por trás |
+| Técnica abria qualquer prontuário sem registro do porquê | Motivo registrado antes de abrir o conteúdo clínico de caso que não é dela | Princípio da necessidade (LGPD, art. 6º, III) e prestação de contas ao paciente |
+
 ## Registro de decisões
 
 | Decisão | Escolha | Motivo |
@@ -135,6 +157,12 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 | Datas da demonstração | Relativas a `_meta.dataBase` | A demonstração não "envelhece" até o dia da apresentação |
 | Fontes | Servidas pelo próprio site | Nenhum dado de navegação vai para terceiros |
 | Exclusões | Nada é apagado; correção por adendo, revogação por novo registro, sessão cancelada | Imutabilidade do prontuário e trilha completa |
+| Notificação compulsória | Só o supervisor registra; o sistema sugere o órgão, a lei e o prazo, e a supervisão decide | Res. CFP 05/2025, art. 7º, III: a responsabilidade técnica é do supervisor |
+| Plano de segurança | Modelo de Stanley e Brown, em versões, feito com o paciente e assinado pela supervisão | Intervenção breve com evidência; o paciente precisa ter o plano à mão |
+| Revisor de escrita | Regras transparentes em `_config.revisorEscrita`, sem IA; só aponta, não corrige nem bloqueia | O texto clínico não sai do navegador e a supervisão ajusta as regras |
+| "Quem acessou" para o paciente | Categorias ("Abriu o prontuário"), não o texto interno da auditoria; para menor de idade, sem o motivo | LGPD, arts. 9º e 18; o portal pode estar com o responsável (Código de Ética, art. 13) |
+| Aviso de falta pelo paciente | Lista fechada de motivos, sem texto livre | O sistema não é canal de crise; o aviso lembra CVV 188 e SAMU 192 |
+| Verificação em duas etapas | Código do aplicativo autenticador (TOTP) e códigos de recuperação; obrigatória para a equipe só em produção; paciente não é obrigado | Senha vazada sozinha não abre o prontuário; o portal do paciente precisa ser simples |
 
 ## ODS (Agenda 2030 da ONU)
 
@@ -152,7 +180,8 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 2. Etapa 2: baixa fidelidade ([`docs/baixa-fidelidade/`](docs/baixa-fidelidade/)), diagrama de navegação e DER ([`docs/diagramas.md`](docs/diagramas.md)).
 3. Etapa 3: protótipo de alta fidelidade no Figma (feito pelo grupo, a partir das telas do site).
 4. Ligar o banco: seguir [`banco/README.md`](banco/README.md).
-5. Produção: MFA, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Function para o link do paciente, backup no plano Pro.
+5. Transição de semestre (resumo de transferência do caso e realocação) — em andamento; ver [`docs/progresso.md`](docs/progresso.md).
+6. Produção: MFA obrigatório para a equipe, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Functions (link do paciente, convite por e-mail, desligar o MFA de quem perdeu o celular), backup no plano Pro.
 
 ## Referências
 
@@ -164,4 +193,6 @@ Mudanças feitas pelo grupo ao validar os requisitos da Etapa 1. **Devem ser con
 - Lei nº 13.787/2018 (guarda de prontuário em meio digital); Lei nº 14.063/2020 (assinaturas eletrônicas)
 - Marco Civil da Internet — Lei nº 12.965/2014, art. 15
 - Lei Brasileira de Inclusão — Lei nº 13.146/2015, art. 63; ABNT NBR 17225:2025 (WCAG 2.2)
-- NIST SP 800-63B-4 (2025); OWASP Password Storage Cheat Sheet
+- NIST SP 800-63B-4 (2025); OWASP Password Storage Cheat Sheet; RFC 6238 (código de uso único por tempo, TOTP)
+- Notificação compulsória: ECA (Lei nº 8.069/1990), arts. 13 e 245; Lei nº 13.819/2019, art. 6º; Lei nº 10.778/2003 (redação da Lei nº 13.931/2019); Estatuto da Pessoa Idosa (Lei nº 10.741/2003), art. 19; Lei Brasileira de Inclusão, art. 26; Portaria GM/MS nº 1.271/2014
+- Plano de segurança: Stanley, B. e Brown, G. K. (2012). Safety Planning Intervention. *Cognitive and Behavioral Practice*, 19(2), 256–264

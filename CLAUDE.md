@@ -16,15 +16,15 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 154 de 154.
-  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 56 de 56.
+  - `python testes/testar_site.py` → hoje 270 de 270 (57 telas no axe-core).
+  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 133 de 133.
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
 
 ## Arquitetura em poucas linhas
 
 - HTML, CSS e JavaScript puros, sem framework nem build. Scripts clássicos (sem `type="module"`), carregados em ordem no `index.html`, todos pendurados no objeto global `PEP`.
 - `js/inicio.js` inicializa: lê o JSON (`js/dados.js`), desloca as datas para que `_meta.dataBase` vire o dia de hoje, carrega a cópia de trabalho (`js/estado.js`) e desenha a tela pela rota `#/rota/...`.
-- Cada tela (`js/telas-*.js`) é uma função que devolve o HTML montado a partir dos dados. Botões têm `data-acao` e formulários têm `data-form`. O `js/acoes.js` trata todos por delegação: confere a permissão, grava pelo repositório, registra a auditoria e redesenha.
+- Cada tela (`js/telas-*.js`) é uma função que devolve o HTML montado a partir dos dados. Risco e segurança ficam em `js/telas-risco.js`; o revisor de escrita em `js/revisor.js` (regras em `_config.revisorEscrita`); o modo discreto em `js/privacidade.js`. Botões têm `data-acao` e formulários têm `data-form`. O `js/acoes.js` trata todos por delegação: confere a permissão, grava pelo repositório, registra a auditoria e redesenha.
 - Toda gravação passa por `js/repositorio.js`. O adaptador é escolhido em `js/config-banco.js`: `'local'` hoje (JSON + cópia no navegador) e `'supabase'` quando o banco for ligado.
 - `js/permissoes.js` espelha as políticas RLS de `banco/schema.sql`. Mudou um, mude o outro e rode os dois testes.
 - Texto digitado por usuário sempre passa por `PEP.util.esc()` antes de entrar no HTML.
@@ -48,7 +48,11 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Ficam fora do prontuário e da cópia do paciente: as orientações de supervisão e o material de avaliação psicológica.
 - Abandono: `faltasSeguidasLimite` faltas seguidas sem justificativa abrem o fluxo de contato. A vaga só é liberada com tentativa de contato registrada, e o motivo alimenta os indicadores.
 - Presença e falta só a partir do dia da sessão (a falta justificada pode vir antes). Agendamento só de hoje em diante.
-- Login: mensagem de erro genérica, bloqueio após `tentativasLogin` erros e auditoria das tentativas sem a senha. A sessão encerra por inatividade.
+- Login: mensagem de erro genérica, bloqueio progressivo após `tentativasLogin` erros (até `bloqueioLoginMaximoSegundos`) e auditoria das tentativas sem a senha. A sessão encerra por inatividade e o texto em edição vira rascunho antes.
+- Verificação em duas etapas (TOTP): o mesmo código não vale duas vezes; códigos de recuperação de uso único, guardados só como hash. No banco, `app.mfa_ok()` dentro de `app.usuario_atual()`: quem ligou o MFA e entrou só com a senha (aal1) não vê nada. `regras.mfaObrigatoria` fica `false` no protótipo e `true` em produção (junto com `app.mfa_obrigatoria()`).
+- Risco: registrado no caso, não muda depois; a supervisão dá ciência; a notificação compulsória só o supervisor registra. Na cópia ao responsável de criança ou adolescente, relato de violência e notificação ficam de fora.
+- Técnica fora da equipe do caso registra o motivo antes de abrir o conteúdo clínico (vale `justificativaValidadeHoras`). O paciente vê "quem acessou" por categoria; para menor de idade, sem o motivo.
+- O paciente só avisa falta de sessão futura, com motivo de lista fechada (sem texto livre: o sistema não é canal de crise).
 - Lembretes nunca têm conteúdo clínico. Não existe chat entre paciente e equipe.
 - Base normativa: Res. CFP 05/2025 e 01/2009, Código de Ética Profissional do Psicólogo e LGPD. Os artigos estão na skill do projeto e na tela "Regras e leis" do site (`#/regras`).
 
@@ -63,9 +67,12 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 
 ## Pendências
 
+- O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. O trabalho em curso fica no branch `andamento-06-11`.
 - Validar com o cliente: perda de vaga também com 3 faltas intercaladas (`regras.faltasIntercaladasSugestao`), as mudanças nos requisitos da Etapa 1 (tabela no README) e "800 usuários simultâneos" × "800 estudantes".
 - Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`.
-- Produção: MFA, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Function para o link do paciente e backup.
+- Fazer: transição de semestre (resumo de transferência, checklist, casos sem dupla ativa, realocação). Opcional: escalas PHQ-9 e GAD-7 só com escores.
+- Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita.
+- Produção: ligar o MFA obrigatório para a equipe, login institucional, assinatura avançada (gov.br) para documentos enviados a terceiros, Edge Functions (link do paciente, convite por e-mail, desligar o MFA de quem perdeu o celular) e backup.
 
 ## Skill do projeto
 

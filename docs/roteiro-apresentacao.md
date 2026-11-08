@@ -30,7 +30,7 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 
 ## 2. Login e primeiro acesso — Isaac (1,5 min)
 
-- `bia.estagiaria` com senha errada → mensagem genérica. "Com 5 erros, bloqueia por 30 segundos, e a senha digitada nunca é gravada."
+- `bia.estagiaria` com senha errada → mensagem genérica. "Com 5 erros, bloqueia por 30 segundos; se continuar errando, 60 s, 2 min... até 15 min. A senha digitada nunca é gravada."
 - Login certo → **Termo de responsabilidade e sigilo** antes de tudo (Res. CFP 05/2025, art. 10, III). Sem aceitar, não navega.
 - "A senha não fica no JSON: só o hash, com 600 mil iterações."
 
@@ -72,6 +72,18 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 - Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade** (A−/A+, contraste, Libras).
 - Passe para os slides: "Agora, por que isso é viável."
 
+## 9. Diferenciais — se sobrar tempo, ou para as perguntas (3 min)
+
+Escolha dois ou três, conforme o tempo.
+
+- **Risco e segurança:** `helena.supervisora` → **Paciente Exemplo 03** → **Risco e segurança**: avaliação com nível e condutas, ciência da supervisão e **plano de segurança** em versões (o paciente lê no portal). Depois, `rafael.supervisor` → **Paciente Exemplo 04** (adolescente): **notificação ao Conselho Tutelar**, com a lei e o prazo à vista. Frase: "Só o supervisor registra a notificação; o sistema sugere, a supervisão decide. E o relato de violência não vai na cópia entregue ao responsável."
+- **Revisor de escrita:** `bia.estagiaria` → **Paciente Exemplo 01** → **Evoluções** → **Nova evolução** → digite "Paciente alega que a mãe é manipuladora": o revisor aponta "alega" e "manipuladora", sem corrigir nem bloquear. Botão **Ver como o paciente lê**. Frase: "Não usa inteligência artificial: o texto não sai do navegador e as regras são da supervisão."
+- **Privacidade:** `ana.tecnica` → abra **Paciente Exemplo 01**: antes do conteúdo clínico, ela registra o **motivo do acesso**. Depois, `paciente01` → **Meus dados** → **Quem acessou o seu prontuário**. No topo, **Discreto** (iniciais no lugar de nomes) e **Cobrir tela**.
+- **Falta avisada:** `paciente01` → próxima sessão → **Não vou poder ir** → motivo da lista. "A falta avisada não conta como abandono, e o motivo vira indicador."
+- **Urgência na fila:** **Entrar na fila de espera** → em "Em poucas palavras, o que te traz aqui?", escreva "Não aguento mais, preciso de ajuda" (um dos sinais de urgência): os contatos de crise aparecem na hora, e a inscrição sobe para o topo da fila da técnica.
+- **Contas:** `marta.direcao` → **Estudantes e contas** → **Gerar senha provisória** (aparece uma vez; no banco fica só o hash).
+- **Verificação em duas etapas:** **Minha conta** → **Ativar a verificação em duas etapas** → a chave para o aplicativo autenticador. Se alguém do grupo tiver o app no celular, mostre ao vivo: depois de **Sair**, a senha certa não basta. Ao terminar, use **"Restaurar dados de demonstração"**.
+
 ## Provas ao vivo (F12)
 
 - **Network:** recarregue e mostre `dados-iniciais.json` (200) e que **nenhum** arquivo vem de outro site.
@@ -86,8 +98,12 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 - **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
 - **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
 - **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
-- **Como provam que funciona?** 154 verificações automáticas no site, 56 no banco (PostgreSQL de verdade) e o validador do JSON.
-- **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS): a estagiária só recebe as linhas dos casos dela.
+- **Como provam que funciona?** 270 verificações automáticas no site (57 telas conferidas no teste de acessibilidade), 133 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
+- **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS e triggers): a estagiária só recebe as linhas dos casos dela e não consegue, por exemplo, gravar uma evolução já "validada".
+- **E se roubarem a senha?** Com a verificação em duas etapas, a senha sozinha não abre nada, nem no banco. Em produção, ela é obrigatória para a equipe.
+- **E se o paciente estiver em risco?** O risco é registrado no caso, a supervisão precisa dar ciência, a notificação obrigatória tem órgão e prazo à vista e o plano de segurança fica com o paciente. O sistema não é canal de crise: mostra CVV 188 e SAMU 192.
+- **A técnica vê tudo?** Vê a parte operacional de todos os casos; o conteúdo clínico de um caso que não é da equipe dela só com o motivo registrado, e o paciente vê quem acessou.
+- **Usa inteligência artificial?** Não. O revisor de escrita segue regras transparentes que a supervisão ajusta; nenhum texto clínico sai do sistema.
 - **Por que a senha não exige símbolo?** O NIST proibiu regras de composição em 2025: elas levam a senhas previsíveis. Vale o comprimento (15 caracteres) e a lista de senhas comuns.
 - **Os dados são reais?** Não. Tudo é fictício; CPFs gerados por algoritmo.
 - **Por que a direção não vê o prontuário?** Sigilo: a função dela é acadêmica; indicadores bastam.

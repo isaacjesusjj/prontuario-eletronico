@@ -38,6 +38,12 @@ erDiagram
     SOLICITACOES ||--o{ LINKS_ACESSO : "link temporário"
     USUARIOS ||--o{ ACEITES : "aceita termos"
     USUARIOS ||--o{ AUDITORIA : "ações"
+    CASOS ||--o{ RISCOS : "avaliação de risco"
+    RISCOS ||--o{ NOTIFICACOES : "notificação compulsória"
+    CASOS ||--o{ PLANOS_SEGURANCA : "versões"
+    PLANOS_SEGURANCA ||--o{ ASSINATURAS : "assinado"
+    USUARIOS ||--o{ ACESSOS_JUSTIFICADOS : "registra o motivo"
+    CASOS ||--o{ ACESSOS_JUSTIFICADOS : "acessado com motivo"
 
     PACIENTES {
         text id PK
@@ -92,6 +98,9 @@ erDiagram
         text resumo
         text status
         jsonb duplicidade
+        bool sinal_urgencia
+        text risco_triagem
+        text encaminhado_para
         text caso_id FK
     }
     CASOS {
@@ -126,6 +135,7 @@ erDiagram
         date data
         text tipo
         text motivo
+        text destino
     }
     SESSOES {
         text id PK
@@ -134,6 +144,8 @@ erDiagram
         time hora
         text presenca
         bool confirmada
+        bool aviso_paciente
+        text motivo_falta
     }
     EVOLUCOES {
         text id PK
@@ -223,6 +235,43 @@ erDiagram
         text termo
         text versao
     }
+    RISCOS {
+        text id PK
+        text caso_id FK
+        text registrado_por FK
+        text tipo
+        text nivel
+        text descricao
+        jsonb condutas
+        text ciencia_por FK
+        timestamptz encerrado_em
+    }
+    NOTIFICACOES {
+        text id PK
+        text risco_id FK
+        text caso_id FK
+        text orgao
+        text registrado_por FK
+        text protocolo
+    }
+    PLANOS_SEGURANCA {
+        text id PK
+        text caso_id FK
+        int versao
+        text autor_id FK
+        text sinais_alerta
+        text pessoas_ajuda
+        text servicos
+        bool revisado_com_paciente
+    }
+    ACESSOS_JUSTIFICADOS {
+        text id PK
+        text usuario_id FK
+        text caso_id FK
+        text motivo
+        text detalhe
+        timestamptz em
+    }
     AUDITORIA {
         bigint seq
         text id PK
@@ -239,7 +288,9 @@ erDiagram
 
 ```mermaid
 flowchart LR
-    E[Entrar] -->|senha provisória| TS[Criar senha] --> TM
+    E[Entrar] -->|duas etapas ligada| CD[Código do aplicativo] --> P
+    E -->|duas etapas obrigatória e não configurada| CM[Configurar duas etapas] --> TS
+    E -->|senha provisória| TS[Criar senha] --> TM
     E -->|1º acesso| TM[Termo de sigilo / Termos de uso] --> P
     E --> P{Painel por perfil}
     E --> FI[Fila de espera pública] --> FO[Inscrição recebida]
@@ -256,11 +307,12 @@ flowchart LR
     P -->|Técnico| AU[Auditoria]
     P -->|Direção| IN[Indicadores]
     P -->|Direção| GE[Grupos de estágio]
-    P -->|Direção| ES[Estudantes: importar CSV]
+    P -->|Direção| ES[Estudantes e contas: importar CSV, senha provisória, desativar]
     P -->|Paciente| MP[Meu prontuário]
-    P -->|Paciente| MD[Meus dados LGPD]
+    P -->|Paciente| MD[Meus dados LGPD: quem acessou]
+    P -->|Paciente| PS[Meu plano de segurança]
     P --> AG[Agenda: dia · semana · mês · lista]
-    P --> MC[Minha conta: trocar senha]
+    P --> MC[Minha conta: trocar senha, duas etapas]
 
     CA --> R1[Resumo, anamnese e consentimentos]
     CA --> R2[Evoluções]
@@ -269,6 +321,8 @@ flowchart LR
     CA --> R5[Avaliação psicológica - restrita]
     CA --> R6[Supervisão - restrita]
     CA --> R7[Encerramento]
+    CA --> R8[Risco e segurança: avaliação, notificação, plano]
+    CA -->|técnica fora da equipe| JM[Motivo do acesso] --> CA
     R1 --> EC[Editar cadastro - técnico]
 ```
 
@@ -288,18 +342,24 @@ flowchart LR
     PA --- U2[Confirmar presença]
     PA --- U3[Pedir cópia do prontuário]
     PA --- U4[Ver e corrigir dados, revogar autorizações - LGPD]
+    PA --- U19[Avisar que não vai à sessão]
+    PA --- U20[Ler o plano de segurança e ver quem acessou]
     ES --- U5[Registrar anamnese e evolução]
     ES --- U6[Registrar presença, agendar, enviar lembrete]
     ES --- U7[Fluxo de abandono: contato e motivo]
     ES --- U8[Emitir declaração e anexar arquivos]
+    ES --- U21[Registrar risco e plano de segurança]
     SU --- U9[Validar ou devolver evolução]
     SU --- U10[Registrar orientação de supervisão]
     SU --- U11[Formar duplas e trios]
+    SU --- U22[Dar ciência do risco e registrar notificação compulsória]
     TE --- U12[Triar, cadastrar e checar CPF]
     TE --- U13[Alocar caso a grupo]
     TE --- U14[Entregar cópia e gerar link temporário]
     TE --- U15[Responder pedidos LGPD]
     TE --- U16[Verificar auditoria]
+    TE --- U23[Registrar o motivo do acesso e criar o acesso do paciente ao portal]
     DI --- U17[Importar estudantes e encerrar vínculos]
     DI --- U18[Ver indicadores agregados]
+    DI --- U24[Gerar senha provisória e desativar contas]
 ```

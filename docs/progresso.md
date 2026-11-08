@@ -1,4 +1,6 @@
-# Progresso: pausa de 06/11/2026, 22h30
+# Progresso do trabalho
+
+Última atualização: 08/11/2026 (etapa A, documentação, concluída). Pausa anterior: 06/11/2026, 22h30.
 
 Branch: `andamento-06-11`. A `main` (que publica o site) **não foi alterada**: o site no ar continua igual.
 
@@ -6,7 +8,7 @@ Pedido em andamento: "deixar o prontuário profissional, com todas as regras de 
 
 ## Como retomar em casa
 
-Se o branch já estiver no GitHub:
+O branch está no GitHub. Na pasta do projeto:
 
 ```bash
 git fetch origin andamento-06-11
@@ -14,24 +16,6 @@ git fetch origin andamento-06-11
 
 ```bash
 git checkout andamento-06-11
-```
-
-Se o branch ainda não estiver no GitHub (o envio pela sessão do Claude foi recusado por falta de permissão), use o pacote `andamento-06-11.bundle`. Ele traz os commits feitos depois da `main` atual (c21115c). Na pasta do projeto, ajuste o caminho do arquivo:
-
-```bash
-git fetch origin
-```
-
-```bash
-git fetch ~/Downloads/andamento-06-11.bundle andamento-06-11:andamento-06-11
-```
-
-```bash
-git checkout andamento-06-11
-```
-
-```bash
-git push -u origin andamento-06-11
 ```
 
 Depois, rode os três testes (comandos no `CLAUDE.md`) antes de mexer em qualquer coisa.
@@ -65,20 +49,25 @@ As mensagens completas dos commits (`git log main..andamento-06-11`) explicam o 
 
 Nada ficou pela metade no código: a pausa foi feita logo depois de um commit com tudo verde.
 
+**Feito em 08/11 (etapa A, documentação):**
+
+- `CLAUDE.md`: contagens dos testes, regras novas que não podem quebrar e pendências.
+- `README.md`: funcionalidades novas, registro de correções do protótipo e registro de decisões.
+- `docs/diagramas.md`: DER com as tabelas novas, navegação e casos de uso (os três diagramas foram conferidos: o Mermaid lê e desenha sem erro).
+- `docs/lgpd.md` (registro das operações e relatório de impacto), `banco/README.md` (29 tabelas, garantias, MFA e Edge Functions) e `docs/roteiro-apresentacao.md` (passo 9 com os diferenciais e respostas novas). Os passos novos do roteiro foram percorridos no site e funcionam.
+- Tela "Regras e leis": linha da verificação em duas etapas.
+
 Ficou **por fazer** (planejado, não começado):
 
-1. **Documentação desatualizada.** `CLAUDE.md` ainda fala em 154 e 56 verificações (agora são 270 e 133) e ainda lista o MFA como pendência. O `README.md` não tem o registro de correções e decisões destes 8 commits. Faltam também `docs/roteiro-apresentacao.md` (novos passos da demonstração), `docs/diagramas.md` (DER com as tabelas novas `riscos`, `notificacoes`, `planos_seguranca` e `acessos_justificados`), `docs/lgpd.md` (RIPD) e `banco/README.md` (MFA e o que fica para Edge Function).
-2. **Tela "Regras e leis"**: falta a linha da verificação em duas etapas (as outras funções novas já têm a sua).
-3. **Transição de semestre**: resumo de transferência do caso, checklist, lista de casos sem dupla ativa e realocação.
-4. **Escalas PHQ-9 e GAD-7** (opcional): só o lançamento do escore, com gráfico, e o item 9 abrindo a avaliação de risco. O texto oficial em português não pôde ser conferido nesta sessão, porque os sites estavam bloqueados. Por isso o plano é não reproduzir os itens, só os escores.
+1. **Transição de semestre**: resumo de transferência do caso, checklist, lista de casos sem dupla ativa e realocação.
+2. **Escalas PHQ-9 e GAD-7** (opcional): só o lançamento do escore, com gráfico, e o item 9 abrindo a avaliação de risco. O texto oficial em português não pôde ser conferido nesta sessão, porque os sites estavam bloqueados. Por isso o plano é não reproduzir os itens, só os escores.
 
 ## Próximo passo
 
-1. Atualizar o `CLAUDE.md` (contagens e pendências) e o `README.md` (registro de correções e de decisões).
-2. Acrescentar a linha do MFA em "Regras e leis" e rodar os três testes.
-3. Fazer a transição de semestre.
-4. Atualizar os documentos da pasta `docs/` e o `banco/README.md`.
-5. Revisão do grupo. Só depois de aprovado, abrir o PR para a `main` (o merge publica o site).
+1. Etapa B: fazer a transição de semestre (site, banco, validador e testes) e documentar.
+2. Etapa C (opcional, perguntar ao grupo antes): escalas PHQ-9 e GAD-7 só com escores.
+3. Etapa D: relatório final para o grupo (o que dizer na banca e o que validar).
+4. Revisão do grupo. Só depois de aprovado, abrir o PR para a `main` (o merge publica o site).
 
 ## Para validar com quem é de fora do grupo
 
@@ -88,5 +77,5 @@ Ficou **por fazer** (planejado, não começado):
 
 ## Observação sobre os branches
 
-- `andamento-06-11` tem tudo: os 8 commits de trabalho e os deste documento.
+- `andamento-06-11` tem tudo e está no GitHub: os 8 commits de trabalho, os deste documento e o da documentação.
 - `melhorias-prontuario` existia só nesta máquina e tem os 7 primeiros commits. Não precisa ser usado: o `andamento-06-11` o substitui.
