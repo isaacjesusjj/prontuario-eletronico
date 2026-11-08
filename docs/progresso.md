@@ -71,7 +71,7 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
-- Bloco 3 (branch `melhorias-bloco-3`): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
+- Bloco 3 (feito no branch `melhorias-bloco-3` e publicado na `main` no mesmo dia): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
 - Falta: bloco 4 (revisão de design, nome Vinculum, mais dados de exemplo), que o grupo vai revisar antes.
 
 Ficou **de fora, por decisão do grupo**:
