@@ -52,6 +52,11 @@ create table pacientes (
   email                 text not null default '' check (email = '' or email ~* '^[^@\s]+@[^@\s]+\.[a-z]{2,}$'),
   responsavel_nome      text not null default '',
   responsavel_telefone  text not null default '' check (responsavel_telefone = '' or responsavel_telefone ~ '^\d{10,11}$'),
+  -- Contato de emergência (situação de risco): nome, vínculo e telefone, os três juntos ou nenhum
+  emergencia_nome       text not null default '' check (length(emergencia_nome) <= 80),
+  emergencia_vinculo    text not null default '' check (length(emergencia_vinculo) <= 40),
+  emergencia_telefone   text not null default '' check (emergencia_telefone = '' or emergencia_telefone ~ '^\d{10,11}$'),
+  check ((emergencia_nome = '') = (emergencia_telefone = '')),
   canal_lembrete        text not null default 'nenhum' check (canal_lembrete in ('whatsapp', 'email', 'nenhum')),
   criado_em             date not null default current_date
 );

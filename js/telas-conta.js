@@ -163,7 +163,9 @@ PEP.telas = PEP.telas || {};
       '<div class="cartao"><h2>Dados cadastrais que a clínica guarda</h2><p><strong>Nome:</strong> ' + esc(p.nome) + (p.nomeSocial ? ' (' + esc(p.nomeSocial) + ')' : '') +
       '<br><strong>Nascimento:</strong> ' + data(p.dataNascimento) + '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) +
       '<br><strong>Telefone:</strong> ' + esc(PEP.validar.formatarTelefone(p.telefone)) + '<br><strong>E-mail:</strong> ' + esc(p.email || '—') +
-      (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + esc(p.responsavelNome) : '') + '</p>' +
+      (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + esc(p.responsavelNome) : '') +
+      (p.emergenciaNome ? '<br><strong>Contato de emergência:</strong> ' + esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
+        ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone)) : '') + '</p>' +
       '<p class="suave pequeno">O conteúdo clínico (evoluções, anamnese) fica no prontuário: peça a cópia em <a href="#/meu-prontuario">Meu prontuário</a>.</p></div>' +
       (caso ? '<div class="cartao"><h2>Minhas autorizações</h2><div class="tabela-rolagem"><table><thead><tr><th scope="col">Finalidade</th><th scope="col">Situação</th><th scope="col"></th></tr></thead><tbody>' + consent +
         '</tbody></table></div><p class="suave pequeno">Revogar não apaga o que foi feito antes com a sua autorização (LGPD, art. 8º, § 5º); vale daqui para frente.</p></div>' : '') +

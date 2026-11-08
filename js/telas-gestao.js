@@ -74,7 +74,11 @@ PEP.telas = PEP.telas || {};
       '<div class="campo"><label for="' + prefixo + '-resp">Responsável legal (se menor)</label><input id="' + prefixo + '-resp" type="text" maxlength="80" value="' + esc(v.responsavelNome || '') + '"></div>' +
       '<div class="campo"><label for="' + prefixo + '-resptel">Telefone do responsável</label><input id="' + prefixo + '-resptel" type="tel" data-mascara="telefone" maxlength="15" value="' + esc(V().formatarTelefone(v.responsavelTelefone || '')) + '"></div>' +
       '<div class="campo"><label for="' + prefixo + '-canal">Lembretes de sessão</label><select id="' + prefixo + '-canal">' + canais + '</select></div>' +
-      '</div>';
+      '</div><fieldset class="caixa-campos"><legend>Contato de emergência (opcional)</legend><p class="dica" style="margin-top:0">Quem avisar numa situação de risco. Combine com o paciente.</p><div class="grade-2">' +
+      '<div class="campo"><label for="' + prefixo + '-emnome">Nome</label><input id="' + prefixo + '-emnome" type="text" maxlength="80" value="' + esc(v.emergenciaNome || '') + '"></div>' +
+      '<div class="campo"><label for="' + prefixo + '-emvinc">Vínculo</label><input id="' + prefixo + '-emvinc" type="text" maxlength="40" placeholder="ex.: irmã, amigo" value="' + esc(v.emergenciaVinculo || '') + '"></div>' +
+      '<div class="campo"><label for="' + prefixo + '-emtel">Telefone</label><input id="' + prefixo + '-emtel" type="tel" data-mascara="telefone" maxlength="15" value="' + esc(V().formatarTelefone(v.emergenciaTelefone || '')) + '"></div>' +
+      '</div></fieldset>';
   }
 
   // ---------- Técnico: triagem e cadastro ----------

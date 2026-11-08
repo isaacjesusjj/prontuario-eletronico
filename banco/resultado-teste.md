@@ -1,18 +1,20 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-08 19:08 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-08 20:01 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**150 de 150 verificações passaram.**
+**152 de 152 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 34 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1739 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1694 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
 | ✓ | presença fora da lista é recusada | recusado: Sessão nova entra como agendada: a presença é registrada a partir do dia da sessão. |
 | ✓ | documento sem finalidade é recusado (Res. CFP 05/2025, art. 12) | recusado: new row for relation "documentos" violates check constraint "documentos_finalidade_check" |
+| ✓ | contato de emergência sem telefone é recusado (nome e telefone vão juntos) | recusado: new row for relation "pacientes" violates check constraint "pacientes_check" |
+| ✓ | telefone do contato de emergência fora do formato é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_emergencia_telefone_ |
 | ✓ | evolução validada não pode ser editada | recusado: Evolução validada é imutável: registre um adendo. |
 | ✓ | evolução não pode ser apagada | recusado: Evolução não pode ser apagada. |
 | ✓ | rascunho não pula direto para validada | recusado: Mudança de status inválida: rascunho → validada. |

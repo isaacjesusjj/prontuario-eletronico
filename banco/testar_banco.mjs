@@ -62,6 +62,9 @@ await erroEsperado('telefone inválido é recusado', "insert into pacientes (nom
 await erroEsperado('presença fora da lista é recusada', "insert into sessoes (caso_id, data, hora, presenca) values ('c01', '2026-12-01', '14:00', 'talvez')");
 await erroEsperado('documento sem finalidade é recusado (Res. CFP 05/2025, art. 12)', "insert into documentos (caso_id, tipo, titulo, finalidade, destinatario, autor_id) values ('c01', 'Declaração', 'Declaração', '', 'Paciente', 'u-est1')");
 
+await erroEsperado('contato de emergência sem telefone é recusado (nome e telefone vão juntos)', "update pacientes set emergencia_nome = 'Contato Exemplo' where id = 'p02'");
+await erroEsperado('telefone do contato de emergência fora do formato é recusado', "update pacientes set emergencia_nome = 'Contato Exemplo', emergencia_telefone = '123' where id = 'p02'");
+
 // ---------- 3. Imutabilidade (vale até para o administrador do banco) ----------
 await erroEsperado('evolução validada não pode ser editada', "update evolucoes set texto = 'alterado depois de validado' where id = 'e01'");
 await erroEsperado('evolução não pode ser apagada', "delete from evolucoes where id = 'e04'");

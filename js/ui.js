@@ -71,7 +71,10 @@ PEP.ui = (function () {
     var menu = document.getElementById('menu');
     if (!u || PEP.estado.pendenciaDeAcesso(u)) { menu.innerHTML = ''; return; }
     var itens = MENUS[u.perfil] || [];
-    menu.innerHTML = itens.map(function (item) {
+    var busca = ['estagiario', 'supervisor', 'tecnico'].indexOf(u.perfil) !== -1 ?
+      '<form data-form="busca" role="search" class="busca-menu" novalidate><label for="busca-paciente" class="sr-only">Buscar paciente pelo nome</label>' +
+      '<input id="busca-paciente" name="termo" type="search" placeholder="Buscar paciente" maxlength="60" autocomplete="off" value="' + esc(PEP.telas._busca || '') + '"></form>' : '';
+    menu.innerHTML = busca + itens.map(function (item) {
       var ativo = rotaAtual.indexOf(item[0]) === 0 || (item[0] === '#/casos' && rotaAtual.indexOf('#/caso/') === 0);
       return '<a href="' + item[0] + '"' + (ativo ? ' class="ativo" aria-current="page"' : '') + '>' + item[1] + '</a>';
     }).join('');

@@ -243,12 +243,52 @@ PEP.telas = PEP.telas || {};
       '<a class="botao secundario" href="#/estudantes">Importar estudantes</a></div>';
   }
 
+  // Último acesso e tentativas sem sucesso desde então (aparece no painel até a pessoa fechar)
+  function avisoUltimoAcesso() {
+    var a = PEP.estado.lerUltimoAcesso();
+    if (!a) return '';
+    return '<div class="aviso ' + (a.falhas ? 'alerta' : 'info') + ' pequeno" role="status" id="aviso-acesso"><div class="linha entre"><span>Seu último acesso foi em ' + data(a.em) + '.' +
+      (a.falhas ? ' <strong>Desde então, ' + a.falhas + ' tentativa(s) de entrar com o seu usuário não deram certo.</strong> Se não foi você, troque a senha em <a href="#/conta">Minha conta</a> e avise a técnica.' : '') +
+      '</span><button class="botao secundario pequeno" data-acao="fechar-aviso-acesso">Fechar</button></div></div>';
+  }
+
   PEP.telas.painel = function (u) {
-    if (u.perfil === 'estagiario') return painelEstagiario(u);
-    if (u.perfil === 'supervisor') return painelSupervisor(u);
-    if (u.perfil === 'tecnico') return painelTecnico(u);
-    if (u.perfil === 'paciente') return painelPaciente(u);
-    return painelDirecao(u);
+    var aviso = avisoUltimoAcesso();
+    if (u.perfil === 'estagiario') return aviso + painelEstagiario(u);
+    if (u.perfil === 'supervisor') return aviso + painelSupervisor(u);
+    if (u.perfil === 'tecnico') return aviso + painelTecnico(u);
+    if (u.perfil === 'paciente') return aviso + painelPaciente(u);
+    return aviso + painelDirecao(u);
+  };
+
+  // ---------- Busca de paciente (campo no menu de quem atende) ----------
+  // Procura só entre os casos que a pessoa já pode ver; no modo discreto, o resultado mostra as iniciais
+  PEP.telas.busca = function (u) {
+    if (['estagiario', 'supervisor', 'tecnico'].indexOf(u.perfil) === -1) return PEP.ui.semPermissao();
+    var termo = PEP.telas._busca || '', n = PEP.revisor.normalizar(termo).trim();
+    var html = '<h1>Busca de paciente</h1>';
+    if (n.length < 2) return html + '<p class="suave">Digite pelo menos 2 letras do nome no campo "Buscar paciente" do menu e tecle Enter.</p>';
+    var bate = function (t) { return PEP.revisor.normalizar(t || '').indexOf(n) !== -1; };
+    var casos = PEP.regras.casosVisiveis(u).filter(function (c) {
+      var p = PEP.ui.pacienteDoCaso(c);
+      return bate(p.nome) || bate(p.nomeSocial) || bate(c.id);
+    });
+    var fila = PEP.regras.podeGerirFila(u) ? PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando' && bate(i.nome); }) : [];
+    html += '<p class="suave" role="status">' + (casos.length + fila.length) + ' resultado(s) para "' + esc(termo) + '".</p>';
+    if (casos.length) {
+      html += '<div class="cartao"><h2>Casos</h2><ul class="lista-busca">' + casos.map(function (c) {
+        var g = PEP.util.porId(PEP.db.grupos, c.grupoId), s = PEP.util.porId(PEP.db.subgrupos, c.subgrupoId);
+        return '<li><a href="#/caso/' + c.id + '">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a> ' + PEP.ui.etiquetaCaso(c) +
+          ' <span class="suave pequeno">caso ' + esc(c.id) + (g ? ' · ' + esc(g.nome) : '') + (s ? ' · ' + esc(s.nome) : '') + '</span></li>';
+      }).join('') + '</ul></div>';
+    }
+    if (fila.length) {
+      html += '<div class="cartao"><h2>Na fila de espera</h2><ul class="lista-busca">' + fila.map(function (i) {
+        return '<li><a href="#/triagem/' + i.id + '">' + esc(PEP.ui.nomeInscricao(i)) + '</a> <span class="suave pequeno">inscrita em ' + data(i.data) + '</span></li>';
+      }).join('') + '</ul></div>';
+    }
+    if (!casos.length && !fila.length) html += '<p class="vazio">Nenhum paciente com esse nome entre os casos que você acompanha.</p>';
+    return html;
   };
 
   PEP.telas._proximasSessoes = proximasSessoes;

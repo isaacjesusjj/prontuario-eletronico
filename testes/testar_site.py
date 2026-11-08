@@ -1129,6 +1129,86 @@ def transicao_de_semestre(nav, base):
     s.fechar()
 
 
+def cadastro_busca_e_auditoria(nav, base):
+    s = Sessao(nav, base, "Cadastro, busca e auditoria")
+    # Último acesso: a 2ª entrada mostra quando foi a 1ª e as tentativas erradas no meio
+    s.entrar("bia.estagiaria")
+    conferir("Acesso", "no primeiro acesso não há aviso de último acesso", s.p.locator("#aviso-acesso").count() == 0)
+    # Modelo de evolução: entra no texto, e um segundo modelo vai para o fim, sem apagar
+    s.ir("#/caso/c01/evolucoes")
+    s.clicar("details.cartao summary")
+    s.clicar('[data-acao="inserir-modelo"][data-modelo="sessao"]')
+    t1 = s.p.locator("#nova-texto").input_value()
+    s.p.fill("#nova-texto", t1.replace("Tema trabalhado: ", "Tema trabalhado: rotina de sono"))
+    s.clicar('[data-acao="inserir-modelo"][data-modelo="acolhimento"]')
+    t2 = s.p.locator("#nova-texto").input_value()
+    conferir("Evolução", "\"Inserir modelo\" põe os tópicos no texto; o segundo modelo vai para o fim, sem apagar o que foi escrito",
+             t1.startswith("Tema trabalhado:") and "rotina de sono" in t2 and "Demanda trazida:" in t2 and str(len(t2)) in s.p.locator("#nova-texto-contador").inner_text())
+    # Busca: só entre os casos da própria dupla, sem o nome no endereço
+    s.p.fill("#busca-paciente", "exemplo 02")
+    s.p.press("#busca-paciente", "Enter")
+    s.p.wait_for_timeout(300)
+    conferir("Busca", "a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço",
+             s.p.locator('#app a[href="#/caso/c02"]').count() == 1 and s.js("location.hash") == "#/busca")
+    s.axe("Busca de paciente")
+    s.p.fill("#busca-paciente", "Exemplo 04")
+    s.p.press("#busca-paciente", "Enter")
+    s.p.wait_for_timeout(300)
+    conferir("Busca", "paciente de outra dupla não aparece na busca", s.p.locator('#app a[href="#/caso/c04"]').count() == 0 and "Nenhum paciente" in s.p.locator("#app").inner_text())
+    s.sair()
+    s.abrir("#/entrar")
+    for _ in range(2):   # espera cada resposta (o erro some antes da próxima tentativa)
+        s.p.fill("#lg-usuario", "bia.estagiaria")
+        s.p.fill("#lg-senha", "senha-errada-123456")
+        s.p.click("#lg-entrar")
+        s.p.wait_for_function("() => !document.getElementById('login-erro').hidden && document.getElementById('lg-entrar').textContent === 'Entrar'", timeout=15000)
+        s.p.evaluate("document.getElementById('login-erro').hidden = true")
+    s.entrar("bia.estagiaria")
+    aviso = s.p.locator("#aviso-acesso").inner_text() if s.p.locator("#aviso-acesso").count() else ""
+    conferir("Acesso", "depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então", "último acesso" in aviso and "2 tentativa" in aviso, aviso[:120])
+    s.clicar('[data-acao="fechar-aviso-acesso"]')
+    conferir("Acesso", "o aviso de último acesso fecha", s.p.locator("#aviso-acesso").count() == 0)
+    s.sair()
+    # Técnica: contato de emergência no cadastro (nome e telefone juntos), na aba de risco e escondido no modo discreto
+    s.entrar("ana.tecnica")
+    s.justificar("c03")
+    s.ir("#/paciente/p02/editar")
+    s.axe("Editar cadastro com contato de emergência")
+    s.p.fill("#pc-emnome", "Contato Exemplo 02")
+    s.clicar('[data-acao="salvar-paciente"]')
+    conferir("Cadastro", "contato de emergência sem telefone é recusado", s.p.locator("#pc-emtel").get_attribute("aria-invalid") == "true"
+             and not s.js("PEP.util.porId(PEP.db.pacientes, 'p02').emergenciaNome"))
+    s.p.fill("#pc-emvinc", "irmão")
+    s.p.fill("#pc-emtel", "11987650202")
+    s.clicar('[data-acao="salvar-paciente"]')
+    p2 = s.js("PEP.util.porId(PEP.db.pacientes, 'p02')")
+    conferir("Cadastro", "com nome e telefone, o contato de emergência é salvo", p2.get("emergenciaNome") == "Contato Exemplo 02" and p2.get("emergenciaTelefone") == "11987650202")
+    s.ir("#/caso/c03/risco")
+    conferir("Cadastro", "na aba de risco, o contato de emergência do paciente aparece com link de telefone",
+             s.p.locator('#app a[href="tel:11987650303"]').count() == 1)
+    s.clicar('[data-acao="modo-discreto"]')
+    conferir("Cadastro", "no modo discreto, o contato de emergência some da tela", s.p.locator('#app a[href="tel:11987650303"]').count() == 0)
+    s.clicar('[data-acao="modo-discreto"]')
+    # Guarda: para quem era menor, contada a partir dos 18 anos
+    guarda = s.js("""() => { const c = PEP.util.porId(PEP.db.casos, 'c04'), p = PEP.util.porId(PEP.db.pacientes, c.pacienteId);
+      const n = p.dataNascimento.split('-'); return [PEP.regras.guardaAte(c), (Number(n[0]) + 38) + '-' + n[1] + '-' + n[2]]; }""")
+    conferir("Cadastro", "a guarda do prontuário de quem era menor conta a partir dos 18 anos (regra configurável)", guarda[0] == guarda[1], " · ".join(guarda))
+    # Auditoria: filtro e planilha, com fórmula neutralizada
+    s.js("PEP.estado.registrarAuditoria('=HYPERLINK(1)', 'c01')")
+    s.ir("#/auditoria")
+    s.p.fill("#fa-texto", "HYPERLINK")
+    s.clicar('form[data-form="filtrar-auditoria"] button[type=submit]')
+    conferir("Auditoria", "o filtro da auditoria reduz a lista", "1 evento(s) com este filtro" in s.p.locator("#app").inner_text())
+    s.axe("Auditoria com filtro")
+    with s.p.expect_download() as baixa:
+        s.clicar('[data-acao="exportar-auditoria"]')
+    conteudo = Path(baixa.value.path()).read_bytes().decode("utf-8")   # bytes crus: mantém o \r\n da planilha
+    conferir("Auditoria", "a planilha (CSV) sai com o filtro, separador ponto e vírgula e a fórmula neutralizada (apóstrofo na frente)",
+             conteudo.startswith("\ufeff") and '"Quando";"Usuário (id)"' in conteudo and "\"'=HYPERLINK" in conteudo and conteudo.count("\r\n") == 3, conteudo[:80])
+    conferir("Auditoria", "a exportação também fica na auditoria", s.js("PEP.db.auditoria.some(a => a.acao.indexOf('Exportou a trilha de auditoria') === 0)"))
+    s.fechar()
+
+
 def verificacao_duas_etapas(nav, base):
     s = Sessao(nav, base, "Duas etapas")
     t0 = datetime(2026, 11, 6, 10, 0, 0)
@@ -1307,7 +1387,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, transicao_de_semestre, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

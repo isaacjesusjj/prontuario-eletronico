@@ -152,8 +152,12 @@ PEP.telas = PEP.telas || {};
   // ---------- Aba do caso ----------
   PEP.telas.abaRisco = function (u, caso) {
     var riscos = R().riscosDoCaso(caso);
+    var p = PEP.ui.pacienteDoCaso(caso);
     var html = '<div class="aviso perigo pequeno" role="note"><strong>Urgência:</strong> ' + PEP.telas.contatosUrgencia(true) +
-      '. Diante de risco iminente, não deixe a pessoa sozinha e acione a supervisão.</div>';
+      '. Diante de risco iminente, não deixe a pessoa sozinha e acione a supervisão.' +
+      (p && p.emergenciaNome && !PEP.privacidade.discreto() ? '<br><strong>Contato de emergência do paciente:</strong> ' + esc(p.emergenciaNome) +
+        (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') + ', <a href="tel:' + esc(p.emergenciaTelefone) + '">' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone)) + '</a>' :
+        p && !p.emergenciaNome ? '<br>Sem contato de emergência no cadastro: combine um com o paciente.' : '') + '</div>';
     if (R().podeRegistrarRisco(u, caso)) html += formularioRisco(caso);
     html += '<h2>Avaliações de risco</h2>' + (riscos.length ? riscos.map(function (r) { return cartaoRisco(u, caso, r); }).join('') : '<p class="vazio">Nenhuma avaliação de risco registrada.</p>');
     return html + cartaoPlano(u, caso);

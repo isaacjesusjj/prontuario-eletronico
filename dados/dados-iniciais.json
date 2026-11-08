@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-06.10",
+    "versao": "2026-11-06.11",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -51,7 +51,8 @@
       "maxEstagiariosPorGrupo": 10,
       "riscoDescricaoMaxCaracteres": 1000,
       "planoCampoMaxCaracteres": 1000,
-      "resumoSecaoMinCaracteres": 10
+      "resumoSecaoMinCaracteres": 10,
+      "guardaMenorDesde18": true
     },
     "listas": {
       "motivosAbandono": [
@@ -402,7 +403,7 @@
       "finalidadesConsentimento": [
         {
           "id": "contrato",
-          "nome": "Contrato terapêutico (horários, faltas, sigilo e seus limites)",
+          "nome": "Contrato terapêutico (horários, faltas, sigilo e seus limites; atendimento por estagiários sob supervisão, como atividade de ensino; registro em prontuário eletrônico)",
           "obrigatoria": true
         },
         {
@@ -417,7 +418,7 @@
         },
         {
           "id": "ensinoAnonimo",
-          "nome": "Uso do caso, sem identificação, em ensino e pesquisa",
+          "nome": "Uso do caso, sem identificação, em ensino e em pesquisa aprovada por Comitê de Ética",
           "obrigatoria": false
         },
         {
@@ -494,6 +495,18 @@
         "O que foi trabalhado",
         "Como o paciente está agora",
         "Sugestões para a continuidade"
+      ],
+      "modelosEvolucao": [
+        {
+          "id": "sessao",
+          "nome": "Sessão",
+          "texto": "Tema trabalhado: \nIntervenção: \nResposta do paciente: \nPlano para a próxima sessão: "
+        },
+        {
+          "id": "acolhimento",
+          "nome": "Acolhimento",
+          "texto": "Demanda trazida: \nContrato combinado (horário, faltas, sigilo e seus limites): \nImpressões iniciais: \nPlano: "
+        }
       ]
     },
     "revisorEscrita": {
@@ -1023,6 +1036,9 @@
       "email": "paciente01@example.org",
       "responsavelNome": "",
       "responsavelTelefone": "",
+      "emergenciaNome": "Contato Exemplo 01",
+      "emergenciaVinculo": "irmã",
+      "emergenciaTelefone": "11987650101",
       "canalLembrete": "whatsapp",
       "criadoEm": "2026-08-19"
     },
@@ -1036,6 +1052,9 @@
       "email": "paciente02@example.org",
       "responsavelNome": "",
       "responsavelTelefone": "",
+      "emergenciaNome": "",
+      "emergenciaVinculo": "",
+      "emergenciaTelefone": "",
       "canalLembrete": "email",
       "criadoEm": "2026-09-09"
     },
@@ -1049,6 +1068,9 @@
       "email": "paciente03@example.org",
       "responsavelNome": "",
       "responsavelTelefone": "",
+      "emergenciaNome": "Contato Exemplo 03",
+      "emergenciaVinculo": "companheiro",
+      "emergenciaTelefone": "11987650303",
       "canalLembrete": "whatsapp",
       "criadoEm": "2026-08-26"
     },
@@ -1062,6 +1084,9 @@
       "email": "paciente04@example.org",
       "responsavelNome": "Responsável Exemplo 04",
       "responsavelTelefone": "11900000104",
+      "emergenciaNome": "Contato Exemplo 04",
+      "emergenciaVinculo": "avó",
+      "emergenciaTelefone": "11987650404",
       "canalLembrete": "whatsapp",
       "criadoEm": "2026-09-02"
     },
@@ -1075,6 +1100,9 @@
       "email": "paciente05@example.org",
       "responsavelNome": "",
       "responsavelTelefone": "",
+      "emergenciaNome": "",
+      "emergenciaVinculo": "",
+      "emergenciaTelefone": "",
       "canalLembrete": "nenhum",
       "criadoEm": "2026-08-12"
     },
@@ -1088,6 +1116,9 @@
       "email": "paciente06@example.org",
       "responsavelNome": "",
       "responsavelTelefone": "",
+      "emergenciaNome": "",
+      "emergenciaVinculo": "",
+      "emergenciaTelefone": "",
       "canalLembrete": "email",
       "criadoEm": "2026-09-02"
     },
@@ -1101,6 +1132,9 @@
       "email": "paciente07@example.org",
       "responsavelNome": "",
       "responsavelTelefone": "",
+      "emergenciaNome": "Contato Exemplo 07",
+      "emergenciaVinculo": "amiga",
+      "emergenciaTelefone": "11987650707",
       "canalLembrete": "whatsapp",
       "criadoEm": "2026-11-03"
     }

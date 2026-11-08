@@ -66,7 +66,8 @@ window.PEP = PEP;
     return {
       nome: val(p + '-nome'), nomeSocial: val(p + '-social'), dataNascimento: val(p + '-nasc'),
       cpf: V().soDigitos(val(p + '-cpf')), telefone: V().soDigitos(val(p + '-tel')), email: val(p + '-email'),
-      responsavelNome: val(p + '-resp'), responsavelTelefone: V().soDigitos(val(p + '-resptel')), canalLembrete: val(p + '-canal')
+      responsavelNome: val(p + '-resp'), responsavelTelefone: V().soDigitos(val(p + '-resptel')), canalLembrete: val(p + '-canal'),
+      emergenciaNome: val(p + '-emnome'), emergenciaVinculo: val(p + '-emvinc'), emergenciaTelefone: V().soDigitos(val(p + '-emtel'))
     };
   }
 
@@ -87,6 +88,12 @@ window.PEP = PEP;
     if (d.email && !V().email(d.email)) e.push([p + '-email', 'E-mail inválido.']);
     if (dn.ok && U().idade(d.dataNascimento) < 18 && !V().nome(d.responsavelNome)) e.push([p + '-resp', 'Menor de 18 anos: informe o responsável legal.']);
     if (d.responsavelTelefone && !V().telefone(d.responsavelTelefone)) e.push([p + '-resptel', 'Telefone do responsável inválido.']);
+    // Contato de emergência: opcional, mas nome e telefone vão juntos
+    if (d.emergenciaNome && !V().nome(d.emergenciaNome)) e.push([p + '-emnome', 'Nome do contato de emergência com caracteres inválidos.']);
+    if (d.emergenciaNome && !d.emergenciaTelefone) e.push([p + '-emtel', 'Informe o telefone do contato de emergência.']);
+    if (d.emergenciaTelefone && !V().telefone(d.emergenciaTelefone)) e.push([p + '-emtel', 'Telefone do contato de emergência inválido.']);
+    if (d.emergenciaTelefone && !d.emergenciaNome) e.push([p + '-emnome', 'Informe o nome do contato de emergência.']);
+    if (d.emergenciaVinculo.length > 40) e.push([p + '-emvinc', 'Use no máximo 40 caracteres.']);
     return e;
   }
 
@@ -232,6 +239,37 @@ window.PEP = PEP;
     },
 
     // ----- Evoluções -----
+    // Modelo de evolução (_config.listas.modelosEvolucao): entra no fim do texto, sem apagar o que já foi escrito
+    'inserir-modelo': function (b) {
+      var alvo = el(b.getAttribute('data-alvo'));
+      var m = PEP.lista('modelosEvolucao').filter(function (x) { return x.id === b.getAttribute('data-modelo'); })[0];
+      if (!alvo || !m) return;
+      alvo.value = alvo.value.trim() ? alvo.value.replace(/\s+$/, '') + '\n\n' + m.texto : m.texto;
+      alvo.dispatchEvent(new Event('input', { bubbles: true }));   // atualiza o contador e o revisor
+      alvo.focus();
+    },
+    'fechar-aviso-acesso': function () { PEP.estado.dispensarUltimoAcesso(); PEP.app.renderizar(); },
+    // Trilha de auditoria em planilha (CSV), com o filtro da tela. Separador ";" (Excel em português) e
+    // proteção contra fórmula: célula que começa com = + - @ ganha um apóstrofo (OWASP, CSV injection)
+    'exportar-auditoria': function () {
+      var u = usuario();
+      if (!R().podeVerAuditoria(u)) return negar();
+      var celula = function (v) { var t = String(v === undefined || v === null ? '' : v); if (/^[=+\-@]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
+      var linhas = [[PEP.config().instituicao.nome + ' · Vínculo · trilha de auditoria exportada em ' + U().formatarData(U().agora()) + ' por ' + u.nome]].concat([[]],
+        [['Quando', 'Usuário (id)', 'Nome', 'Perfil', 'Ação', 'Alvo', 'Hash anterior', 'Hash']],
+        PEP.telas.auditoriaFiltrada().map(function (a) {
+          var x = PEP.util.porId(PEP.db.usuarios, a.usuarioId);
+          return [a.em, a.usuarioId, PEP.ui.nomeUsuario(a.usuarioId), x ? R().nomePerfil(x.perfil) : '', a.acao, a.alvo, a.hashAnterior || '', a.hash || ''];
+        }));
+      var csv = '\ufeff' + linhas.map(function (l) { return l.map(celula).join(';'); }).join('\r\n');
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      link.download = 'auditoria-vinculo-' + U().hoje() + '.csv';
+      document.body.appendChild(link); link.click(); link.remove();
+      concluir('Planilha da auditoria gerada (' + (linhas.length - 3) + ' eventos).', 'Exportou a trilha de auditoria (CSV)', '—');
+    },
+    'limpar-filtro-auditoria': function () { PEP.telas._filtroAuditoria = null; PEP.app.renderizar(); },
+
     'nova-evolucao': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
       if (!R().podeEscreverEvolucao(u, c)) return negar();
@@ -969,6 +1007,17 @@ window.PEP = PEP;
           concluir('Senha alterada.', 'Trocou a senha', u.id);
         });
       });
+    },
+    // Busca de paciente (menu). O termo fica só na memória da página, nunca no endereço: assim nome de
+    // paciente não vai para o histórico do navegador
+    busca: function (form) {
+      PEP.telas._busca = form.elements.termo.value.trim().slice(0, 60);
+      if (window.location.hash !== '#/busca') window.location.hash = '#/busca'; else PEP.app.renderizar();
+    },
+    'filtrar-auditoria': function (form) {
+      var f = form.elements;
+      PEP.telas._filtroAuditoria = { texto: f.texto.value.trim(), usuario: f.usuario.value, de: f.de.value, ate: f.ate.value };
+      PEP.app.renderizar();
     },
     // Passagem do caso para outra dupla (transição de semestre). As mesmas regras valem no banco
     // (app.transferencia_regras), e é ele que muda a dupla do caso quando o banco está ligado.

@@ -142,9 +142,39 @@ PEP.telas = PEP.telas || {};
   // ---------- Técnico: trilha de auditoria ----------
   PEP.telas._verificacao = null;
 
+  // Filtro da trilha (ação ou alvo, usuário e período); a planilha (CSV) sai com o mesmo filtro
+  PEP.telas._filtroAuditoria = null;
+  PEP.telas.auditoriaFiltrada = function () {
+    var f = PEP.telas._filtroAuditoria || {}, t = PEP.revisor.normalizar(f.texto || '');
+    return PEP.db.auditoria.filter(function (a) {
+      if (t && PEP.revisor.normalizar(a.acao + ' ' + a.alvo).indexOf(t) === -1) return false;
+      if (f.usuario && a.usuarioId !== f.usuario) return false;
+      if (f.de && String(a.em).slice(0, 10) < f.de) return false;
+      if (f.ate && String(a.em).slice(0, 10) > f.ate) return false;
+      return true;
+    });
+  };
+  function formularioFiltroAuditoria() {
+    var f = PEP.telas._filtroAuditoria || {};
+    var ids = [];
+    PEP.db.auditoria.forEach(function (a) { if (ids.indexOf(a.usuarioId) === -1) ids.push(a.usuarioId); });
+    var opcoes = '<option value="">Todos</option>' + ids.map(function (id) {
+      return '<option value="' + esc(id) + '"' + (f.usuario === id ? ' selected' : '') + '>' + esc(PEP.ui.nomeUsuario(id)) + '</option>';
+    }).join('');
+    return '<form class="cartao" data-form="filtrar-auditoria" novalidate><h2>Filtrar</h2><div class="grade-2">' +
+      '<div class="campo"><label for="fa-texto">Ação ou alvo contém</label><input id="fa-texto" name="texto" type="search" maxlength="60" value="' + esc(f.texto || '') + '"></div>' +
+      '<div class="campo"><label for="fa-usuario">Usuário</label><select id="fa-usuario" name="usuario">' + opcoes + '</select></div>' +
+      '<div class="campo"><label for="fa-de">De</label><input id="fa-de" name="de" type="date" value="' + esc(f.de || '') + '"></div>' +
+      '<div class="campo"><label for="fa-ate">Até</label><input id="fa-ate" name="ate" type="date" value="' + esc(f.ate || '') + '"></div></div>' +
+      '<div class="linha"><button class="botao secundario" type="submit">Filtrar</button>' +
+      (PEP.telas._filtroAuditoria ? '<button type="button" class="botao secundario" data-acao="limpar-filtro-auditoria">Limpar filtro</button>' : '') +
+      '<button type="button" class="botao secundario" data-acao="exportar-auditoria">Exportar planilha (CSV)</button></div></form>';
+  }
+
   PEP.telas.auditoria = function (u) {
     if (!PEP.regras.podeVerAuditoria(u)) return PEP.ui.semPermissao();
-    var lista = PEP.db.auditoria.slice().reverse().slice(0, 200);
+    var filtrada = PEP.telas.auditoriaFiltrada();
+    var lista = filtrada.slice().reverse().slice(0, 200);
     var v = PEP.telas._verificacao;
     var resultado = '';
     if (v) {
@@ -156,7 +186,9 @@ PEP.telas = PEP.telas || {};
       'Cada evento leva o hash SHA-256 do anterior: se alguém mexer num evento, a verificação acusa.</p>' +
       '<div class="linha" style="margin-bottom:1rem"><button class="botao" data-acao="verificar-auditoria">Verificar integridade</button>' +
       '<span class="suave pequeno">' + PEP.db.auditoria.length + ' eventos · último hash: <span class="codigo">' + esc((PEP.db.auditoria[PEP.db.auditoria.length - 1] || {}).hash ? PEP.db.auditoria[PEP.db.auditoria.length - 1].hash.slice(0, 16) + '…' : '—') + '</span></span></div>' +
-      resultado +
+      resultado + formularioFiltroAuditoria() +
+      '<p class="suave pequeno" role="status">' + filtrada.length + ' evento(s)' + (PEP.telas._filtroAuditoria ? ' com este filtro' : '') +
+      (filtrada.length > 200 ? '; a tabela mostra os 200 mais recentes (a planilha leva todos)' : '') + '.</p>' +
       '<div class="cartao tabela-rolagem"><table><caption class="sr-only">Eventos de auditoria, do mais recente para o mais antigo</caption><thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Perfil</th><th scope="col">Ação</th><th scope="col">Alvo</th><th scope="col">Hash</th></tr></thead><tbody>' +
       lista.map(function (a) {
         var usuario = PEP.util.porId(PEP.db.usuarios, a.usuarioId);

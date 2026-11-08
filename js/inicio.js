@@ -26,7 +26,7 @@ PEP.app = (function () {
     agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Acesso do paciente', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
     'meu-plano': 'Meu plano de segurança',
     auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes e contas', paciente: 'Editar cadastro',
-    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas'
+    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas', busca: 'Busca de paciente'
   };
 
   function lerRota() {
@@ -62,6 +62,7 @@ PEP.app = (function () {
       case 'termo': return T.termo(u);
       case 'configurar-mfa': return T.configurarMfa(u);
       case 'painel': return T.painel(u);
+      case 'busca': return T.busca(u);
       case 'casos': return T.casos(u);
       case 'caso': return T.caso(u, rota.p1, rota.p2 || 'resumo');
       case 'imprimir': return T.imprimir(u, rota.p1);

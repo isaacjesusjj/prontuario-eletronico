@@ -431,6 +431,12 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .previa-paciente .cartao { margin: 0; box-shadow: none; }
 .previa-paciente .texto { white-space: pre-wrap; font-family: var(--serifa); margin-top: .3rem; }
 
+/* ---------- Busca de paciente (menu) ---------- */
+.busca-menu { padding: .2rem .2rem .6rem; }
+.busca-menu input { width: 100%; }
+.lista-busca { list-style: none; padding: 0; margin: 0; }
+.lista-busca li { padding: .45rem 0; border-bottom: 1px dashed var(--borda); }
+
 /* ---------- Passagem do caso (transição de semestre) ---------- */
 .checklist { list-style: none; padding: 0; margin: .4rem 0 .8rem; }
 .checklist li { display: flex; gap: .5rem; align-items: baseline; padding: .25rem 0; border-bottom: 1px dashed var(--borda); }

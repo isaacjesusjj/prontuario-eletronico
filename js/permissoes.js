@@ -389,8 +389,15 @@ PEP.regras = (function () {
     PEP.db.sessoes.forEach(function (s) { if (s.casoId === caso.id && s.presenca !== 'agendada' && s.presenca !== 'cancelada') datas.push(s.data); });
     var enc = encerramentoDoCaso(caso);
     if (enc) datas.push(enc.data);
-    var ultima = datas.filter(Boolean).sort().pop();
-    var p = ultima.slice(0, 10).split('-');
+    var ultima = datas.filter(Boolean).sort().pop().slice(0, 10);
+    // Regra prudente da clínica (regras.guardaMenorDesde18, a confirmar com o jurídico): para quem era menor,
+    // a contagem começa no dia em que a pessoa faz 18 anos, se isso for depois do último registro
+    var pac = porId(PEP.db.pacientes, caso.pacienteId);
+    if (PEP.regra('guardaMenorDesde18') && pac && pac.dataNascimento) {
+      var n = pac.dataNascimento.split('-'), dezoito = (Number(n[0]) + 18) + '-' + n[1] + '-' + n[2];
+      if (dezoito > ultima) ultima = dezoito;
+    }
+    var p = ultima.split('-');
     return (Number(p[0]) + (PEP.regra('guardaProntuarioAnos') || 20)) + '-' + p[1] + '-' + p[2];
   }
 

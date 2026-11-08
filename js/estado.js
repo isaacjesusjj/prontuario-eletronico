@@ -158,9 +158,24 @@ PEP.estado = (function () {
     if (s) { s.ultimoUso = agoraMs; gravar('sessionStorage', CHAVE_SESSAO, JSON.stringify(s)); }
   }
 
+  // Último acesso e tentativas sem sucesso desde então (boa prática de segurança, SBIS): a pessoa percebe
+  // se alguém tentou entrar com o usuário dela. Calculado da auditoria antes de registrar esta entrada.
+  function resumoDoUltimoAcesso(usuario) {
+    var eventos = PEP.db.auditoria || [], login = String(usuario.login || '').toLowerCase(), i = eventos.length;
+    // A trilha está em ordem: procura a última entrada desta conta (a hora guarda só até o minuto, a ordem é exata)
+    while (i-- > 0) { if (eventos[i].usuarioId === usuario.id && eventos[i].acao === 'Entrou no sistema') break; }
+    if (i < 0) return null;
+    var falhas = eventos.slice(i + 1).filter(function (a) {
+      return a.usuarioId === 'visitante' && String(a.alvo).toLowerCase() === login && /sem sucesso|incorreto/.test(a.acao);
+    }).length;
+    return { em: eventos[i].em, falhas: falhas };
+  }
+  function lerUltimoAcesso() { var s = lerSessao(); return s && !s.ultimoAcessoDispensado ? s.ultimoAcesso || null : null; }
+  function dispensarUltimoAcesso() { var s = lerSessao(); if (s) { s.ultimoAcessoDispensado = true; gravar('sessionStorage', CHAVE_SESSAO, JSON.stringify(s)); } }
+
   function entrar(usuario) {
     var agoraMs = Date.now();
-    gravar('sessionStorage', CHAVE_SESSAO, JSON.stringify({ usuarioId: usuario.id, inicio: agoraMs, ultimoUso: agoraMs }));
+    gravar('sessionStorage', CHAVE_SESSAO, JSON.stringify({ usuarioId: usuario.id, inicio: agoraMs, ultimoUso: agoraMs, ultimoAcesso: resumoDoUltimoAcesso(usuario) }));
     motivoSaida = ''; // o aviso de "sessão encerrada" some quando a pessoa entra de novo
     registrarAuditoria('Entrou no sistema', '—');
   }
@@ -356,7 +371,7 @@ PEP.estado = (function () {
     carregar: carregar, salvar: salvar, restaurar: restaurar,
     usuarioAtual: usuarioAtual, marcarAtividade: marcarAtividade, tempoInativo: tempoInativo, entrar: entrar, sair: sair, lerMotivoSaida: lerMotivoSaida,
     autenticar: autenticar, pendenciaDeAcesso: pendenciaDeAcesso, lerMfaPendente: lerMfaPendente, cancelarMfa: cancelarMfa, confirmarMfa: confirmarMfa,
-    precisaConfigurarMfa: precisaConfigurarMfa, mfaExigido: mfaExigido,
+    precisaConfigurarMfa: precisaConfigurarMfa, mfaExigido: mfaExigido, lerUltimoAcesso: lerUltimoAcesso, dispensarUltimoAcesso: dispensarUltimoAcesso,
     registrarAuditoria: registrarAuditoria, selarAuditoria: selarAuditoria, verificarAuditoria: verificarAuditoria
   };
 })();

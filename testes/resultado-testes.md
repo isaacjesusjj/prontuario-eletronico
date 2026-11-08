@@ -1,20 +1,20 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 08/11/2026 19:09, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 08/11/2026 20:10, no Chrome (Playwright), com axe-core 4.14.0.
 
-**287 de 287 verificações passaram.** Acessibilidade: 59 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**304 de 304 verificações passaram.** Acessibilidade: 62 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 66 | 0 |
+| Acessibilidade | 69 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
-| Auditoria | 5 | 0 |
+| Auditoria | 8 | 0 |
 | Senha | 11 | 0 |
 | Permissões | 7 | 0 |
-| Evolução | 7 | 0 |
+| Evolução | 8 | 0 |
 | Anamnese | 1 | 0 |
 | Sessões | 5 | 0 |
 | Lembretes | 3 | 0 |
@@ -23,7 +23,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 19:09, no Chrome (Playwright), 
 | Anexos | 4 | 0 |
 | Agenda | 4 | 0 |
 | Triagem | 1 | 0 |
-| Cadastro | 1 | 0 |
+| Cadastro | 6 | 0 |
 | Alocação | 1 | 0 |
 | Acesso do paciente | 4 | 0 |
 | Paciente | 1 | 0 |
@@ -42,6 +42,8 @@ Gerado por `testes/testar_site.py` em 08/11/2026 19:09, no Chrome (Playwright), 
 | Contas | 7 | 0 |
 | Duas etapas | 20 | 0 |
 | Transição | 15 | 0 |
+| Acesso | 3 | 0 |
+| Busca | 2 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
@@ -322,13 +324,30 @@ Gerado por `testes/testar_site.py` em 08/11/2026 19:09, no Chrome (Playwright), 
 | ✓ | Transição | a nova dupla lê o resumo de transferência no prontuário |  |
 | ✓ | Transição | e vê de onde o caso veio |  |
 | ✓ | Transição | o resumo entra na cópia do prontuário, com o nome |  |
+| ✓ | Acesso | no primeiro acesso não há aviso de último acesso |  |
+| ✓ | Evolução | "Inserir modelo" põe os tópicos no texto; o segundo modelo vai para o fim, sem apagar o que foi escrito |  |
+| ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
+| ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
+| ✓ | Busca | paciente de outra dupla não aparece na busca |  |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 17:10. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | o aviso de último acesso fecha |  |
+| ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
+| ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
+| ✓ | Cadastro | com nome e telefone, o contato de emergência é salvo |  |
+| ✓ | Cadastro | na aba de risco, o contato de emergência do paciente aparece com link de telefone |  |
+| ✓ | Cadastro | no modo discreto, o contato de emergência some da tela |  |
+| ✓ | Cadastro | a guarda do prontuário de quem era menor conta a partir dos 18 anos (regra configurável) | 2049-05-09 · 2049-05-09 |
+| ✓ | Auditoria | o filtro da auditoria reduz a lista |  |
+| ✓ | Acessibilidade | Cadastro, busca e auditoria · Auditoria com filtro: sem violações WCAG A/AA |  |
+| ✓ | Auditoria | a planilha (CSV) sai com o filtro, separador ponto e vírgula e a fórmula neutralizada (apóstrofo na frente) | ﻿"Clínica-Escola de Psicologia (fictícia, para o protótipo) · Vínculo · trilha d |
+| ✓ | Auditoria | a exportação também fica na auditoria |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T19:09:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T20:10:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw87i2nd8o7m |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw89nz03nqjt |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

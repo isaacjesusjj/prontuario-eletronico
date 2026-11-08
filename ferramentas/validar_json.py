@@ -192,6 +192,10 @@ for x in db["pacientes"]:
             p(f"{onde}: menor de idade sem responsável")
     if x["canalLembrete"] not in ("whatsapp", "email", "nenhum"):
         p(f"{onde}: canal de lembrete inválido")
+    if bool(x.get("emergenciaNome")) != bool(x.get("emergenciaTelefone")):
+        p(f"{onde}: contato de emergência precisa de nome e telefone")
+    if x.get("emergenciaTelefone") and not re.fullmatch(r"\d{10,11}", x["emergenciaTelefone"]):
+        p(f"{onde}: telefone do contato de emergência inválido")
 for i in db["inscricoes"]:
     onde = f"inscrição {i['id']}"
     if i.get("cpf") and not cpf_valido(i["cpf"]):

@@ -188,7 +188,10 @@ PEP.telas = PEP.telas || {};
       '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) + '</p>' +
       '<p><strong>Telefone:</strong> ' + (disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) + '<br><strong>E-mail:</strong> ' + (disc ? oculto : esc(p.email || '—')) +
       (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + (disc ? esc(PEP.privacidade.iniciais(p.responsavelNome)) : esc(p.responsavelNome)) : '') +
-      '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') + '</p></div>' +
+      '<br><strong>Contato de emergência:</strong> ' + (!p.emergenciaNome ? '—' : disc ? oculto : esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
+        ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone))) +
+      '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') +
+      '<br><strong>Guarda mínima do prontuário até:</strong> ' + data(R().guardaAte(caso)) + '</p></div>' +
       (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') +
       (u.perfil === 'tecnico' ? blocoPortal(p) : '') + '</div>' +
       blocoAnamnese(u, caso) + blocoConsentimentos(u, caso) + blocoPassagem(u, caso);
@@ -294,6 +297,9 @@ PEP.telas = PEP.telas || {};
         sessoes.map(function (s) { return '<option value="' + s.id + '">' + data(s.data) + ' às ' + esc(s.hora) + '</option>'; }).join('') +
         '<option value="">Sem sessão vinculada</option></select></div>' +
         '<div class="campo"><label for="nova-texto">Texto</label><span class="dica" id="nova-texto-dica">Modelo: tema trabalhado · intervenção · resposta do paciente · plano para a próxima sessão.</span>' +
+        '<div class="linha" style="margin:.2rem 0 .4rem"><span class="suave pequeno">Inserir modelo:</span>' + PEP.lista('modelosEvolucao').map(function (m) {
+          return '<button type="button" class="botao secundario pequeno" data-acao="inserir-modelo" data-alvo="nova-texto" data-modelo="' + esc(m.id) + '">' + esc(m.nome) + '</button>';
+        }).join('') + '</div>' +
         '<textarea id="nova-texto" aria-describedby="nova-texto-dica" ' + atributosLimite('nova-texto') + '></textarea>' + contador('nova-texto', '') +
         ferramentasDeEscrita('nova-texto', '') + '</div>' +
         '<div class="linha"><button class="botao secundario pequeno" data-acao="nova-evolucao" data-caso="' + caso.id + '" data-modo="rascunho">Salvar rascunho</button>' +
