@@ -26,6 +26,19 @@ PEP.telas = PEP.telas || {};
     if (restritas.length) abas.push([restritas[0][0], 'Área restrita', restritas.map(function (r) { return r[0]; })]);
     return abas;
   }
+  // Uma frase sobre cada aba, logo abaixo das abas: quem chega agora entende o que tem ali
+  var DESCRICAO_ABA = {
+    resumo: 'Quem é o paciente e o que foi combinado: cadastro, demanda, objetivos, anamnese e consentimentos.',
+    encerramento: 'Alta, desistência ou encaminhamento para outro serviço. O prontuário continua guardado.',
+    evolucoes: 'O registro de cada sessão. O estagiário escreve e a supervisão valida; depois de validado, não muda (correção só por adendo).',
+    risco: 'Avaliação de risco, notificação compulsória e plano de segurança feito com o paciente.',
+    sessoes: 'Agenda do caso, presença e faltas. Faltas seguidas sem justificativa abrem o contato com o paciente.',
+    documentos: 'Declarações, atestados, relatórios e laudos; o que foi comunicado a terceiros; e anexos.',
+    supervisao: 'Área restrita: orientações da supervisão. Ficam fora do prontuário e da cópia do paciente.',
+    restrita: 'Área restrita: material de avaliação psicológica (testes). Fica fora do prontuário e da cópia do paciente.'
+  };
+  function descricaoAba(aba) { return DESCRICAO_ABA[aba] ? '<p class="descricao-aba">' + DESCRICAO_ABA[aba] + '</p>' : ''; }
+
   // Rotas que a pessoa pode abrir neste caso (as abas e as partes que ficam dentro delas)
   function rotasPermitidas(u, caso) {
     return ['resumo', 'evolucoes', 'risco', 'sessoes', 'documentos', 'encerramento'].concat(partesRestritas(u, caso).map(function (r) { return r[0]; }));
@@ -352,7 +365,7 @@ PEP.telas = PEP.telas || {};
     }
     if (rotasPermitidas(u, caso).indexOf(aba) === -1) aba = 'resumo';
     // Técnica fora da equipe do caso: o conteúdo clínico só abre com o motivo do acesso registrado
-    if (R().precisaJustificar(u, caso)) return cabecalho(u, caso) + abas(u, caso, aba) + PEP.telas.formularioJustificativa(caso, '#/caso/' + caso.id + '/' + aba);
+    if (R().precisaJustificar(u, caso)) return cabecalho(u, caso) + abas(u, caso, aba) + descricaoAba(aba) + PEP.telas.formularioJustificativa(caso, '#/caso/' + caso.id + '/' + aba);
 
     var corpo;
     if (aba === 'evolucoes') corpo = abaEvolucoes(u, caso);
@@ -360,7 +373,7 @@ PEP.telas = PEP.telas || {};
     else if (aba === 'risco') corpo = PEP.telas.abaRisco(u, caso);
     else corpo = PEP.telas.casoAbaExtra(u, caso, aba);
 
-    return cabecalho(u, caso) + abas(u, caso, aba) + corpo;
+    return cabecalho(u, caso) + abas(u, caso, aba) + descricaoAba(aba) + corpo;
   };
 
   // Motivo do acesso (técnica): fica registrado, vale por algumas horas e o paciente pode ver em "Meus dados"
@@ -381,7 +394,8 @@ PEP.telas = PEP.telas || {};
     if (u.perfil === 'direcao' || u.perfil === 'paciente') return PEP.ui.semPermissao('Este perfil não navega em prontuários.');
     var casos = PEP.regras.casosVisiveis(u);
     var titulo = u.perfil === 'estagiario' ? 'Meus casos' : (u.perfil === 'supervisor' ? 'Casos dos meus grupos' : 'Todos os casos');
-    var html = '<h1>' + titulo + '</h1>';
+    var html = '<h1>' + titulo + '</h1>' + (u.perfil === 'tecnico' ? '' : '<p class="subtitulo">' +
+      (u.perfil === 'estagiario' ? 'Os pacientes da sua dupla ou trio.' : 'Os casos dos seus grupos de estágio.') + ' Toque num caso para abrir o prontuário.</p>');
     if (u.perfil === 'tecnico') html += '<p class="suave">Como responsável técnica, você vê todos os casos. Para abrir o conteúdo clínico de um caso, registre o motivo: ele fica na auditoria e o paciente pode vê-lo.</p>';
     if (!casos.length) return html + '<p class="vazio">Nenhum caso.</p>';
     return html + '<div class="grade">' + casos.map(function (c) {

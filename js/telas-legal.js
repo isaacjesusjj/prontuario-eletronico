@@ -58,7 +58,7 @@ PEP.telas = PEP.telas || {};
       '<li>Acesso ligado ao vínculo de estágio: quando o semestre termina, o acesso do estagiário acaba.</li>' +
       '<li>Registro imutável de acessos (auditoria com cadeia de hash) e evoluções que não podem ser alteradas depois de validadas.</li>' +
       '<li>Em caso de incidente com risco relevante, comunicamos a ANPD e as pessoas afetadas em até 3 dias úteis (Res. CD/ANPD 15/2024).</li></ul></div>' +
-      '<div class="cartao"><h2>8. O que fica guardado no seu navegador</h2><p>Sem cookies de rastreamento. O site usa o armazenamento do navegador só para funcionar: a sessão de login (apagada ao fechar a aba), as preferências de acessibilidade e, neste protótipo, os dados fictícios de demonstração. As fontes são servidas pelo próprio site; o tradutor de Libras (VLibras, do Governo Federal) só é carregado se você pedir.</p></div>' +
+      '<div class="cartao"><h2>8. O que fica guardado no seu navegador</h2><p>Sem cookies de rastreamento. O site usa o armazenamento do navegador só para funcionar: a sessão de login (apagada ao fechar a aba), as preferências de acessibilidade e, neste protótipo, os dados fictícios de demonstração. As fontes são servidas pelo próprio site; o tradutor de Libras (VLibras, do Governo Federal) só é carregado se você pedir e, quando usado, envia ao serviço do governo só o texto que você escolher traduzir. O estatístico de uso que vem com o VLibras fica bloqueado.</p></div>' +
       '<div class="cartao"><h2>9. Mudanças neste aviso</h2><p>Mudanças relevantes geram nova versão, com data, e são avisadas no próximo acesso. Consulte também os <a href="#/termos">termos de uso</a> e o <a href="https://site.cfp.org.br/wp-content/uploads/2012/07/codigo-de-etica-psicologia.pdf" target="_blank" rel="noopener">Código de Ética Profissional do Psicólogo</a>.</p></div>';
   };
 
@@ -87,7 +87,7 @@ PEP.telas = PEP.telas || {};
       '<div class="cartao"><h2>Recursos disponíveis</h2><ul>' +
       '<li><strong>A− / A+</strong> no menu do topo (botão "Acessibilidade" ou a letra da sua conta): muda o tamanho do texto (até 150%), sem quebrar o layout.</li>' +
       '<li><strong>Contraste</strong>: tema de alto contraste.</li>' +
-      '<li><strong>Libras</strong>: carrega o VLibras, tradutor do Governo Federal.</li>' +
+      '<li><strong>Libras</strong>: abre o VLibras, tradutor do Governo Federal (no menu do topo). O texto que você tocar é enviado ao serviço do governo para a tradução: evite usar em textos do prontuário.</li>' +
       '<li>Link "Pular para o conteúdo" como primeiro item da página (tecla Tab).</li>' +
       '<li>Todas as funções funcionam pelo teclado, com foco sempre visível.</li>' +
       '<li>Cada tela tem título próprio na aba e um título principal (h1); a mudança de tela é anunciada.</li>' +

@@ -18,6 +18,7 @@ import shutil
 import sys
 import threading
 import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -758,6 +759,109 @@ def navegacao_e_identidade(nav, base):
     s.fechar()
 
 
+def entrada_libras_e_clareza(nav, base):
+    """Ajustes pedidos pelo grupo: menos branco (topo verde, faixa verde na entrada), logotipo da Faculdade
+    embaixo do Vinculum, nomes do grupo à vista, "Esqueci minha senha" numa tela curta, explicação de cada
+    aba e o Libras (VLibras 7) funcionando com a política de segurança do site."""
+    s = Sessao(nav, base, "Entrada e clareza", viewport={"width": 390, "height": 844})
+    s.abrir("#/entrar")
+    conferir("Identidade", "topo verde (menos branco) e, na entrada, a marca grande fica na faixa verde (a do topo some para não repetir)",
+             s.js("getComputedStyle(document.getElementById('topo')).backgroundColor") == "rgb(0, 121, 49)"
+             and s.js("getComputedStyle(document.querySelector('.marca-topo')).visibility") == "hidden" and s.p.locator(".faixa-entrada h1").inner_text().strip() == "Vinculum")
+    logo = s.p.locator(".faixa-entrada img.logo-inst")
+    caixa_h1, caixa_logo = s.p.locator(".faixa-entrada h1").bounding_box(), logo.bounding_box()
+    conferir("Identidade", "logotipo da Faculdade embaixo do Vinculum, menor (até 34 px de altura) e nítido em tela densa (o arquivo tem o dobro dos pixels mostrados)",
+             caixa_logo["y"] >= caixa_h1["y"] + caixa_h1["height"] and caixa_logo["height"] <= 34
+             and logo.evaluate("i => i.complete && i.naturalWidth >= 2 * i.getBoundingClientRect().width") and "branco" in (logo.get_attribute("src") or ""))
+    equipe = [n.strip() for n in s.p.locator(".equipe-projeto li").all_inner_texts()]
+    conferir("Créditos", "a entrada mostra \"Quem fez o Vinculum\" com os três nomes do grupo", equipe == ["Daniel Dantas", "Dilson Rodrigues", "Isaac de Jesus Lima"], ", ".join(equipe))
+    rodape = s.p.locator("#rodape").inner_text()
+    conferir("Créditos", "o rodapé de toda tela traz os nomes do grupo e o logotipo branco da Faculdade",
+             all(n in rodape for n in ["Daniel Dantas", "Dilson Rodrigues", "Isaac de Jesus Lima"])
+             and s.p.locator("#rodape img.logo-inst.branco").evaluate("i => i.complete && i.naturalWidth > 0"))
+    s.axe("Celular · entrada")
+    # Esqueci minha senha
+    s.clicar('a.link-senha')
+    texto = s.p.locator("#app").inner_text()
+    conferir("Senha", "\"Esqueci minha senha\" abre uma tela curta que diz a quem pedir (equipe: coordenação; paciente: psicóloga técnica)",
+             s.js("location.hash") == "#/esqueci-senha" and "Esqueci minha senha" in s.p.title() and "coordenação" in texto and "psicóloga técnica" in texto
+             and s.p.locator('#app a[href="#/entrar"]').count() >= 1)
+    s.axe("Esqueci minha senha")
+    s.entrar("bia.estagiaria")
+    s.ir("#/esqueci-senha")
+    conferir("Senha", "quem já entrou não fica na tela de \"Esqueci minha senha\" (volta ao início)", s.js("location.hash") == "#/painel")
+    conferir("Créditos", "depois de entrar, o rodapé continua com os nomes do grupo e a marca volta ao topo",
+             "Isaac de Jesus Lima" in s.p.locator("#rodape").inner_text() and s.js("getComputedStyle(document.querySelector('.marca-topo')).visibility") == "visible")
+    s.sair()
+    # Clareza: cada aba do prontuário e cada item do "Mais" dizem o que têm
+    s.entrar("helena.supervisora")
+    sem_descricao = []
+    for aba in ["resumo", "evolucoes", "risco", "sessoes", "documentos", "supervisao", "restrita", "encerramento"]:
+        s.ir(f"#/caso/c01/{aba}")
+        if len(s.p.locator(".descricao-aba").inner_text().strip()) < 30:
+            sem_descricao.append(aba)
+    conferir("Clareza", "cada aba do prontuário tem uma frase dizendo o que há nela", not sem_descricao, ", ".join(sem_descricao))
+    s.ir("#/mais")
+    itens = s.p.locator("#app .lista-mais li").count()
+    conferir("Clareza", "no \"Mais\", cada item tem uma explicação curta", itens >= 4 and s.p.locator("#app .lista-mais .descricao").count() >= itens - 5)
+    faltam = []
+    for rota in ["#/casos", "#/agenda", "#/conta", "#/supervisao", "#/indicadores"]:
+        s.ir(rota)
+        if not s.js("(() => { const h = document.querySelector('#app h1'), n = h && h.nextElementSibling; return !!n && (n.matches('.subtitulo, .suave, .aviso')); })()"):
+            faltam.append(rota)
+    conferir("Clareza", "as telas principais têm uma frase logo abaixo do título explicando para que servem", not faltam, ", ".join(faltam))
+    s.fechar()
+    # Com o banco ligado, "Esqueci minha senha" pede o link ao Supabase Auth, com a mesma resposta para todos
+    s = Sessao(nav, base, "Esqueci a senha (banco simulado)")
+    enviados, estado = supabase_simulado(s)
+    s.abrir("#/esqueci-senha")
+    s.p.fill("#es-email", "nao-e-email")
+    s.clicar('form[data-form="recuperar-senha"] button[type=submit]')
+    conferir("Senha", "banco ligado: e-mail inválido é recusado no campo, sem chamar o servidor",
+             s.p.get_attribute("#es-email", "aria-invalid") == "true" and not estado.get("recuperar"))
+    s.p.fill("#es-email", "bia.estagiaria@clinica.example.org")
+    s.clicar('form[data-form="recuperar-senha"] button[type=submit]')
+    s.p.wait_for_timeout(300)
+    conferir("Senha", "banco ligado: o pedido vai ao Supabase Auth e a resposta não revela se a conta existe",
+             (estado.get("recuperar") or [{}])[-1].get("email") == "bia.estagiaria@clinica.example.org" and "Se o e-mail estiver cadastrado" in s.p.locator("#es-resposta").inner_text())
+    s.fechar()
+    # Libras: a política de segurança libera só o VLibras (gov.br e o caminho dele no jsDelivr), sem o estatístico de uso
+    csp = re.search(r'Content-Security-Policy" content="([^"]+)"', (RAIZ / "index.html").read_text(encoding="utf-8")).group(1)
+    diretivas = {d.split()[0]: d.split()[1:] for d in csp.split("; ")}
+    jsdelivr = [f for fontes in diretivas.values() for f in fontes if "jsdelivr" in f]
+    conferir("Libras", "a política de segurança libera o VLibras (gov.br e só o caminho dele no jsDelivr) e não libera o estatístico de uso (PostHog)",
+             "https://vlibras.gov.br" in diretivas["script-src"] and "https://vlibras.gov.br" in diretivas["frame-src"]
+             and jsdelivr and all(f == "https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/" for f in jsdelivr) and "posthog" not in csp, csp[:160])
+    try:
+        urllib.request.urlopen(urllib.request.Request("https://vlibras.gov.br/app/vlibras-plugin.js", method="HEAD"), timeout=8)
+        com_rede = True
+    except Exception:
+        com_rede = False
+    if not com_rede:
+        print("  (Libras ao vivo: pulado, sem acesso ao vlibras.gov.br nesta máquina)")
+        return
+    # Ao vivo: abre o VLibras pelo menu e espera o avatar carregar (eventos que o próprio VLibras manda)
+    ctx = nav.new_context(viewport={"width": 390, "height": 844}, locale="pt-BR")
+    p = ctx.new_page()
+    pedidos = []
+    p.on("request", lambda r: pedidos.append(r.url))
+    p.goto(base + "#/entrar")
+    p.wait_for_selector("#app h1")
+    p.evaluate("window.__ev = []; addEventListener('message', e => { if (e.data && e.data.type === 'unity_event') __ev.push(e.data.event); })")
+    p.click("#botao-conta")
+    p.click('[data-acao="vlibras"]')
+    menu_fechou = not p.is_visible("#menu-conta")
+    try:
+        p.wait_for_function("() => window.__ev.includes('on_load_player')", timeout=90000)
+        carregou = True
+    except Exception:
+        carregou = False
+    conferir("Libras", "o item Libras abre o VLibras na hora (fecha o menu) e o avatar carrega",
+             carregou and menu_fechou and p.evaluate("!!document.getElementById('vlibras-access-wrapper')"), ", ".join(sorted(set(p.evaluate("__ev")))))
+    conferir("Libras", "nenhum pedido vai para o estatístico de uso do VLibras (PostHog)", not any("posthog" in u for u in pedidos))
+    ctx.close()
+
+
 def risco_e_seguranca(nav, base):
     s = Sessao(nav, base, "Risco e segurança")
     # Estagiária: avaliação de risco e plano de segurança feito com o paciente
@@ -1078,6 +1182,9 @@ def supabase_simulado(s, fatores=()):
                 # token que vence em 30 s: o próximo pedido já precisa renová-lo
                 return route.fulfill(status=200, content_type="application/json", body=json.dumps({"access_token": "tok-1", "refresh_token": "ref-1", "expires_in": 30}))
             return route.fulfill(status=400, content_type="application/json", body='{"error":"invalid_grant"}')
+        if partes.path == "/auth/v1/recover":   # "Esqueci minha senha": o Auth manda o link (aqui, só registra o pedido)
+            estado.setdefault("recuperar", []).append(json.loads(req.post_data or "{}"))
+            return route.fulfill(status=200, content_type="application/json", body="{}")
         if partes.path == "/auth/v1/user":
             return route.fulfill(status=200, content_type="application/json", body=json.dumps({"id": "auth-teste", "factors": list(fatores)}))
         fator = re.fullmatch(r"/auth/v1/factors/([^/]+)/(challenge|verify)", partes.path)
@@ -1645,7 +1752,7 @@ def main():
     with sync_playwright() as p:
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
-        for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias, navegacao_e_identidade,
+        for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias, navegacao_e_identidade, entrada_libras_e_clareza,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
                       verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, adaptador_supabase, adaptador_supabase_mfa):
             try:

@@ -70,7 +70,7 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 
 - `marta.direcao` → **Indicadores** (sem nomes) → **Grupos de estágio** → **Encerrar estágio**: o acesso termina na hora.
 - `iara.estagiaria`: entra, mas não vê nenhum caso (vínculo do semestre passado).
-- Botão da conta (no topo, à direita): tamanho do texto, alto contraste e Libras. Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade**.
+- Botão da conta (no topo, à direita): tamanho do texto, alto contraste e **Libras** (o avatar do VLibras abre e sinaliza; toque num texto, como o título, para ver a tradução). Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade**.
 - Passe para os slides: "Agora, por que isso é viável."
 
 ## 9. Diferenciais — se sobrar tempo, ou para as perguntas (3 min)
@@ -104,7 +104,7 @@ Escolha dois ou três, conforme o tempo.
 - **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
 - **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
 - **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
-- **Como provam que funciona?** 372 verificações automáticas no site (71 telas conferidas no teste de acessibilidade), 174 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
+- **Como provam que funciona?** 389 verificações automáticas no site (73 telas conferidas no teste de acessibilidade), 174 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
 - **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS e triggers): a estagiária só recebe as linhas dos casos dela e não consegue, por exemplo, gravar uma evolução já "validada".
 - **E se roubarem a senha?** Com a verificação em duas etapas, a senha sozinha não abre nada, nem no banco. Em produção, ela é obrigatória para a equipe.
 - **E se o paciente estiver em risco?** O risco é registrado no caso, a supervisão precisa dar ciência, a notificação obrigatória tem órgão e prazo à vista e o plano de segurança fica com o paciente. O sistema não é canal de crise: mostra CVV 188 e SAMU 192.
@@ -121,4 +121,4 @@ Escolha dois ou três, conforme o tempo.
 
 - **Sem internet:** abra a pasta no VS Code com a extensão **Live Server**.
 - **Algo estranho na tela:** **Sair** → **"Restaurar dados de demonstração"**.
-- **VLibras não abre:** depende do site do governo; mostre a declaração de acessibilidade.
+- **VLibras não abre:** depende do site do governo e da internet; mostre a declaração de acessibilidade. Se perguntarem de privacidade: o VLibras só carrega quando a pessoa pede, envia ao governo só o texto escolhido e o estatístico de uso dele fica bloqueado.

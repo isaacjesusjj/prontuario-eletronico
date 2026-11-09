@@ -109,7 +109,7 @@ PostgreSQL no Supabase (região São Paulo). Projeção: ~84 MB por ano no cená
 
 | O quê | Como rodar | Resultado |
 |---|---|---|
-| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 372 de 372 |
+| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 389 de 389 |
 | Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 174 de 174 |
 | JSON antes de migrar | `python ferramentas/validar_json.py` | 0 problemas |
 
@@ -170,6 +170,19 @@ Pedido do grupo: visual mais limpo, identidade da Faculdade Santa Casa, foco em 
 | Rótulos e cabeçalhos de tabela em caixa alta | Texto normal, selos arredondados | Caixa alta é mais difícil de ler |
 | Campos com letra de 15,5 px | Campos com 16 px e 44 px de altura | Abaixo de 16 px o iPhone dá zoom ao tocar no campo; 44 px é o alvo de toque recomendado |
 
+**Segunda rodada (pedido do grupo, 09/11):**
+
+| O que estava | O que ficou | Por quê |
+|---|---|---|
+| Muito branco: topo, cartões e fundo quase todos brancos | Topo verde, fundo esverdeado, rodapé verde-escuro; os cartões brancos se destacam do fundo | Identidade mais presente e telas menos "lavadas" |
+| Logotipo da Faculdade acima do Vinculum, do mesmo tamanho | Vinculum em destaque numa faixa verde e o logotipo da Faculdade menor, embaixo, na versão branca oficial da Faculdade | O sistema é o produto; a Faculdade assina embaixo. O arquivo do logotipo tem 303 × 85 px: em até 32 px de altura ele fica nítido também em celular de tela densa |
+| **Libras não funcionava** | VLibras 7 carregando e o avatar sinalizando (testado de verdade no navegador) | O VLibras mudou na versão 7: o endereço do gov.br agora redireciona para o jsDelivr, que a política de segurança do site bloqueava. A política libera agora o gov.br e só o caminho do VLibras no jsDelivr; o estatístico de uso que vem com o VLibras (PostHog, nos EUA) continua bloqueado |
+| "Esqueceu a senha?" era um parágrafo longo dentro do login | Link "Esqueci minha senha" logo abaixo da senha, que abre uma tela curta: quem gera a senha provisória (equipe: coordenação; paciente: psicóloga técnica). Com o banco ligado, a mesma tela manda o link por e-mail, com a mesma resposta exista ou não a conta | Login mais curto e instrução mais clara |
+| Nomes do grupo só numa linha pequena no fim da entrada | Quadro "Quem fez o Vinculum" na entrada e os nomes no rodapé de todas as telas | Crédito à vista |
+| Abas e itens sem explicação | Uma frase sob as abas do prontuário dizendo o que há em cada uma; explicação curta em cada item do "Mais"; frase sob o título das telas principais | Quem chega agora entende cada parte sem perguntar |
+
+O VLibras envia ao serviço do Governo Federal o texto que a pessoa toca para traduzir. O site avisa isso na hora e na declaração de acessibilidade, e recomenda não traduzir texto do prontuário (registrado também em `docs/lgpd.md`).
+
 Os 5 pedidos de confirmação (`window.confirm`) continuam: restaurar dados, falta sem justificativa, encerrar estágio, desativar conta e desligar a verificação em duas etapas. Todos protegem ações difíceis de desfazer.
 
 ## Registro de decisões
@@ -178,6 +191,7 @@ Os 5 pedidos de confirmação (`window.confirm`) continuam: restaurar dados, fal
 |---|---|---|
 | Nome | Vinculum (antes Vínculo) | "Laço", em latim: remete ao vínculo terapêutico, ao problema do paciente que não volta e ao acesso que nasce e morre com o vínculo de estágio |
 | Identidade visual | Verde da Faculdade Santa Casa (`#007931`), uma fonte só (Public Sans), logotipo da Faculdade com autorização | Escolha do grupo; tons ajustáveis no topo de `css/estilo.css` |
+| VLibras | Endereço oficial (vlibras.gov.br/app), carregado só quando a pessoa pede; na CSP, só o gov.br, as APIs do VLibras e o caminho dele no jsDelivr | Libras funcionando sem abrir o site para scripts de terceiros nem para estatística de uso |
 | Navegação | Barra embaixo no celular e no tablet em pé; coluna à esquerda a partir de 960 px; preferências e Sair no menu da conta | O sistema será usado mais em celular e tablet |
 | Tecnologia das telas | HTML, CSS e JS puros | Exigência da Etapa 4 e facilidade para explicar o código |
 | Banco | PostgreSQL no Supabase, região São Paulo | Volume pequeno; regras de acesso no próprio banco (RLS); login com MFA; dados no Brasil; custo zero no PIC |

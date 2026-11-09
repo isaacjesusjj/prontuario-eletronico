@@ -801,12 +801,6 @@ window.PEP = PEP;
     },
     'fechar-senha-gerada': function () { PEP.telas._senhaGerada = null; PEP.app.renderizar(); },
     // Esqueci a senha (banco ligado): a resposta é a mesma exista ou não o e-mail (não revela quem tem conta)
-    'recuperar-senha': function () {
-      var email = val('lg-usuario'), ad = repo().adaptador();
-      if (!ad.recuperarSenha) return;
-      if (!V().email(email)) { PEP.form.aplicar(document, [['lg-usuario', 'Digite o seu e-mail para receber o link.']]); return; }
-      ad.recuperarSenha(email).then(function () { PEP.ui.toast('Se o e-mail estiver cadastrado, você vai receber um link para criar outra senha.'); });
-    },
 
     // ----- Verificação em duas etapas -----
     'cancelar-mfa': function () { PEP.estado.cancelarMfa(); PEP.app.renderizar(); },
@@ -1084,6 +1078,15 @@ window.PEP = PEP;
     },
     // Busca de paciente (menu). O termo fica só na memória da página, nunca no endereço: assim nome de
     // paciente não vai para o histórico do navegador
+    // "Esqueci minha senha" com o banco ligado: o Supabase Auth manda o link. A resposta é a mesma
+    // exista ou não a conta (não revela quem tem cadastro)
+    'recuperar-senha': function (form) {
+      var email = form.elements.email.value.trim(), ad = repo().adaptador();
+      if (!ad.recuperarSenha) return;
+      if (!V().email(email)) { PEP.form.aplicar(form, [['es-email', 'Digite o seu e-mail cadastrado.']]); return; }
+      var avisar = function () { el('es-resposta').textContent = 'Se o e-mail estiver cadastrado, você vai receber um link para criar outra senha. Confira também a caixa de spam.'; };
+      ad.recuperarSenha(email).then(avisar, avisar);
+    },
     busca: function (form) {
       PEP.telas._busca = form.elements.termo.value.trim().slice(0, 60);
       if (window.location.hash !== '#/busca') { window.location.hash = '#/busca'; return; }

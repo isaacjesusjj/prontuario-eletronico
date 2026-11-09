@@ -17,7 +17,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 372 de 372 (71 telas no axe-core).
+  - `python testes/testar_site.py` → hoje 389 de 389 (73 telas no axe-core).
   - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 174 de 174.
   - No GitHub, os três rodam sozinhos a cada envio (`.github/workflows/testes.yml`, aba Actions).
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
@@ -30,7 +30,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Toda gravação passa por `js/repositorio.js`. O adaptador é escolhido em `js/config-banco.js`: `'local'` hoje (JSON + cópia no navegador) e `'supabase'` quando o banco for ligado.
 - `js/permissoes.js` espelha as políticas RLS de `banco/schema.sql`. Mudou um, mude o outro e rode os dois testes.
 - Texto digitado por usuário sempre passa por `PEP.util.esc()` antes de entrar no HTML.
-- A CSP do `index.html` não permite scripts, fontes ou chamadas a servidores de terceiros. As fontes ficam em `fontes/`.
+- A CSP do `index.html` não permite scripts, fontes ou chamadas a servidores de terceiros. As fontes ficam em `fontes/`. Única exceção: o VLibras (Libras), carregado só quando a pessoa pede (`js/acessibilidade.js`): a CSP libera `https://vlibras.gov.br`, as APIs `*.vlibras.gov.br` e só o caminho `https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/` (para onde o gov.br redireciona). O estatístico de uso do VLibras (PostHog) fica bloqueado de propósito.
 
 ## JSON (`dados/dados-iniciais.json`)
 

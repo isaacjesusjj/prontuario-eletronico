@@ -171,7 +171,7 @@ PEP.telas = PEP.telas || {};
       var x = R().planoAtual(c);
       if (x && (!p || x.em > p.em)) p = x;
     });
-    var html = '<h1>Meu plano de segurança</h1><div class="cartao"><h2>Se você estiver em perigo agora</h2>' + PEP.telas.contatosUrgencia(false) + '</div>';
+    var html = '<h1>Meu plano de segurança</h1><p class="subtitulo">Para ler quando sentir que uma crise está começando: o que fazer, com quem falar e para onde ligar.</p><div class="cartao"><h2>Se você estiver em perigo agora</h2>' + PEP.telas.contatosUrgencia(false) + '</div>';
     if (!p) return html + '<div class="cartao"><p>Você ainda não tem um plano de segurança. Se for preciso, ele é feito com você, na sessão, por quem te atende.</p></div>';
     return html + '<div class="cartao plano-paciente"><h2>O que combinamos</h2><p class="suave pequeno">Feito com você em ' + data(p.em) + ' (versão ' + p.versao + '). ' +
       'Leia quando sentir que uma crise está começando e siga os passos na ordem.</p>' + camposDoPlano(p) + '</div>' +

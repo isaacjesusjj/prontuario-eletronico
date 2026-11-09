@@ -27,7 +27,7 @@ Depois, rode os três testes (comandos no `CLAUDE.md`) antes de mexer em qualque
 | Teste | Comando | Resultado |
 |---|---|---|
 | Validador do JSON | `python ferramentas/validar_json.py` | **0 problemas**. 1 aviso de propósito: a sessão s40 do caso c03 está sem evolução, para mostrar o alerta de 48 h |
-| Site | `python testes/testar_site.py` | **372 de 372** (71 telas conferidas com axe-core, WCAG 2.2 AA) |
+| Site | `python testes/testar_site.py` | **389 de 389** (73 telas conferidas com axe-core, WCAG 2.2 AA) |
 | Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **174 de 174** |
 
 Antes deste trabalho eram 154 verificações no site e 56 no banco.
@@ -74,6 +74,7 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
 - Bloco 3 (feito no branch `melhorias-bloco-3` e publicado na `main` no mesmo dia): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
+- Bloco 4, segunda rodada (09/11, branch `ajustes-vinculum-2`): Libras consertado (o VLibras 7 passou a redirecionar para o jsDelivr, que a política de segurança bloqueava; avatar testado de verdade no navegador); menos branco (topo verde, fundo esverdeado, rodapé verde-escuro); Vinculum em destaque na entrada com o logotipo da Faculdade menor embaixo; "Esqueci minha senha" numa tela curta; nomes do grupo na entrada e no rodapé; uma frase explicando cada aba, cada item do "Mais" e as telas principais. Também corrigida a coluna de navegação, que passava por cima do topo no fim das páginas longas.
 - Bloco 4 (feito em 09/11 no branch `redesign-vinculum` e publicado na `main` no mesmo dia): redesenho aprovado pelo grupo. Nome **Vinculum** no site e em todos os documentos (o endereço continua o mesmo); verde da Faculdade e uma fonte só; logotipo da Faculdade (com autorização) na entrada, no "Sobre" e nos documentos impressos; no celular, topo curto com o menu da conta e barra de navegação embaixo (o resto em "Mais"); no computador, coluna à esquerda; painel com uma linha de números e uma lista de pendências; prontuário com 6 abas; pedidos da técnica num item só; busca numa página própria; entrada curta. Detalhes na seção "Redesenho Vinculum" do `README.md`. Testes novos: etapa "navegação e identidade" (celular, computador, menu da conta, abas, pendências, logotipo).
 
 Ficou **de fora, por decisão do grupo**:

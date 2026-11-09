@@ -129,7 +129,9 @@ PEP.telas = PEP.telas || {};
     if (u.perfil === 'direcao') return PEP.ui.semPermissao('A agenda individual mostra pacientes; a direção acompanha pelos indicadores.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(ref || '')) ref = U().hoje();
     visao = visao || (u.perfil === 'paciente' ? 'lista' : 'semana');
-    var titulo = '<h1>' + (u.perfil === 'paciente' ? 'Minhas sessões' : 'Agenda') + '</h1>';
+    var titulo = '<h1>' + (u.perfil === 'paciente' ? 'Minhas sessões' : 'Agenda') + '</h1><p class="subtitulo">' +
+      (u.perfil === 'paciente' ? 'Suas sessões na clínica-escola. Confirme a presença ou avise se não puder ir.' :
+        'Sessões dos seus casos por dia, semana, mês ou lista, com a sala. Para agendar, abra o caso e vá em Sessões.') + '</p>';
     // Filtro por sala: mostra a ocupação de uma sala (para quem atende; o paciente vê só as próprias sessões)
     if (u.perfil !== 'paciente') {
       var atual = PEP.telas._salaAgenda || '';

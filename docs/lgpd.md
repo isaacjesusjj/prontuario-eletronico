@@ -22,6 +22,7 @@ Rascunho preparado pelo grupo para a instituição completar e validar com o jur
 | Comunicações a terceiros | Pacientes | Data, tipo, destinatário, finalidade, fundamento e o que foi informado | Encaminhar, responder a requisição, proteger a vida, comunicar aos responsáveis | Art. 11, II, "a", "e" e "f"; consentimento quando a comunicação depende de autorização | Equipe do caso; técnico com motivo; o paciente vê as que ficaram visíveis | Igual ao prontuário |
 | Aviso de falta pelo paciente | Pacientes | Sessão e motivo de lista fechada (sem texto livre) | Organizar a agenda e entender as faltas (indicador sem nomes) | Art. 11, II, "f" | Equipe do caso; direção só o total por motivo | Igual ao prontuário |
 | Contas e auditoria | Equipe e pacientes com conta | Nome, e-mail, matrícula, CRP, registros de acesso, motivo de acesso da técnica | Login, controle de acesso, prova de integridade, "quem acessou" para o paciente | Art. 7º, II e IX; arts. 6º, X, e 46 | Técnico (auditoria); o paciente vê os acessos ao próprio prontuário, por categoria | Acessos: mínimo 6 meses (Marco Civil, art. 15); auditoria do prontuário: igual ao prontuário |
+| Tradução para Libras (VLibras) | Quem usa o recurso | Só o texto que a pessoa escolhe traduzir | Acessibilidade (Lei 13.146/2015, art. 63) | Uso voluntário do recurso, sem texto do prontuário (a validar com o encarregado) | Governo Federal (serviço VLibras), na hora da tradução | Não guardado pelo Vinculum |
 | Verificação em duas etapas | Equipe (obrigatória em produção) e pacientes que ligarem | Segredo do aplicativo autenticador (no Supabase Auth) e códigos de recuperação (só o hash) | Segurança do acesso | Art. 46 | Ninguém da equipe lê o segredo; para quem perdeu o celular, a direção (contas da equipe) ou a técnica (contas de paciente) só desliga | Enquanto a conta existir |
 
 Operador: provedor do banco em nuvem (Supabase, região São Paulo), sob contrato de tratamento de dados.
@@ -46,6 +47,7 @@ Operador: provedor do banco em nuvem (Supabase, região São Paulo), sob contrat
 | Formulário público revelar quem é paciente | Baixa | Alto | Mensagem igual para CPF novo ou já cadastrado; duplicidade só para a equipe | Baixo |
 | Arquivo malicioso nos anexos | Baixa | Médio | Só PDF/JPG/PNG até 2 MB, conferindo o conteúdo; bucket privado | Baixo |
 | Perda de dados | Baixa | Alto | Plano Pro com backup diário (7 dias) + exportação periódica; teste de restauração | Baixo |
+| Texto clínico ir para o tradutor de Libras | Baixa | Médio | VLibras só carrega quando a pessoa pede; aviso na hora e na declaração de acessibilidade para não traduzir texto do prontuário; estatístico de uso do VLibras bloqueado pela CSP | Baixo |
 | Adulteração da auditoria | Baixa | Alto | Cadeia de hash; tabela só de inserção; verificação no banco e na tela | Baixo |
 
 **Conclusão:** com as medidas acima e a ativação do MFA obrigatório para a equipe e do backup no plano de produção, o risco residual é aceitável para iniciar um piloto com dados reais, após aprovação da coordenação, do encarregado e do jurídico.

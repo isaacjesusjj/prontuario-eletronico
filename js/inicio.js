@@ -14,13 +14,13 @@ PEP.app = (function () {
   var primeiraTela = true; // na abertura, o foco fica no começo da página (o 1º Tab vai para "Pular para o conteúdo")
 
   // Rotas abertas (não precisam de login)
-  var PUBLICAS = { entrar: 1, inscricao: 1, 'inscricao-ok': 1, sobre: 1, privacidade: 1, termos: 1, acessibilidade: 1, regras: 1, acesso: 1 };
+  var PUBLICAS = { entrar: 1, 'esqueci-senha': 1, inscricao: 1, 'inscricao-ok': 1, sobre: 1, privacidade: 1, termos: 1, acessibilidade: 1, regras: 1, acesso: 1 };
   // Páginas informativas que continuam abertas durante o primeiro acesso
   var INFORMATIVAS = { sobre: 1, privacidade: 1, termos: 1, acessibilidade: 1, regras: 1 };
 
   // Títulos da aba: nunca levam nome de paciente
   var TITULOS = {
-    entrar: 'Entrar', inscricao: 'Fila de espera', 'inscricao-ok': 'Inscrição recebida', sobre: 'Sobre o projeto', privacidade: 'Aviso de privacidade',
+    entrar: 'Entrar', 'esqueci-senha': 'Esqueci minha senha', inscricao: 'Fila de espera', 'inscricao-ok': 'Inscrição recebida', sobre: 'Sobre o projeto', privacidade: 'Aviso de privacidade',
     termos: 'Termos de uso', acessibilidade: 'Acessibilidade', regras: 'Regras e leis', acesso: 'Leitura do prontuário', painel: 'Início', casos: 'Casos',
     caso: 'Prontuário', imprimir: 'Cópia do prontuário', supervisao: 'Validação de evoluções', fila: 'Fila de espera', triagem: 'Triagem', alocacao: 'Alocação',
     agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Pedidos: cópia do prontuário', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
@@ -52,6 +52,7 @@ PEP.app = (function () {
     var T = PEP.telas;
     switch (rota.nome) {
       case 'entrar': return T.entrar();
+      case 'esqueci-senha': return T.esqueciSenha();
       case 'inscricao': return T.inscricao();
       case 'inscricao-ok': return T.inscricaoConcluida();
       case 'sobre': return T.sobre();
@@ -94,7 +95,7 @@ PEP.app = (function () {
     var u = PEP.estado.usuarioAtual();
     var rota = lerRota();
     if (!u && !PUBLICAS[rota.nome]) { window.location.hash = '#/entrar'; rota = lerRota(); }
-    if (u && rota.nome === 'entrar') { window.location.hash = '#/painel'; rota = lerRota(); }
+    if (u && (rota.nome === 'entrar' || rota.nome === 'esqueci-senha')) { window.location.hash = '#/painel'; rota = lerRota(); }
     // Primeiro acesso: MFA obrigatório, troca da senha provisória e aceite do termo vêm antes de tudo
     var pendencia = PEP.estado.pendenciaDeAcesso(u);
     // Códigos de recuperação recém-gerados aparecem uma vez só: a tela fica neles até a pessoa dizer que guardou
@@ -106,6 +107,7 @@ PEP.app = (function () {
     else if (navegou) ultimaRotaAuditada = '';
     if (navegou) carregarDoServidor(u, rota);
 
+    document.body.setAttribute('data-tela', rota.nome);   // o CSS ajusta o topo na entrada
     PEP.ui.desenharTopo(u);
     PEP.ui.desenharMenu(u, window.location.hash);
     PEP.ui.desenharRodape();

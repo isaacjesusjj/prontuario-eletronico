@@ -252,7 +252,7 @@ PEP.telas = PEP.telas || {};
     if (aba === 'documentos') return abaDocumentos(u, caso);
     if (aba === 'restrita') return PEP.telas.seletorRestrito(u, caso, aba) + abaRestrita(u, caso);
     if (aba === 'supervisao') return PEP.telas.seletorRestrito(u, caso, aba) + abaSupervisao(u, caso);
-    return '<h2>Encerramento</h2>' + abaEncerramento(u, caso);
+    return abaEncerramento(u, caso);
   };
 
   // ---------- Cópia do prontuário ----------

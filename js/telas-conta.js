@@ -80,7 +80,7 @@ PEP.telas = PEP.telas || {};
   PEP.telas.conta = function (u) {
     var aceites = PEP.db.aceites.filter(function (a) { return a.usuarioId === u.id; });
     var nomesTermo = { sigilo: 'Termo de responsabilidade e sigilo', uso: 'Termos de uso e aviso de privacidade' };
-    return '<h1>Minha conta</h1>' +
+    return '<h1>Minha conta</h1><p class="subtitulo">Seus dados de acesso, a troca de senha e a verificação em duas etapas.</p>' +
       '<div class="cartao"><h2>Dados da conta</h2><p><strong>Nome:</strong> ' + esc(PEP.ui.nomeUsuario(u.id)) + '<br><strong>Usuário:</strong> ' + esc(u.login) +
       '<br><strong>E-mail:</strong> ' + esc(u.email) + '<br><strong>Perfil:</strong> ' + esc(PEP.regras.nomePerfil(u.perfil)) +
       (u.matricula ? '<br><strong>Matrícula:</strong> ' + esc(u.matricula) : '') + (u.crp ? '<br><strong>CRP:</strong> ' + esc(u.crp) : '') + '</p>' +

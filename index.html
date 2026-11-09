@@ -10,9 +10,11 @@
   <!-- Não indexar: prontuário não deve aparecer em buscadores -->
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <!-- Política de segurança: só carrega scripts, estilos e fontes do próprio site
-       (o VLibras, do gov.br, só quando a pessoa pede) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br; style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br; img-src 'self' data: blob: https://vlibras.gov.br https://*.vlibras.gov.br; font-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br; connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br; frame-src blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <!-- Política de segurança: só carrega scripts, estilos e fontes do próprio site.
+       Exceção: o VLibras (Libras, gov.br), só quando a pessoa pede (js/acessibilidade.js). O gov.br
+       redireciona os arquivos do VLibras para o jsDelivr: fica liberado só o caminho do VLibras lá
+       (o estatístico de uso que vem no VLibras continua bloqueado). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://vlibras.gov.br https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/; style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/; img-src 'self' data: blob: https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/; font-src 'self' https://vlibras.gov.br https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/; connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/; frame-src blob: https://vlibras.gov.br; object-src 'none'; base-uri 'self'; form-action 'self'">
   <!-- Ícone da aba embutido (evita o erro 404 do favicon.ico no console) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007931'/%3E%3Ccircle cx='25' cy='32' r='12.5' fill='none' stroke='%23fff' stroke-width='5'/%3E%3Ccircle cx='39' cy='32' r='12.5' fill='none' stroke='%23fff' stroke-width='5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/estilo.css">
@@ -23,9 +25,9 @@
   <!-- Marca do Vinculum: dois anéis entrelaçados (vínculo). Desenhada uma vez e usada no topo, na entrada e na cortina -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
     <symbol id="aneis" viewBox="0 0 42 28">
-      <circle cx="15" cy="14" r="10.5" fill="none" stroke-width="3.4" style="stroke:var(--verde)"/>
-      <circle cx="27" cy="14" r="10.5" fill="none" stroke-width="3.4" style="stroke:var(--verde-escuro)"/>
-      <path d="M21 5.6A10.5 10.5 0 0 1 25.5 14" fill="none" stroke-width="3.4" style="stroke:var(--verde)"/>
+      <circle cx="15" cy="14" r="10.5" fill="none" stroke-width="3.4" style="stroke:var(--anel-1, var(--verde))"/>
+      <circle cx="27" cy="14" r="10.5" fill="none" stroke-width="3.4" style="stroke:var(--anel-2, var(--verde-escuro))"/>
+      <path d="M21 5.6A10.5 10.5 0 0 1 25.5 14" fill="none" stroke-width="3.4" style="stroke:var(--anel-1, var(--verde))"/>
     </symbol>
   </svg>
 

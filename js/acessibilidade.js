@@ -39,26 +39,33 @@ PEP.acessibilidade = (function () {
     PEP.ui.toast(pref.contraste ? 'Alto contraste ativado.' : 'Alto contraste desativado.');
   }
 
-  // O VLibras só é baixado quando a pessoa pede (o site não depende dele para funcionar)
-  var vlibrasCarregado = false;
+  // ---------- VLibras (tradutor de Libras do Governo Federal) ----------
+  // Só é baixado quando a pessoa pede: o site não depende dele para funcionar.
+  // Endereço oficial do VLibras 7. O gov.br entrega a página do avatar (o boneco 3D, num iframe) e redireciona
+  // os outros arquivos para o jsDelivr; por isso a política de segurança (CSP, no index.html) libera o
+  // vlibras.gov.br e só o caminho do VLibras no jsDelivr. O estatístico de uso que vem no VLibras (PostHog,
+  // nos EUA) fica de fora da CSP: num prontuário, nenhum dado de navegação vai para terceiros.
+  var VLIBRAS = 'https://vlibras.gov.br/app';
+  var vlibras = 'parado';   // parado → carregando → pronto
   function abrirVlibras() {
-    if (vlibrasCarregado) { var botao = document.querySelector('[vw-access-button]'); if (botao) botao.click(); return; }
-    var div = document.createElement('div');
-    div.setAttribute('vw', ''); div.className = 'enabled';
-    div.innerHTML = '<div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>';
-    document.body.appendChild(div);
+    PEP.ui.fecharConta(false);   // o menu da conta sai da frente do tradutor
+    if (vlibras === 'pronto') { window.VLibrasWidget.open(); return; }
+    if (vlibras === 'carregando') return;
+    vlibras = 'carregando';
+    PEP.ui.toast('Carregando o VLibras…');
+    window.VLibrasWidget = { path: VLIBRAS };
     var s = document.createElement('script');
-    s.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
+    s.src = VLIBRAS + '/vlibras-plugin.js';
     s.onload = function () {
       try {
-        new window.VLibras.Widget('https://vlibras.gov.br/app');
-        vlibrasCarregado = true;
-        // o widget se monta no evento load; como a página já carregou, dispara de novo
-        window.dispatchEvent(new Event('load'));
-        PEP.ui.toast('VLibras carregado: use o botão azul no canto da tela.');
-      } catch (e) { PEP.ui.toast('Não foi possível iniciar o VLibras.'); }
+        new window.VLibras.Widget({ rootPath: VLIBRAS });
+        vlibras = 'pronto';
+        window.VLibrasWidget.open();   // abre o tradutor na hora (o botão azul do VLibras fica na lateral da tela)
+        // O VLibras manda ao servidor do governo o texto escolhido para traduzir: a pessoa precisa saber
+        PEP.ui.toast('VLibras aberto. O texto que você tocar vai para o serviço do governo, que traduz para Libras.');
+      } catch (e) { vlibras = 'parado'; PEP.ui.toast('Não foi possível iniciar o VLibras.'); }
     };
-    s.onerror = function () { PEP.ui.toast('Não foi possível carregar o VLibras (sem conexão com vlibras.gov.br).'); };
+    s.onerror = function () { vlibras = 'parado'; PEP.ui.toast('Não foi possível carregar o VLibras (sem conexão com o serviço do governo).'); };
     document.body.appendChild(s);
   }
 

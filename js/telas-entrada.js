@@ -21,11 +21,25 @@ PEP.telas = PEP.telas || {};
       '<button type="button" class="botao secundario" data-acao="cancelar-mfa">Voltar</button></div></form>';
   };
 
-  // Logotipo da Faculdade (uso autorizado para o projeto acadêmico), servido pelo próprio site
-  PEP.telas.logoFaculdade = function (altura) {
-    var h = altura || 40, w = Math.round(h * 303 / 85);
-    return '<img class="logo-inst" src="img/logo-fcmsantacasa.png" width="' + w + '" height="' + h + '" alt="Faculdade de Ciências Médicas da Santa Casa de São Paulo">';
+  // Logotipo da Faculdade (uso autorizado para o projeto acadêmico), servido pelo próprio site.
+  // Versão verde para fundo claro e versão branca (oficial da Faculdade) para fundo verde.
+  // O arquivo tem 303 × 85 px: até 32 px de altura ele fica nítido também em celular de tela densa.
+  PEP.telas.logoFaculdade = function (altura, branco) {
+    var h = altura || 32, w = Math.round(h * 303 / 85);
+    return '<img class="logo-inst' + (branco ? ' branco' : '') + '" src="img/logo-fcmsantacasa' + (branco ? '-branco' : '') + '.png" width="' + w + '" height="' + h +
+      '" alt="Faculdade de Ciências Médicas da Santa Casa de São Paulo">';
   };
+
+  // Quem fez o projeto: aparece na entrada, no "Sobre" e no rodapé de todas as telas
+  PEP.telas.GRUPO = ['Daniel Dantas', 'Dilson Rodrigues', 'Isaac de Jesus Lima'];
+
+  // Faixa verde do alto da entrada: a marca do sistema em destaque e a da Faculdade embaixo, menor
+  function faixaEntrada() {
+    return '<section class="faixa-entrada" aria-labelledby="titulo-marca"><div class="entrada">' +
+      '<h1 class="marca-grande" id="titulo-marca">' + PEP.ui.aneis() + 'Vinculum</h1>' +
+      '<p class="apresentacao">Prontuário eletrônico da clínica-escola de Psicologia: da fila de espera ao encerramento do caso, com supervisão em cada registro.</p>' +
+      PEP.telas.logoFaculdade(32, true) + '</div></section>';
+  }
 
   PEP.telas.entrar = function () {
     if (PEP.estado.lerMfaPendente()) return PEP.telas.entrarCodigo();
@@ -38,30 +52,53 @@ PEP.telas = PEP.telas || {};
         '<strong>' + esc(PEP.ui.nomeUsuario(u.id)) + '</strong><span class="perfil-tipo">' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span></button>';
     }).join('');
 
-    return '<div class="entrada">' + PEP.telas.logoFaculdade(40) +
-      '<h1 class="marca-grande">' + PEP.ui.aneis() + 'Vinculum</h1>' +
-      '<p class="apresentacao">Prontuário eletrônico da clínica-escola de Psicologia: da fila de espera ao encerramento do caso, com supervisão em cada registro.</p>' +
+    return faixaEntrada() + '<div class="entrada">' +
       (motivo ? '<div class="aviso alerta" role="status">Sua sessão foi encerrada por ' + (motivo === 'inatividade' ? PEP.regra('inatividadeMinutos') + ' minutos sem uso' : 'tempo máximo de uso') + '. Entre de novo para continuar.</div>' : '') +
       '<form class="cartao" data-form="login" novalidate aria-labelledby="titulo-entrar">' +
-      '<h2 id="titulo-entrar" class="sr-only">Entrar</h2>' +
+      '<h2 id="titulo-entrar">Entrar</h2>' +
       '<div class="aviso perigo" id="login-erro" role="alert" hidden></div>' +
       '<div class="campo"><label for="lg-usuario">Usuário ou e-mail</label>' +
       '<input id="lg-usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>' +
       '<div class="campo"><label for="lg-senha">Senha</label>' +
       '<div class="senha-linha"><input id="lg-senha" name="senha" type="password" autocomplete="current-password" required>' +
-      '<button type="button" class="botao secundario pequeno" data-acao="mostrar-senha" data-alvo="lg-senha" aria-pressed="false">Mostrar</button></div></div>' +
-      '<button class="botao largo" type="submit" id="lg-entrar">Entrar</button>' +
-      (PEP.repo.adaptador().remoto ?
-        '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? Digite seu e-mail acima e <button type="button" class="botao secundario pequeno" data-acao="recuperar-senha">receba um link</button> para criar outra.</p>' :
-        '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? A coordenação (equipe) ou a psicóloga técnica (pacientes) gera uma senha provisória, que você troca no primeiro acesso.</p>') +
-      '</form>' +
+      '<button type="button" class="botao secundario pequeno" data-acao="mostrar-senha" data-alvo="lg-senha" aria-pressed="false">Mostrar</button></div>' +
+      '<a class="link-senha" href="#/esqueci-senha">Esqueci minha senha</a></div>' +
+      '<button class="botao largo" type="submit" id="lg-entrar">Entrar</button></form>' +
       '<h2>Contas de demonstração</h2>' +
       '<p class="suave pequeno" style="margin:0">Contas fictícias: toque numa conta e depois em <strong>Entrar</strong>. Senha de todas: <strong>' + esc(meta.senhaDemonstracao || '') + '</strong>.</p>' +
       '<div class="contas-demo">' + contas + '</div>' +
       '<div class="cartao"><h2>Quer ser atendido(a)?</h2><p class="suave">Entre na fila de espera da clínica-escola. Leva 2 minutos.</p>' +
       '<a class="botao secundario largo" href="#/inscricao">Entrar na fila de espera</a></div>' +
-      '<p class="suave pequeno">Grupo: Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima · <a href="#/sobre">sobre o projeto</a></p>' +
+      '<section class="cartao equipe-projeto" aria-labelledby="titulo-equipe"><h2 id="titulo-equipe">Quem fez o Vinculum</h2>' +
+      '<ul>' + PEP.telas.GRUPO.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>' +
+      '<p class="suave pequeno" style="margin:0">Projeto Integrador de Curso (PIC) · Análise e Desenvolvimento de Sistemas · Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026. ' +
+      '<a href="#/sobre">Sobre o projeto</a></p></section>' +
       '<button class="botao secundario pequeno" data-acao="restaurar">Restaurar dados de demonstração</button></div>';
+  };
+
+  // "Esqueci minha senha": tela curta, por perfil. No protótipo não há envio de e-mail: quem cuida
+  // das contas gera uma senha provisória, e a pessoa cria a dela no primeiro acesso.
+  // Com o banco ligado, o Supabase Auth manda o link para o e-mail (mesma resposta, exista ou não a conta).
+  PEP.telas.esqueciSenha = function () {
+    var remoto = PEP.repo.adaptador().remoto;
+    return faixaEntrada() + '<div class="entrada">' +
+      '<div class="cartao"><a href="#/entrar" class="voltar">‹ Entrar</a><h2 style="margin-top:.3rem">Esqueci minha senha</h2>' +
+      (remoto ?
+        '<form data-form="recuperar-senha" novalidate><div class="campo"><label for="es-email">Seu e-mail cadastrado</label>' +
+        '<input id="es-email" name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" required></div>' +
+        '<button class="botao largo" type="submit">Enviar link para criar outra senha</button>' +
+        '<p class="suave pequeno" id="es-resposta" role="status" style="margin:.6rem 0 0"></p></form>' :
+        '<p>Você recebe uma <strong>senha provisória</strong> e, ao entrar com ela, cria a sua.</p>') +
+      '</div>' +
+      '<section class="cartao" aria-labelledby="titulo-quem-gera"><h2 id="titulo-quem-gera">Quem gera a senha provisória</h2><ul class="lista-itens">' +
+      '<li><span class="sinal info" aria-hidden="true"></span><div class="resto"><strong>Estudante, supervisor(a) ou equipe</strong>' +
+      '<small>Peça a senha provisória à coordenação do curso.</small></div></li>' +
+      '<li><span class="sinal info" aria-hidden="true"></span><div class="resto"><strong>Paciente</strong>' +
+      '<small>Fale com a psicóloga técnica da clínica-escola. Ela confere quem é você antes de gerar a senha provisória.</small></div></li></ul></section>' +
+      '<p class="suave pequeno">Ninguém da clínica pede a sua senha. Não envie senha por mensagem.</p>' +
+      (remoto ? '' : '<div class="aviso info pequeno"><strong>Na demonstração:</strong> a direção (<code>marta.direcao</code>) gera a senha provisória da equipe em "Estudantes"; ' +
+        'a técnica (<code>ana.tecnica</code>) gera a do paciente no Resumo do caso dele.</div>') +
+      '<a class="botao secundario largo" href="#/entrar">Voltar para entrar</a></div>';
   };
 
   // No protótipo (dados no navegador), nenhuma clínica recebe a inscrição. Quem chegar aqui
@@ -115,10 +152,10 @@ PEP.telas = PEP.telas || {};
   };
 
   PEP.telas.sobre = function () {
-    return '<h1>Sobre o Vinculum</h1>' + PEP.telas.logoFaculdade(40) +
+    return '<h1>Sobre o Vinculum</h1>' + PEP.telas.logoFaculdade(32) +
       '<div class="cartao"><h2>O projeto</h2>' +
       '<p>Protótipo funcional do Projeto Integrador de Curso (PIC) — Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.</p>' +
-      '<p><strong>Grupo:</strong> Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima.</p>' +
+      '<p><strong>Grupo:</strong> ' + esc(PEP.telas.GRUPO.slice(0, -1).join(', ') + ' e ' + PEP.telas.GRUPO.slice(-1)) + '.</p>' +
       '<p><strong>O nome:</strong> <em>vinculum</em> é "laço", em latim. O sistema existe para manter o vínculo entre o paciente e a clínica-escola, e o acesso de cada pessoa nasce e termina com o vínculo de estágio.</p>' +
       '<p class="suave"><strong>Versões anteriores:</strong> Etapa 1 — requisitos (Adônis Silveira, Isaac Jesus, Felipe Moretti e Giovane Guedes, 1º semestre de 2026); ' +
       'protótipo de telas v1 (Daniel Dantas, Dilson Rodrigues, Gustavo Santos e Ryan Mendes).</p></div>' +

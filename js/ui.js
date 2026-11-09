@@ -52,6 +52,24 @@ PEP.ui = (function () {
     direcao: [['#/painel', 'Início', 'inicio'], ['#/indicadores', 'Indicadores', 'indicadores'], ['#/alocacao', 'Grupos', 'pessoas'], ['#/estudantes', 'Estudantes', 'estudantes']]
   };
   var CABEM_NA_BARRA = 5;
+  // O que tem em cada item, em uma frase (aparece na página "Mais"), para quem chega agora entender
+  var DESCRICOES = {
+    '#/painel': 'Resumo do dia: números, pendências e próximas sessões.',
+    '#/casos': 'Pacientes em atendimento e o prontuário de cada um.',
+    '#/agenda': 'Sessões por dia, semana ou mês, com a sala.',
+    '#/busca': 'Encontrar um paciente pelo nome, entre os casos que você pode ver.',
+    '#/supervisao': 'Evoluções enviadas pelos estagiários, para validar ou devolver.',
+    '#/alocacao': 'Grupos de estágio, duplas e trios, e os pacientes de cada um.',
+    '#/indicadores': 'Números do serviço, sem nomes: atendimentos, faltas e abandono.',
+    '#/fila': 'Pessoas inscritas esperando atendimento, para triar.',
+    '#/solicitacoes': 'Pedidos dos pacientes: cópia do prontuário e direitos da LGPD.',
+    '#/auditoria': 'Quem fez o quê e quando, com verificação contra adulteração.',
+    '#/estudantes': 'Contas de estudantes: importar a turma e gerar senha provisória.',
+    '#/meu-prontuario': 'Pedir a cópia do seu prontuário.',
+    '#/meu-plano': 'O plano de segurança que você fez com quem te atende.',
+    '#/meus-dados': 'Seus dados, quem acessou o seu prontuário e seus pedidos pela LGPD.',
+    '#/conta': 'Trocar a senha e ligar a verificação em duas etapas.'
+  };
   function itensExtras(u) {
     var itens = MENUS[u.perfil] || [];
     return itens.length > CABEM_NA_BARRA ? itens.slice(CABEM_NA_BARRA - 1) : [];
@@ -176,9 +194,12 @@ PEP.ui = (function () {
 
   // Página "Mais": o que não coube na barra de baixo, a conta e as páginas informativas
   function telaMais(u) {
-    var linha = function (href, nome, ic) { return '<li><a href="' + href + '">' + icone(ic) + '<span>' + esc(nome) + '</span><span class="seta" aria-hidden="true">›</span></a></li>'; };
+    var linha = function (href, nome, ic) {
+      return '<li><a href="' + href + '">' + icone(ic) + '<span>' + esc(nome) + (DESCRICOES[href] ? '<span class="descricao">' + esc(DESCRICOES[href]) + '</span>' : '') +
+        '</span><span class="seta" aria-hidden="true">›</span></a></li>';
+    };
     var extras = itensExtras(u);
-    return '<h1>Mais</h1>' +
+    return '<h1>Mais</h1><p class="subtitulo">O que não coube na barra de baixo, a sua conta e as informações do sistema.</p>' +
       (extras.length ? '<ul class="lista-mais">' + extras.map(function (i) { return linha(i[0], i[1], i[2]); }).join('') + '</ul>' : '') +
       '<ul class="lista-mais">' + linha('#/conta', 'Minha conta', 'conta') + '</ul>' +
       '<h2>Sobre o Vinculum</h2><ul class="lista-mais">' + linha('#/sobre', 'Sobre o projeto', 'info') + linha('#/privacidade', 'Aviso de privacidade', 'dados') +
@@ -188,10 +209,12 @@ PEP.ui = (function () {
   function desenharRodape() {
     var r = el('rodape');
     if (!r || r.innerHTML) return;
-    r.innerHTML = '<div class="rodape-dentro"><nav aria-label="Informações do site"><a href="#/sobre">Sobre</a><a href="#/privacidade">Privacidade</a>' +
+    var g = PEP.telas.GRUPO;
+    r.innerHTML = '<div class="rodape-dentro">' + PEP.telas.logoFaculdade(32, true) +
+      '<p class="grupo">Feito por ' + esc(g.slice(0, -1).join(', ') + ' e ' + g.slice(-1)) + ' · Projeto Integrador de Curso, Análise e Desenvolvimento de Sistemas, 2026</p>' +
+      '<nav aria-label="Informações do site"><a href="#/sobre">Sobre o projeto</a><a href="#/privacidade">Privacidade</a>' +
       '<a href="#/termos">Termos de uso</a><a href="#/acessibilidade">Acessibilidade</a><a href="#/regras">Regras e leis</a></nav>' +
-      '<p>Protótipo acadêmico · PIC de ADS · Faculdade de Ciências Médicas da Santa Casa de São Paulo · dados fictícios. ' +
-      'Dúvidas sobre seus dados: <a href="#/privacidade#encarregado">fale com o encarregado</a>.</p></div>';
+      '<p>Protótipo acadêmico com dados fictícios. Dúvidas sobre seus dados: <a href="#/privacidade#encarregado">fale com o encarregado</a>.</p></div>';
   }
 
   function definirTitulo(texto) {

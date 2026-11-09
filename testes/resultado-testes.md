@@ -1,18 +1,18 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), com axe-core 4.14.0.
 
-**372 de 372 verificações passaram.** Acessibilidade: 71 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**389 de 389 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 80 | 0 |
+| Acessibilidade | 82 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
 | Auditoria | 8 | 0 |
-| Senha | 11 | 0 |
+| Senha | 15 | 0 |
 | Permissões | 7 | 0 |
 | Evolução | 8 | 0 |
 | Anamnese | 1 | 0 |
@@ -34,12 +34,15 @@ Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), 
 | Sessão | 4 | 0 |
 | Demonstração | 2 | 0 |
 | Celular | 18 | 0 |
-| Identidade | 2 | 0 |
+| Identidade | 4 | 0 |
 | Painel | 1 | 0 |
 | Caso | 4 | 0 |
 | Menu da conta | 5 | 0 |
 | Pedidos | 1 | 0 |
 | Computador | 1 | 0 |
+| Créditos | 3 | 0 |
+| Clareza | 3 | 0 |
+| Libras | 3 | 0 |
 | Risco | 17 | 0 |
 | Revisor | 8 | 0 |
 | Privacidade | 15 | 0 |
@@ -259,6 +262,23 @@ Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), 
 | ✓ | Caso | a Área restrita junta supervisão e avaliação psicológica, com um seletor entre as duas |  |
 | ✓ | Pedidos | a técnica tem um item só, "Pedidos", com cópia do prontuário e direitos LGPD lado a lado |  |
 | ✓ | Computador | a navegação vira uma coluna à esquerda com os 7 itens, sem o "Mais" |  |
+| ✓ | Identidade | topo verde (menos branco) e, na entrada, a marca grande fica na faixa verde (a do topo some para não repetir) |  |
+| ✓ | Identidade | logotipo da Faculdade embaixo do Vinculum, menor (até 34 px de altura) e nítido em tela densa (o arquivo tem o dobro dos pixels mostrados) |  |
+| ✓ | Créditos | a entrada mostra "Quem fez o Vinculum" com os três nomes do grupo | Daniel Dantas, Dilson Rodrigues, Isaac de Jesus Lima |
+| ✓ | Créditos | o rodapé de toda tela traz os nomes do grupo e o logotipo branco da Faculdade |  |
+| ✓ | Acessibilidade | Entrada e clareza · Celular · entrada: sem violações WCAG A/AA |  |
+| ✓ | Senha | "Esqueci minha senha" abre uma tela curta que diz a quem pedir (equipe: coordenação; paciente: psicóloga técnica) |  |
+| ✓ | Acessibilidade | Entrada e clareza · Esqueci minha senha: sem violações WCAG A/AA |  |
+| ✓ | Senha | quem já entrou não fica na tela de "Esqueci minha senha" (volta ao início) |  |
+| ✓ | Créditos | depois de entrar, o rodapé continua com os nomes do grupo e a marca volta ao topo |  |
+| ✓ | Clareza | cada aba do prontuário tem uma frase dizendo o que há nela |  |
+| ✓ | Clareza | no "Mais", cada item tem uma explicação curta |  |
+| ✓ | Clareza | as telas principais têm uma frase logo abaixo do título explicando para que servem |  |
+| ✓ | Senha | banco ligado: e-mail inválido é recusado no campo, sem chamar o servidor |  |
+| ✓ | Senha | banco ligado: o pedido vai ao Supabase Auth e a resposta não revela se a conta existe |  |
+| ✓ | Libras | a política de segurança libera o VLibras (gov.br e só o caminho dele no jsDelivr) e não libera o estatístico de uso (PostHog) | default-src 'self'; script-src 'self' https://vlibras.gov.br https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/; style-src 'self' 'unsafe-inline' https://vlibras.gov |
+| ✓ | Libras | o item Libras abre o VLibras na hora (fecha o menu) e o avatar carrega | get_avatar, on_load_player, on_playing_state_change, update_progress |
+| ✓ | Libras | nenhum pedido vai para o estatístico de uso do VLibras (PostHog) |  |
 | ✓ | Acessibilidade | Risco e segurança · Caso · risco e segurança: sem violações WCAG A/AA |  |
 | ✓ | Risco | a aba mostra os números de urgência (SAMU 192, CVV 188) |  |
 | ✓ | Risco | avaliação sem descrição é recusada |  |
@@ -351,7 +371,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), 
 | ✓ | Duas etapas | configurou: os códigos de recuperação aparecem antes de seguir, e não há botão de desativar (é obrigatória) |  |
 | ✓ | Duas etapas | ... e só depois de "Já guardei" segue para o termo de sigilo | #/termo |
 | ✓ | Duas etapas | para o paciente, não é obrigatória (o portal precisa ser simples) |  |
-| ✓ | Transição | o resumo de transferência já vem com período, sessões, demanda e objetivos tirados do prontuário | Período: de 28/08/2026 a 08/11/2026 · 7 sessões com presença · 1 falta(s), 1 justificada(s). Demanda: Dificuldade em lid |
+| ✓ | Transição | o resumo de transferência já vem com período, sessões, demanda e objetivos tirados do prontuário | Período: de 29/08/2026 a 09/11/2026 · 7 sessões com presença · 1 falta(s), 1 justificada(s). Demanda: Dificuldade em lid |
 | ✓ | Acessibilidade | Transição de semestre · Caso · resumo de transferência: sem violações WCAG A/AA |  |
 | ✓ | Transição | sem completar as seções, o resumo não é enviado (o campo diz o que falta) |  |
 | ✓ | Transição | completo, o resumo é assinado e enviado à supervisão (sem sessão vinculada) |  |
@@ -373,7 +393,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 23:40. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 09/11/2026 15:53. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -422,10 +442,10 @@ Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), 
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-09T02:40:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-09T18:53:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw8nm2781jxi |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw9md7kkyejq |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |
