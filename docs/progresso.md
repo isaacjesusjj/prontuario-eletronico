@@ -1,8 +1,10 @@
 # Progresso do trabalho
 
-Última atualização: 09/11/2026 (etapas A, B, D e os blocos 1 a 4 da etapa E concluídos; o bloco 4, redesenho Vinculum, está no branch `redesign-vinculum`, esperando o "pode publicar"). Pausa anterior: 06/11/2026, 22h30.
+Última atualização: 09/11/2026 (etapas A, B, D e os blocos 1 a 4 da etapa E concluídos e publicados). Pausa anterior: 06/11/2026, 22h30.
 
 **Publicado em 08/11/2026:** o branch `andamento-06-11` foi juntado à `main`, e o site no ar tem todas as melhorias.
+
+**Publicado em 09/11/2026:** o redesenho Vinculum (branch `redesign-vinculum`) foi juntado à `main`; a publicação do GitHub Pages e os testes do GitHub Actions passaram.
 
 Pedido em andamento: "deixar o prontuário profissional, com todas as regras de segurança de dados, login e validações, e com diferenciais". Este arquivo diz onde o trabalho parou e como continuar.
 
@@ -72,7 +74,7 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
 - Bloco 3 (feito no branch `melhorias-bloco-3` e publicado na `main` no mesmo dia): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
-- Bloco 4 (feito em 09/11 no branch `redesign-vinculum`): redesenho aprovado pelo grupo. Nome **Vinculum** no site e em todos os documentos (o endereço continua o mesmo); verde da Faculdade e uma fonte só; logotipo da Faculdade (com autorização) na entrada, no "Sobre" e nos documentos impressos; no celular, topo curto com o menu da conta e barra de navegação embaixo (o resto em "Mais"); no computador, coluna à esquerda; painel com uma linha de números e uma lista de pendências; prontuário com 6 abas; pedidos da técnica num item só; busca numa página própria; entrada curta. Detalhes na seção "Redesenho Vinculum" do `README.md`. Testes novos: etapa "navegação e identidade" (celular, computador, menu da conta, abas, pendências, logotipo).
+- Bloco 4 (feito em 09/11 no branch `redesign-vinculum` e publicado na `main` no mesmo dia): redesenho aprovado pelo grupo. Nome **Vinculum** no site e em todos os documentos (o endereço continua o mesmo); verde da Faculdade e uma fonte só; logotipo da Faculdade (com autorização) na entrada, no "Sobre" e nos documentos impressos; no celular, topo curto com o menu da conta e barra de navegação embaixo (o resto em "Mais"); no computador, coluna à esquerda; painel com uma linha de números e uma lista de pendências; prontuário com 6 abas; pedidos da técnica num item só; busca numa página própria; entrada curta. Detalhes na seção "Redesenho Vinculum" do `README.md`. Testes novos: etapa "navegação e identidade" (celular, computador, menu da conta, abas, pendências, logotipo).
 
 Ficou **de fora, por decisão do grupo**:
 
@@ -83,8 +85,7 @@ Ficou **de fora, por decisão do grupo**:
 1. Revisão do grupo: cada integrante percorre o passo 9 do roteiro (lista em `relatorio-final.md`).
 2. Validar com a supervisão e o jurídico (lista abaixo e no relatório).
 3. Atualizar o Figma com as telas novas, se a Etapa 3 for cobrada junto.
-4. Publicar o redesenho quando o grupo disser "pode publicar" (junta o `redesign-vinculum` na `main`).
-5. Próximas conversas: passo a passo do banco de dados e versão em aplicativo (instalável no celular ou outra opção). O Figma (Etapa 3) precisa ganhar o visual novo.
+4. Próximas conversas: passo a passo do banco de dados e versão em aplicativo (instalável no celular ou outra opção). O Figma (Etapa 3) precisa ganhar o visual novo.
 
 ## Para validar com quem é de fora do grupo
 
