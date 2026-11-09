@@ -96,14 +96,14 @@ js/inicio.js                rotas (#/rota), primeiro acesso, inatividade e inici
 banco/                      schema PostgreSQL, migração JSON → banco, testes e projeção
 testes/                     testes automáticos do site (Playwright + axe-core)
 ferramentas/validar_json.py confere o JSON antes de migrar
-docs/                       roteiro, diagramas (DER, navegação, casos de uso), LGPD, baixa fidelidade
+docs/                       banco de dados e projeções, roteiro, diagramas (DER, navegação, casos de uso), LGPD, baixa fidelidade
 ```
 
 Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scripts clássicos; caminhos relativos; layout responsivo; sem chamadas a servidores de terceiros; política de segurança de conteúdo (CSP) no `index.html`.
 
 ## Banco de dados
 
-PostgreSQL no Supabase (região São Paulo). Projeção: ~84 MB por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~1,6 GB em 20 anos de guarda. Tudo em [`banco/README.md`](banco/README.md): schema, migração, passo a passo e garantias.
+PostgreSQL no Supabase (região São Paulo). Projeção (conta em `banco/projecao.py`, com as 32 tabelas): ~109 MB por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~2,1 GB em 20 anos de guarda, mais ~2,9 GB de anexos; cabe no plano Pro (8 GB de banco). **Tudo organizado em [`docs/banco-de-dados.md`](docs/banco-de-dados.md)**: como o JSON vira o banco, as tabelas por assunto, o que o banco garante, quem vê o quê, projeções por cenário, planos e custos, guarda dos dados e próximo passo. O passo a passo para ligar está em [`banco/README.md`](banco/README.md).
 
 ## Testes
 

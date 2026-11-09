@@ -171,7 +171,7 @@ PEP.telas = PEP.telas || {};
       '<tr><td>Auditoria</td><td>Cadeia de hash verificável na tela</td><td>Tabela só de inserção, com trigger e cadeia de hash no banco</td></tr>' +
       '<tr><td>Arquivos</td><td>IndexedDB do navegador, com tipo, tamanho e hash conferidos</td><td>Supabase Storage em bucket privado</td></tr>' +
       '</tbody></table></div>' +
-      '<p class="suave pequeno">Projeção de volume (cenário atual: 800 estudantes, 400 pacientes por semestre): cerca de 84 MB de banco por ano e 1,6 GB em 20 anos de guarda. Premissas em <code>banco/projecao.py</code>.</p></div>' +
+      '<p class="suave pequeno">Projeção de volume (cenário atual: 800 estudantes, 400 pacientes por semestre): cerca de 109 MB de banco por ano e 2,1 GB em 20 anos de guarda (mais 2,9 GB de anexos). Premissas em <code>banco/projecao.py</code>.</p></div>' +
       '<div class="cartao"><h2>Regras e leis</h2><p>Cada regra do sistema tem a norma de origem e a tela em que aparece: <a href="#/regras">ver a matriz de regras e leis</a>. ' +
       'Veja também o <a href="#/privacidade">aviso de privacidade</a>, os <a href="#/termos">termos de uso</a> e a <a href="#/acessibilidade">declaração de acessibilidade</a>.</p></div>' +
       '<div class="cartao"><h2>ODS (ONU)</h2><p><strong>ODS 3 — Saúde e bem-estar:</strong> mais continuidade no cuidado em saúde mental. ' +

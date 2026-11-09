@@ -102,7 +102,7 @@ Escolha dois ou três, conforme o tempo.
 ## Perguntas prováveis
 
 - **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
-- **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
+- **O banco aguenta?** ~109 MB por ano no cenário atual (2,1 GB em 20 anos, mais 2,9 GB de anexos); ~21 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. Cabe no plano Pro do Supabase (US$ 25/mês, 8 GB de banco); quem mais cresce é a auditoria (registro de quem abriu cada prontuário). Detalhes em `docs/banco-de-dados.md`.
 - **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
 - **Como provam que funciona?** 389 verificações automáticas no site (73 telas conferidas no teste de acessibilidade), 174 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
 - **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS e triggers): a estagiária só recebe as linhas dos casos dela e não consegue, por exemplo, gravar uma evolução já "validada".

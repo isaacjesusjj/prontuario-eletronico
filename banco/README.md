@@ -9,11 +9,11 @@ O site já está pronto para trocar o JSON pelo banco. Esta pasta tem tudo o que
 | `dados-demo.sql` | Os dados fictícios prontos para inserir (gerado pelo script acima). |
 | `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 174 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
 | `teste_stub_supabase.sql` | Simula o que o Supabase já traz (login, papéis, segundo fator e Storage), só para o teste. **Não rodar no Supabase.** |
-| `projecao.py` | Projeção de volume por ano e em 20 anos, em três cenários. |
+| `projecao.py` | Projeção de volume por ano e em 20 anos, em três cenários, contando as 32 tabelas (tamanho de linha medido no banco de teste). Resultado explicado em `docs/banco-de-dados.md`. |
 
 ## Por que PostgreSQL no Supabase
 
-- **Volume:** a projeção dá ~84 MB de banco por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~16 GB em 20 anos no cenário ×10. Qualquer banco relacional aguenta; o PostgreSQL aguenta com folga.
+- **Volume:** a projeção dá ~109 MB de banco por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~21 GB em 20 anos no cenário ×10. Explicação completa, com custos, em [`docs/banco-de-dados.md`](../docs/banco-de-dados.md). Qualquer banco relacional aguenta; o PostgreSQL aguenta com folga.
 - **Regras de acesso no próprio banco:** "estagiário só vê o caso da dupla dele" vira política RLS. Mesmo quem chamar a API direto, sem passar pelas telas, só recebe as linhas que pode ver.
 - **Login pronto:** Supabase Auth guarda a senha com hash no servidor e oferece a verificação em duas etapas (TOTP), que o schema exige de quem a ligou.
 - **Dados no Brasil:** região South America (São Paulo), `sa-east-1`.

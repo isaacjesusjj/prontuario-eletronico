@@ -77,7 +77,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 
 - O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. As melhorias de novembro (branch `andamento-06-11`) foram publicadas na `main` em 08/11/2026.
 - Validar com o cliente: perda de vaga também com 3 faltas intercaladas (`regras.faltasIntercaladasSugestao`), as mudanças nos requisitos da Etapa 1 (tabela no README) e "800 usuários simultâneos" × "800 estudantes".
-- Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`.
+- Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`. A explicação do banco e das projeções de uso (para o professor) está em `docs/banco-de-dados.md`; os números saem de `python banco/projecao.py`. Mudou o schema ou as premissas: atualize o documento junto.
 - O grupo decidiu deixar as escalas PHQ-9 e GAD-7 para depois (se entrarem, só com as pontuações). O Figma (Etapa 3) ainda não tem as telas novas.
 - O resumo para a banca e a lista do que validar, e com quem, estão em `docs/relatorio-final.md`.
 - Validar com a supervisão e o jurídico/encarregado: níveis e condutas de risco, órgãos e prazos de notificação, plano de segurança, motivos de acesso e de falta, regras do revisor de escrita, seções do resumo de transferência e dos documentos psicológicos, o artigo da Res. CFP 13/2022 citado no contrato e a guarda de menor contada a partir dos 18 anos.
