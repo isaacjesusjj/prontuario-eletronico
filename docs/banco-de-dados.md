@@ -160,6 +160,8 @@ A conta está em `banco/projecao.py`. As premissas ficam no topo do arquivo: mud
 
 No cenário ×10, o que passar de 8 GB custa US$ 0,125 por GB por mês. No 20º ano seriam ~13 GB a mais, cerca de **US$ 1,70 por mês**. Há outra saída: a auditoria é particionada por ano, e os anos antigos podem ir para um armazenamento mais barato.
 
+**Sem dinheiro?** O leque de opções gratuitas está em [`opcoes-gratuitas.md`](opcoes-gratuitas.md). Ele compara o próprio JSON, o GitHub como banco, os planos gratuitos (Supabase, Neon, Firebase, Turso, Cloudflare D1, MongoDB, Appwrite, Nhost), programas de código aberto instalados (Supabase instalado, PocketBase) e créditos de estudante.
+
 Preços e limites conferidos em novembro de 2026 em fontes públicas sobre o Supabase. Confirmar em supabase.com/pricing antes de contratar.
 
 Fontes: [MakerKit](https://makerkit.dev/blog/saas/supabase-pricing), [UI Bakery](https://uibakery.io/blog/supabase-pricing), [Schematic](https://schematichq.com/blog/supabase-pricing), [DesignRevision](https://designrevision.com/blog/supabase-pricing).

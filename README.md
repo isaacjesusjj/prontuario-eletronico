@@ -103,7 +103,7 @@ Decisões técnicas: HTML, CSS e JavaScript puros, sem frameworks nem build; scr
 
 ## Banco de dados
 
-PostgreSQL no Supabase (região São Paulo). Projeção (conta em `banco/projecao.py`, com as 32 tabelas): ~109 MB por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~2,1 GB em 20 anos de guarda, mais ~2,9 GB de anexos; cabe no plano Pro (8 GB de banco). **Tudo organizado em [`docs/banco-de-dados.md`](docs/banco-de-dados.md)**: como o JSON vira o banco, as tabelas por assunto, o que o banco garante, quem vê o quê, projeções por cenário, planos e custos, guarda dos dados e próximo passo. O passo a passo para ligar está em [`banco/README.md`](banco/README.md).
+PostgreSQL no Supabase (região São Paulo). Projeção (conta em `banco/projecao.py`, com as 32 tabelas): ~109 MB por ano no cenário atual (800 estudantes, 400 pacientes por semestre) e ~2,1 GB em 20 anos de guarda, mais ~2,9 GB de anexos; cabe no plano Pro (8 GB de banco). **Tudo organizado em [`docs/banco-de-dados.md`](docs/banco-de-dados.md)**: como o JSON vira o banco, as tabelas por assunto, o que o banco garante, quem vê o quê, projeções por cenário, planos e custos, guarda dos dados e próximo passo. O passo a passo para ligar está em [`banco/README.md`](banco/README.md). Opções **gratuitas** (e se o próprio JSON aguentaria) em [`docs/opcoes-gratuitas.md`](docs/opcoes-gratuitas.md).
 
 ## Testes
 
