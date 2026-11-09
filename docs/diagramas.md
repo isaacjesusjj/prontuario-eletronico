@@ -1,4 +1,4 @@
-# Diagramas do Vínculo (Etapa 2)
+# Diagramas do Vinculum (Etapa 2)
 
 Os diagramas usam Mermaid: o GitHub desenha direto nesta página.
 
@@ -344,8 +344,9 @@ flowchart LR
     P -->|Supervisor| D[Duplas e trios]
     P -->|Técnico| F[Fila] --> T[Triagem e cadastro] --> CA
     P -->|Técnico| AL[Alocação]
-    P -->|Técnico| AP[Acesso do paciente] --> CP
-    P -->|Técnico| LG[Pedidos LGPD]
+    P -->|Técnico| PE[Pedidos dos pacientes]
+    PE --> AP[Cópia do prontuário] --> CP
+    PE --> LG[Direitos LGPD]
     P -->|Técnico| AU[Auditoria]
     P -->|Direção| IN[Indicadores]
     P -->|Direção| GE[Grupos de estágio]
@@ -354,17 +355,19 @@ flowchart LR
     P -->|Paciente| MD[Meus dados LGPD: quem acessou]
     P -->|Paciente| PS[Meu plano de segurança]
     P --> AG[Agenda: dia · semana · mês · lista]
-    P --> MC[Minha conta: trocar senha, duas etapas]
-    P --> BU[Busca de paciente] --> CA
+    P --> MC[Menu da conta: preferências, Minha conta, Sair]
+    P --> MA[Mais: itens que não cabem na barra do celular]
+    P --> BU[Buscar paciente] --> CA
 
-    CA --> R1[Resumo, anamnese e consentimentos]
+    CA --> R1[Resumo: cadastro, anamnese e consentimentos]
     CA --> R2[Evoluções]
-    CA --> R3[Sessões, faltas e lembretes]
-    CA --> R4[Documentos, comunicações e anexos] --> DP[Documento psicológico: assinar, entregar, imprimir]
-    CA --> R5[Avaliação psicológica - restrita]
-    CA --> R6[Supervisão - restrita]
-    CA --> R7[Encerramento]
-    CA --> R8[Risco e segurança: avaliação, notificação, plano]
+    CA --> R8[Risco: avaliação, notificação, plano]
+    CA --> R3[Sessões: faltas e lembretes]
+    CA --> R4[Documentos: comunicações e anexos] --> DP[Documento psicológico: assinar, entregar, imprimir]
+    CA --> RR[Área restrita]
+    RR --> R6[Supervisão]
+    RR --> R5[Avaliação psicológica]
+    R1 --> R7[Encerrar ou encaminhar]
     CA -->|técnica fora da equipe| JM[Motivo do acesso] --> CA
     R1 --> PC[Passagem do caso: conferência e nova dupla]
     R1 --> EC[Editar cadastro - técnico]

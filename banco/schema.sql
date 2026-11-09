@@ -1,5 +1,5 @@
 -- =====================================================================
--- Vínculo — schema do banco (PostgreSQL 15+ / Supabase, região São Paulo)
+-- Vinculum — schema do banco (PostgreSQL 15+ / Supabase, região São Paulo)
 -- Cada tabela corresponde a uma coleção de dados/dados-iniciais.json
 -- (nomes em snake_case: casoId → caso_id). Rodar no SQL Editor do
 -- Supabase, como "postgres". Testado em PostgreSQL 18 (banco/testar_banco.mjs).

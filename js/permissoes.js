@@ -324,12 +324,12 @@ PEP.regras = (function () {
       { id: 'abertas', ok: !abertas, bloqueia: false, texto: abertas ? abertas + ' rascunho(s) ou evolução(ões) devolvida(s): ficam fora do prontuário se não forem enviados' : 'Nenhum rascunho ou devolução em aberto' },
       { id: 'sessoes', ok: !semEvolucao, bloqueia: false, texto: semEvolucao ? semEvolucao + ' sessão(ões) com presença e sem evolução' : 'Toda sessão com presença tem evolução' },
       { id: 'risco', ok: !semCiencia, bloqueia: false, texto: !riscos.length ? 'Sem risco em acompanhamento' : semCiencia ? 'Risco em acompanhamento ainda sem a ciência da supervisão' :
-        'Risco em acompanhamento, com ciência: a nova dupla retoma na primeira sessão (aba Risco e segurança)' },
+        'Risco em acompanhamento, com ciência: a nova dupla retoma na primeira sessão (aba Risco)' },
       { id: 'agenda', ok: !agendadas, bloqueia: false, texto: agendadas ? agendadas + ' sessão(ões) agendada(s): confira o horário com a nova dupla e avise o paciente' : 'Sem sessões agendadas' }
     ];
   }
   // Rascunho gerado do resumo: dados que o prontuário já tem + as seções que o estagiário completa.
-  // O risco não entra no texto: fica na aba Risco e segurança (que não sai na cópia de criança ou adolescente).
+  // O risco não entra no texto: fica na aba Risco (que não sai na cópia de criança ou adolescente).
   function modeloResumoTransferencia(caso) {
     var a = anamneseAtual(caso), ss = PEP.db.sessoes.filter(function (s) { return s.casoId === caso.id; });
     var conta = function (p) { return ss.filter(function (s) { return s.presenca === p; }).length; };

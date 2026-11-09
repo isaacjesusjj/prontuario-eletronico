@@ -1,4 +1,4 @@
-# Relatório final das melhorias — Vínculo
+# Relatório final das melhorias — Vinculum
 
 Para: Daniel, Dilson e Isaac. Novembro de 2026.
 

@@ -2,9 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#007931">
   <!-- Título neutro: nunca colocar nome de paciente no título da aba -->
-  <title>Vínculo · Prontuário da Clínica-Escola</title>
+  <title>Vinculum · Prontuário da Clínica-Escola</title>
   <meta name="description" content="Protótipo acadêmico de prontuário eletrônico para clínica-escola de Psicologia. Dados fictícios.">
   <!-- Não indexar: prontuário não deve aparecer em buscadores -->
   <meta name="robots" content="noindex, nofollow">
@@ -13,23 +14,30 @@
        (o VLibras, do gov.br, só quando a pessoa pede) -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br; style-src 'self' 'unsafe-inline' https://vlibras.gov.br https://*.vlibras.gov.br; img-src 'self' data: blob: https://vlibras.gov.br https://*.vlibras.gov.br; font-src 'self' https://vlibras.gov.br https://*.vlibras.gov.br; connect-src 'self' https://*.supabase.co https://vlibras.gov.br https://*.vlibras.gov.br; frame-src blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <!-- Ícone da aba embutido (evita o erro 404 do favicon.ico no console) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='%23432a68' stroke='%23b08d4a' stroke-width='3'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='30' text-anchor='middle' fill='%23e8d9b5'%3EV%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23007931'/%3E%3Ccircle cx='25' cy='32' r='12.5' fill='none' stroke='%23fff' stroke-width='5'/%3E%3Ccircle cx='39' cy='32' r='12.5' fill='none' stroke='%23fff' stroke-width='5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
   <a class="pular" href="#app">Pular para o conteúdo</a>
 
+  <!-- Marca do Vinculum: dois anéis entrelaçados (vínculo). Desenhada uma vez e usada no topo, na entrada e na cortina -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="aneis" viewBox="0 0 42 28">
+      <circle cx="15" cy="14" r="10.5" fill="none" stroke-width="3.4" style="stroke:var(--verde)"/>
+      <circle cx="27" cy="14" r="10.5" fill="none" stroke-width="3.4" style="stroke:var(--verde-escuro)"/>
+      <path d="M21 5.6A10.5 10.5 0 0 1 25.5 14" fill="none" stroke-width="3.4" style="stroke:var(--verde)"/>
+    </symbol>
+  </svg>
+
   <!-- Aviso fixo: protótipo, dados fictícios -->
-  <div class="faixa-aviso" role="note">
-    Protótipo acadêmico · dados 100% fictícios · pronto para ligar o banco de dados
-  </div>
+  <div class="faixa-aviso" role="note">Protótipo acadêmico · dados fictícios</div>
 
   <header class="topo" id="topo"></header>
 
   <div class="layout">
     <nav class="menu" id="menu" aria-label="Menu principal"></nav>
     <main class="conteudo" id="app" tabindex="-1">
-      <noscript>Ative o JavaScript para usar o protótipo.</noscript>
+      <noscript>Ative o JavaScript para usar o Vinculum.</noscript>
     </main>
   </div>
 
@@ -44,7 +52,7 @@
 
   <!-- "Cobrir tela": esconde tudo na hora, quando alguém se aproxima (js/privacidade.js) -->
   <div class="cortina" id="cortina" role="dialog" aria-modal="true" aria-labelledby="cortina-titulo" aria-describedby="cortina-texto" hidden>
-    <span class="marca-icone" aria-hidden="true">V</span>
+    <svg class="aneis" viewBox="0 0 42 28" aria-hidden="true" focusable="false"><use href="#aneis"></use></svg>
     <strong id="cortina-titulo">Tela coberta</strong>
     <span id="cortina-texto">O que estava aberto continua aqui. A sessão encerra sozinha se ficar sem uso.</span>
     <button class="botao" id="cortina-voltar" data-acao="descobrir-tela">Mostrar a tela de novo</button>

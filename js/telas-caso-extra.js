@@ -125,7 +125,7 @@ PEP.telas = PEP.telas || {};
     var lista = R().comunicacoesDoCaso(caso);
     var html = '<div class="cartao" id="comunicacoes"><h2>Comunicações e compartilhamentos</h2>' +
       '<p class="suave pequeno">Toda informação passada a terceiros fica registrada: data, destinatário, finalidade e fundamento. Informe só o estritamente necessário (Código de Ética, arts. 10 e 13). ' +
-      'Requisição judicial: responda por documento psicológico, não com cópia do prontuário. A notificação compulsória fica na aba Risco e segurança.</p>';
+      'Requisição judicial: responda por documento psicológico, não com cópia do prontuário. A notificação compulsória fica na aba Risco.</p>';
     html += lista.length ? '<div class="tabela-rolagem"><table><caption class="sr-only">Comunicações a terceiros, da mais recente para a mais antiga</caption><thead><tr><th scope="col">Data</th><th scope="col">Tipo</th><th scope="col">Destinatário e finalidade</th><th scope="col">O que foi informado</th><th scope="col">Paciente vê?</th></tr></thead><tbody>' +
       lista.map(function (x) {
         var t = R().tipoComunicacao(x.tipo);
@@ -235,7 +235,7 @@ PEP.telas = PEP.telas || {};
       (pend.bloqueiam.length ? '<div class="aviso perigo pequeno" role="note"><strong>Antes de encerrar:</strong> ' + esc(pend.bloqueiam.join('; ')) + '.</div>' : '') +
       (pend.avisos.length ? '<div class="aviso alerta pequeno" role="note"><strong>Confira:</strong> ' + esc(pend.avisos.join('; ')) + '.</div>' : '') +
       '<div class="grade-2"><div class="campo"><label for="enc-tipo">Tipo</label><select id="enc-tipo">' + PEP.ui.opcoes(opcoesTipo) + '</select>' +
-      '<span class="dica">Abandono é registrado pelo fluxo de faltas (aba Sessões e faltas), depois da tentativa de contato.</span></div>' +
+      '<span class="dica">Abandono é registrado pelo fluxo de faltas (aba Sessões), depois da tentativa de contato.</span></div>' +
       '<div class="campo"><label for="enc-motivo">Motivo *</label><input id="enc-motivo" type="text" maxlength="120"></div></div>' +
       '<div class="campo"><label for="enc-destino">Serviço que recebe o encaminhamento (obrigatório no encaminhamento)</label>' +
       '<input id="enc-destino" type="text" maxlength="120" list="lista-servicos" autocomplete="off">' +
@@ -250,9 +250,9 @@ PEP.telas = PEP.telas || {};
   PEP.telas.casoAbaExtra = function (u, caso, aba) {
     if (aba === 'sessoes') return abaSessoes(u, caso);
     if (aba === 'documentos') return abaDocumentos(u, caso);
-    if (aba === 'restrita') return abaRestrita(u, caso);
-    if (aba === 'supervisao') return abaSupervisao(u, caso);
-    return abaEncerramento(u, caso);
+    if (aba === 'restrita') return PEP.telas.seletorRestrito(u, caso, aba) + abaRestrita(u, caso);
+    if (aba === 'supervisao') return PEP.telas.seletorRestrito(u, caso, aba) + abaSupervisao(u, caso);
+    return '<h2>Encerramento</h2>' + abaEncerramento(u, caso);
   };
 
   // ---------- Cópia do prontuário ----------
@@ -269,7 +269,7 @@ PEP.telas = PEP.telas || {};
       var l = tipo === 'evolucao' ? R().assinaturasVigentes(PEP.util.porId(PEP.db.evolucoes, id)) : R().assinaturasDe(tipo, id);
       return l.map(function (s) { return esc(PEP.ui.nomeUsuario(s.usuarioId)) + ' em ' + data(s.em); }).join(' · ');
     };
-    return '<div class="cartao"><h1>Prontuário psicológico — cópia</h1>' +
+    return '<div class="cartao">' + PEP.telas.logoFaculdade(38) + '<h1 style="margin-top:.6rem">Prontuário psicológico — cópia</h1>' +
       '<p class="suave pequeno">' + esc(PEP.config().instituicao.nome) + ' · gerada em ' + data(PEP.util.agora()) + ' ' + esc(geradoPara) + ' · documento sigiloso</p>' +
       '<h2>Identificação</h2><p>' + esc(p.nome) + (p.nomeSocial ? ' (' + esc(p.nomeSocial) + ')' : '') + ' · nascimento ' + data(p.dataNascimento) + (p.responsavelNome ? ' · responsável: ' + esc(p.responsavelNome) : '') + '</p>' +
       '<h2>Avaliação de demanda</h2><p>' + esc(a.demanda) + '</p><h2>Objetivos</h2><p>' + esc(a.objetivos) + '</p>' +
@@ -345,7 +345,7 @@ PEP.telas = PEP.telas || {};
       (!R().documentoValido(d) && !R().eventoDoDocumento(d, 'anulacao') ? '<p class="aviso alerta pequeno">Sem validade até a assinatura do supervisor do caso (Res. CFP 05/2025, art. 19). A impressão fica liberada depois.</p>' : '') +
       (acoes ? '<div class="pilha-acoes">' + acoes + '</div>' : '') + '</div>';
     html += '<article class="documento-psicologico" aria-label="' + esc(m.nome) + '">' +
-      '<header class="doc-cabecalho"><strong>' + esc(PEP.config().instituicao.nome) + '</strong><br>Serviço-Escola de Psicologia</header>' +
+      '<header class="doc-cabecalho">' + PEP.telas.logoFaculdade(38) + '<strong>' + esc(PEP.config().instituicao.nome) + '</strong><br>Serviço-Escola de Psicologia</header>' +
       '<h2 class="doc-titulo">' + esc(m.nome) + '</h2>' +
       '<dl class="doc-identificacao"><dt>Interessado(a)</dt><dd>' + esc(p.nome) + '</dd><dt>Solicitante</dt><dd>' + esc(d.solicitante || '—') + '</dd>' +
       '<dt>Finalidade</dt><dd>' + esc(d.finalidade) + '</dd><dt>Destinatário</dt><dd>' + esc(d.destinatario) + '</dd><dt>Autoria</dt><dd>' + autoria + '</dd></dl>' +

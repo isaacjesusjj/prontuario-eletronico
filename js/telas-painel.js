@@ -24,36 +24,47 @@ PEP.telas = PEP.telas || {};
     return PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.presenca === 'agendada' && s.data < hoje; });
   }
 
+  // Próximas sessões: uma linha por sessão (data, hora e sala; paciente quando é a equipe)
   function listaSessoes(sessoes, mostrarPaciente) {
-    if (!sessoes.length) return '<p class="vazio">Nenhuma sessão agendada.</p>';
-    return '<ul>' + sessoes.slice(0, 6).map(function (s) {
+    var html = '<section class="cartao" aria-labelledby="titulo-sessoes"><div class="cabecalho-cartao"><h2 id="titulo-sessoes">Próximas sessões</h2><a href="#/agenda">Agenda</a></div>';
+    if (!sessoes.length) return html + '<p class="vazio">Nenhuma sessão agendada.</p></section>';
+    return html + '<ul class="lista-itens">' + sessoes.slice(0, 5).map(function (s) {
       var caso = PEP.util.porId(PEP.db.casos, s.casoId);
-      return '<li>' + data(s.data) + ' às ' + esc(s.hora) + (s.sala ? ' · ' + esc(s.sala) : '') +
-        (mostrarPaciente ? ' — <a href="#/caso/' + caso.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</a>' : '') +
-        (s.confirmada ? ' <span class="etiqueta validada">confirmada</span>' : ' <span class="etiqueta rascunho">a confirmar</span>') + '</li>';
-    }).join('') + '</ul><a class="pequeno" href="#/agenda">Ver agenda completa</a>';
+      return '<li><div class="resto"><strong>' + PEP.util.diaRelativo(s.data) + ', ' + esc(s.hora) + (s.sala ? ' · ' + esc(s.sala) : '') + '</strong>' +
+        (mostrarPaciente ? '<small><a href="#/caso/' + caso.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</a></small>' : '') + '</div>' +
+        (s.confirmada ? '<span class="etiqueta validada">Confirmada</span>' : '<span class="etiqueta rascunho">A confirmar</span>') + '</li>';
+    }).join('') + '</ul></section>';
+  }
+
+  // ---------- Pendências ----------
+  // Tudo o que pede ação vira um item de uma lista só (antes eram vários avisos empilhados no topo).
+  // Cada item: { tipo: 'perigo' | 'alerta' | 'info', titulo (HTML), texto (HTML) }
+  function item(tipo, titulo, texto) { return { tipo: tipo, titulo: titulo, texto: texto || '' }; }
+  function linkCaso(c, aba, sufixo) {
+    return '<a href="#/caso/' + c.id + (aba ? '/' + aba : '') + '">' + esc(PEP.ui.nomePacienteDoCaso(c)) + (sufixo || '') + '</a>';
   }
 
   // Avaliações de risco em aberto nos casos (aguardando a ciência da supervisão vem primeiro)
-  function alertasRisco(casos, souSupervisor) {
+  function pendenciasRisco(casos, souSupervisor) {
     var ids = casos.map(function (c) { return c.id; });
     var abertos = PEP.db.riscos.filter(function (r) { return ids.indexOf(r.casoId) !== -1 && !r.encerradoEm; });
-    var semCiencia = abertos.filter(function (r) { return !r.cienciaEm; });
-    var html = '';
-    var link = function (r) {
-      var c = PEP.util.porId(PEP.db.casos, r.casoId);
-      return '<a href="#/caso/' + c.id + '/risco">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a> (risco ' + esc(r.nivel) + ', ' + data(r.em) + ')';
-    };
-    if (semCiencia.length) {
-      html += '<div class="aviso perigo" role="note"><strong>' + (souSupervisor ? 'Avaliação de risco aguardando a sua ciência:' : 'Avaliação de risco aguardando a ciência da supervisão:') + '</strong> ' +
-        semCiencia.map(link).join(', ') + '.</div>';
-    }
-    var acompanhando = abertos.filter(function (r) { return r.cienciaEm; });
-    if (acompanhando.length) html += '<div class="aviso alerta pequeno"><strong>Risco em acompanhamento:</strong> ' + acompanhando.map(link).join(', ') + '. Retome nas próximas sessões.</div>';
-    return html;
+    var caso = function (r) { return PEP.util.porId(PEP.db.casos, r.casoId); };
+    return abertos.filter(function (r) { return !r.cienciaEm; }).map(function (r) {
+      return item('perigo', linkCaso(caso(r), 'risco'), 'Avaliação de risco ' + esc(r.nivel) + ' (' + data(r.em) + ') ' +
+        (souSupervisor ? 'aguardando a sua ciência.' : 'aguardando a ciência da supervisão.'));
+    }).concat(abertos.filter(function (r) { return r.cienciaEm; }).map(function (r) {
+      return item('alerta', linkCaso(caso(r), 'risco'), 'Risco em acompanhamento (' + esc(r.nivel) + '): retome nas próximas sessões.');
+    }));
   }
 
   // Transição de semestre: caso em andamento cuja dupla não tem mais estagiário com vínculo ativo
+  function pendenciasSemDupla(u) {
+    return PEP.regras.casosSemDuplaAtiva(u).map(function (c) {
+      return item('perigo', linkCaso(c), 'Caso sem dupla ativa (o estágio terminou): faça a passagem para outra dupla no Resumo, em "Passagem do caso".');
+    });
+  }
+
+  // Na tela de alocação (supervisão e técnica), o mesmo aviso aparece em destaque
   PEP.telas.alertaSemDupla = function (u) {
     var l = PEP.regras.casosSemDuplaAtiva(u);
     if (!l.length) return '';
@@ -62,40 +73,27 @@ PEP.telas = PEP.telas || {};
     }).join(', ') + '. Faça a passagem para outra dupla (resumo do caso e quadro "Passagem do caso") para o atendimento continuar.</div>';
   };
 
-  function alertas(casos) {
-    var html = '';
-    var risco = casos.filter(PEP.regras.emRiscoDeAbandono);
-    if (risco.length) {
-      html += '<div class="aviso alerta"><strong>Risco de abandono:</strong> ' + risco.map(function (c) {
-        return '<a href="#/caso/' + c.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a> (' + PEP.regras.faltasSeguidas(c) + ' faltas seguidas)';
-      }).join(', ') + '. Registre a tentativa de contato antes de liberar a vaga.</div>';
-    }
+  function pendenciasDosCasos(casos) {
+    var l = [];
+    casos.filter(PEP.regras.emRiscoDeAbandono).forEach(function (c) {
+      l.push(item('perigo', linkCaso(c, 'sessoes'), 'Risco de abandono: ' + PEP.regras.faltasSeguidas(c) + ' faltas seguidas. Registre a tentativa de contato antes de liberar a vaga.'));
+    });
     var ids = casos.map(function (c) { return c.id; }), hoje = PEP.util.hoje();
     var nomesFalta = {};
     PEP.lista('motivosFaltaPaciente').forEach(function (m) { nomesFalta[m.id] = m.nome; });
-    var avisadas = PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.avisoPaciente && s.data >= hoje; });
-    if (avisadas.length) {
-      html += '<div class="aviso info pequeno"><strong>Falta avisada pelo paciente:</strong> ' + avisadas.map(function (s) {
-        var c = PEP.util.porId(PEP.db.casos, s.casoId);
-        return '<a href="#/caso/' + c.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(s.data) + '</a> (' + esc((nomesFalta[s.motivoFalta] || '').toLowerCase()) + ')';
-      }).join(', ') + '. Se puder, ofereça outro horário.</div>';
-    }
-    var atrasadas = [];
-    casos.forEach(function (c) { PEP.regras.sessoesSemEvolucao(c).forEach(function (s) { atrasadas.push(s); }); });
-    if (atrasadas.length) {
-      html += '<div class="aviso alerta pequeno"><strong>Evolução atrasada (mais de ' + PEP.regra('prazoEvolucaoHoras') + ' h depois da sessão):</strong> ' + atrasadas.map(function (s) {
-        var c = PEP.util.porId(PEP.db.casos, s.casoId);
-        return '<a href="#/caso/' + c.id + '/evolucoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(s.data) + '</a>';
-      }).join(', ') + '. Registro atrasado é risco para o cuidado e para a formação.</div>';
-    }
-    var pend = presencasPendentes(casos);
-    if (pend.length) {
-      html += '<div class="aviso info pequeno"><strong>Presença pendente:</strong> ' + pend.map(function (s) {
-        var c = PEP.util.porId(PEP.db.casos, s.casoId);
-        return '<a href="#/caso/' + c.id + '/sessoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(s.data) + '</a>';
-      }).join(', ') + '.</div>';
-    }
-    return html;
+    var caso = function (s) { return PEP.util.porId(PEP.db.casos, s.casoId); };
+    PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.avisoPaciente && s.data >= hoje; }).forEach(function (s) {
+      l.push(item('info', linkCaso(caso(s), 'sessoes'), 'Falta avisada pelo paciente para ' + data(s.data) + ' (' + esc((nomesFalta[s.motivoFalta] || '').toLowerCase()) + '). Se puder, ofereça outro horário.'));
+    });
+    casos.forEach(function (c) {
+      PEP.regras.sessoesSemEvolucao(c).forEach(function (s) {
+        l.push(item('alerta', linkCaso(c, 'evolucoes'), 'Evolução atrasada: sessão de ' + data(s.data) + ', mais de ' + PEP.regra('prazoEvolucaoHoras') + ' h sem registro.'));
+      });
+    });
+    presencasPendentes(casos).forEach(function (s) {
+      l.push(item('info', linkCaso(caso(s), 'sessoes'), 'Presença pendente: sessão de ' + data(s.data) + '.'));
+    });
+    return l;
   }
 
   function painelEstagiario(u) {
@@ -106,28 +104,19 @@ PEP.telas = PEP.telas || {};
     var devolvidas = minhas.filter(function (e) { return e.status === 'devolvida'; });
     var rascunhos = minhas.filter(function (e) { return e.status === 'rascunho'; });
     var sessoes = proximasSessoes(ativos);
+    var caso = function (e) { return PEP.util.porId(PEP.db.casos, e.casoId); };
 
-    var html = '<h1>Olá, ' + esc(u.nome) + '</h1><p class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + '</p>';
+    var pend = pendenciasRisco(ativos, false)
+      .concat(devolvidas.map(function (e) { return item('alerta', linkCaso(caso(e), 'evolucoes'), 'Evolução de ' + data(e.data) + ' devolvida. Supervisão: ' + esc(e.comentarioSupervisor)); }))
+      .concat(pendenciasDosCasos(ativos))
+      .concat(rascunhos.map(function (e) { return item('info', linkCaso(caso(e), 'evolucoes'), 'Rascunho de evolução de ' + data(e.data) + '.'); }));
+
+    var html = '<h1>Olá, ' + esc(u.nome) + '</h1><p class="subtitulo">' + esc(PEP.regras.descricaoUsuario(u)) + '</p>';
     if (!PEP.regras.alocacaoDoEstagiario(u.id)) {
       html += '<div class="aviso info">Você não tem vínculo de estágio ativo neste semestre, por isso não vê casos. O acesso aos prontuários nasce e termina com o vínculo.</div>';
     }
-    html += alertasRisco(ativos, false) + alertas(ativos) +
-      '<div class="grade">' + PEP.ui.numero(ativos.length, 'casos ativos') +
-      PEP.ui.numero(devolvidas.length + rascunhos.length, 'evoluções pendentes') +
-      PEP.ui.numero(sessoes.length, 'próximas sessões') + '</div>';
-
-    html += '<div class="grade-2"><div class="cartao"><h2>Evoluções pendentes</h2>';
-    if (!devolvidas.length && !rascunhos.length) html += '<p class="vazio">Tudo em dia.</p>';
-    devolvidas.forEach(function (e) {
-      var c = PEP.util.porId(PEP.db.casos, e.casoId);
-      html += '<p><span class="etiqueta devolvida">Devolvida</span> <a href="#/caso/' + c.id + '/evolucoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(e.data) + '</a><br><span class="suave pequeno">Supervisão: ' + esc(e.comentarioSupervisor) + '</span></p>';
-    });
-    rascunhos.forEach(function (e) {
-      var c = PEP.util.porId(PEP.db.casos, e.casoId);
-      html += '<p><span class="etiqueta rascunho">Rascunho</span> <a href="#/caso/' + c.id + '/evolucoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + ' · ' + data(e.data) + '</a></p>';
-    });
-    html += '</div><div class="cartao"><h2>Próximas sessões</h2>' + listaSessoes(sessoes, true) + '</div></div>';
-    return html;
+    return html + PEP.ui.numeros([[ativos.length, 'casos ativos'], [devolvidas.length + rascunhos.length, 'evoluções a terminar'], [sessoes.length, 'próximas sessões']]) +
+      '<div class="grade-2">' + PEP.ui.listaPendencias(pend) + listaSessoes(sessoes, true) + '</div>';
   }
 
   function painelSupervisor(u) {
@@ -140,24 +129,26 @@ PEP.telas = PEP.telas || {};
     var max = PEP.regra('maxEstagiariosPorGrupo');
     var cheios = grupos.filter(function (g) { return PEP.regras.estagiariosDoGrupo(g.id).length > max; });
 
-    var html = '<h1>Olá, ' + esc(u.nome) + '</h1><p class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + ' · ' + esc(u.crp) + '</p>' +
-      alertasRisco(ativos, true) + PEP.telas.alertaSemDupla(u) + alertas(ativos) +
-      (cheios.length ? '<div class="aviso alerta pequeno">Grupo com mais de ' + max + ' estagiários: ' + cheios.map(function (g) { return esc(g.nome); }).join(', ') + '. Referência da Res. CFP 05/2025, art. 5º (hoje suspenso por liminar do STF).</div>' : '') +
-      '<div class="grade">' + PEP.ui.numero(fila.length, 'evoluções para validar') +
-      PEP.ui.numero(ativos.length, 'casos ativos nos meus grupos') + PEP.ui.numero(nEst, 'estagiários supervisionados') + '</div>' +
-      '<div class="cartao">' + PEP.grafico.atendimentosPorMes(PEP.regras.indicadores(u).porMes, 'Atendimentos por mês nos meus grupos') + '</div>' +
-      '<div class="cartao"><div class="linha entre"><h2>Fila de validação</h2><a class="botao pequeno" href="#/supervisao">Abrir validação</a></div>';
-    if (!fila.length) html += '<p class="vazio">Nenhuma evolução aguardando.</p>';
-    fila.forEach(function (e) {
-      var c = PEP.util.porId(PEP.db.casos, e.casoId);
-      html += '<p><span class="etiqueta enviada">Enviada</span> <a href="#/caso/' + c.id + '/evolucoes">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a> · por ' + esc(PEP.ui.nomeUsuario(e.autorId)) + ' em ' + data(e.data) + '</p>';
-    });
-    return html + '</div>';
+    var pend = pendenciasRisco(ativos, true).concat(pendenciasSemDupla(u)).concat(pendenciasDosCasos(ativos))
+      .concat(cheios.map(function (g) { return item('alerta', '<strong>' + esc(g.nome) + '</strong>', 'Mais de ' + max + ' estagiários no grupo. Referência da Res. CFP 05/2025, art. 5º (hoje suspenso por liminar do STF).'); }));
+
+    var validar = '<section class="cartao" aria-labelledby="titulo-validar"><div class="cabecalho-cartao"><h2 id="titulo-validar">Para validar</h2><a href="#/supervisao">Validação</a></div>' +
+      (fila.length ? '<ul class="lista-itens">' + fila.map(function (e) {
+        var c = PEP.util.porId(PEP.db.casos, e.casoId);
+        return '<li><div class="resto">' + linkCaso(c, 'evolucoes') + '<small>Enviada por ' + esc(PEP.ui.nomeUsuario(e.autorId)) + ' · sessão de ' + data(e.data) + '</small></div>' +
+          '<span class="etiqueta enviada">Na supervisão</span></li>';
+      }).join('') + '</ul>' : '<p class="vazio">Nenhuma evolução aguardando.</p>') + '</section>';
+
+    return '<h1>Olá, ' + esc(u.nome) + '</h1><p class="subtitulo">' + esc(PEP.regras.descricaoUsuario(u)) + ' · ' + esc(u.crp) + '</p>' +
+      PEP.ui.numeros([[fila.length, 'evoluções para validar'], [ativos.length, 'casos ativos'], [nEst, 'estagiários']]) +
+      '<div class="grade-2">' + PEP.ui.listaPendencias(pend) + validar + '</div>' +
+      '<div class="cartao">' + PEP.grafico.atendimentosPorMes(PEP.regras.indicadores(u).porMes, 'Atendimentos por mês nos meus grupos') + '</div>';
   }
 
   function painelTecnico(u) {
     var fila = PEP.db.inscricoes.filter(function (i) { return i.status === 'aguardando'; });
     var dup = fila.filter(function (i) { return i.duplicidade; });
+    var urgentes = fila.filter(function (i) { return i.sinalUrgencia; });
     var semGrupo = PEP.db.casos.filter(function (c) { return c.status === 'aguardando-alocacao'; });
     var pedidos = PEP.db.solicitacoes.filter(function (s) { return s.status !== 'entregue'; });
     var lgpd = PEP.db.pedidosTitular.filter(function (p) { return p.status === 'aberto'; });
@@ -167,29 +158,20 @@ PEP.telas = PEP.telas || {};
     var abertos = PEP.db.riscos.filter(function (r) { return !r.encerradoEm; });
     var triagemComRisco = semGrupo.filter(function (c) { return PEP.regras.riscosAbertos(c).length; });
 
-    return '<h1>Olá, ' + esc(u.nome) + '</h1><p class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + ' · ' + esc(u.crp) + '</p>' +
-      (triagemComRisco.length ? '<div class="aviso perigo" role="note"><strong>Risco visto na triagem, caso ainda sem grupo:</strong> ' + triagemComRisco.map(function (c) {
-        return '<a href="#/alocacao">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a>';
-      }).join(', ') + '. Aloque com prioridade e avise a supervisão.</div>' : '') +
-      (abertos.length ? '<div class="aviso alerta pequeno">' + abertos.length + ' avaliação(ões) de risco em aberto na clínica, ' +
-        abertos.filter(function (r) { return !r.cienciaEm; }).length + ' aguardando a ciência da supervisão.</div>' : '') +
-      PEP.telas.alertaSemDupla(u) + alertas(ativos) +
-      (fila.some(function (i) { return i.sinalUrgencia; }) ? '<div class="aviso perigo" role="note"><strong>' + fila.filter(function (i) { return i.sinalUrgencia; }).length +
-        ' inscrição(ões) com sinal de urgência no relato.</strong> <a href="#/fila">Contatar hoje</a>: urgência não espera a fila.</div>' : '') +
-      (dup.length ? '<div class="aviso alerta pequeno"><strong>' + dup.length + ' inscrição(ões) com CPF já cadastrado.</strong> <a href="#/fila">Conferir na fila</a> antes de triar.</div>' : '') +
-      '<div class="grade">' + PEP.ui.numero(fila.length, 'pessoas na fila de espera') +
-      PEP.ui.numero(semGrupo.length, 'casos aguardando alocação') +
-      PEP.ui.numero(pedidos.length, 'pedidos de acesso ao prontuário') +
-      PEP.ui.numero(lgpd.length, 'pedidos LGPD em aberto') + '</div>' +
-      '<div class="cartao">' + PEP.grafico.atendimentosPorMes(PEP.regras.indicadores(u).porMes, 'Atendimentos por mês no Serviço-Escola') + '</div>' +
-      '<div class="grade-2">' +
-      '<div class="cartao"><h2>Fila de espera</h2>' + (fila.length ? '<ul>' + fila.slice(0, 5).map(function (i) {
-        return '<li>' + esc(PEP.ui.nomeInscricao(i)) + ' · desde ' + data(i.data) + (i.duplicidade ? ' <span class="etiqueta alerta">CPF já cadastrado</span>' : '') + '</li>';
-      }).join('') + '</ul>' : '<p class="vazio">Fila vazia.</p>') + '<a class="botao pequeno" href="#/fila">Ver fila e triar</a></div>' +
-      '<div class="cartao"><h2>Pedidos dos titulares</h2>' + (pedidos.length || lgpd.length ? '<ul>' +
-        pedidos.map(function (s) { var p = PEP.util.porId(PEP.db.pacientes, s.pacienteId); return '<li>Cópia do prontuário · ' + esc(PEP.ui.nomePaciente(p, p.id)) + ' · ' + data(s.em) + '</li>'; }).join('') +
-        lgpd.map(function (p) { return '<li>LGPD (' + esc(p.tipo) + ') · ' + data(p.em) + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum pedido pendente.</p>') +
-      '<div class="linha"><a class="botao pequeno" href="#/solicitacoes">Acesso ao prontuário</a><a class="botao secundario pequeno" href="#/pedidos-lgpd">Pedidos LGPD</a></div></div></div>';
+    var pend = triagemComRisco.map(function (c) {
+      return item('perigo', '<a href="#/alocacao">' + esc(PEP.ui.nomePacienteDoCaso(c)) + '</a>', 'Risco visto na triagem, caso ainda sem grupo: aloque com prioridade e avise a supervisão.');
+    });
+    if (urgentes.length) pend.push(item('perigo', '<a href="#/fila">Fila de espera</a>', urgentes.length + ' inscrição(ões) com sinal de urgência no relato: contatar hoje, urgência não espera a fila.'));
+    if (abertos.length) pend.push(item('alerta', '<strong>Avaliações de risco</strong>', abertos.length + ' em aberto na clínica, ' + abertos.filter(function (r) { return !r.cienciaEm; }).length + ' aguardando a ciência da supervisão.'));
+    pend = pend.concat(pendenciasSemDupla(u)).concat(pendenciasDosCasos(ativos));
+    if (dup.length) pend.push(item('alerta', '<a href="#/fila">Fila de espera</a>', dup.length + ' inscrição(ões) com CPF já cadastrado: confira antes de triar.'));
+    if (semGrupo.length) pend.push(item('info', '<a href="#/alocacao">Alocação</a>', semGrupo.length + ' caso(s) aguardando dupla ou trio.'));
+    if (pedidos.length || lgpd.length) pend.push(item('info', '<a href="#/solicitacoes">Pedidos dos pacientes</a>', pedidos.length + ' pedido(s) de cópia do prontuário e ' + lgpd.length + ' pedido(s) LGPD em aberto.'));
+
+    return '<h1>Olá, ' + esc(u.nome) + '</h1><p class="subtitulo">' + esc(PEP.regras.descricaoUsuario(u)) + ' · ' + esc(u.crp) + '</p>' +
+      PEP.ui.numeros([[fila.length, 'na fila de espera'], [semGrupo.length, 'aguardando alocação'], [pedidos.length + lgpd.length, 'pedidos dos pacientes']]) +
+      PEP.ui.listaPendencias(pend) +
+      '<div class="cartao">' + PEP.grafico.atendimentosPorMes(PEP.regras.indicadores(u).porMes, 'Atendimentos por mês no Serviço-Escola') + '</div>';
   }
 
   // Paciente: "Não vou poder ir" (motivo de lista fechada; sem texto livre: mensagem pelo sistema
@@ -206,11 +188,12 @@ PEP.telas = PEP.telas || {};
     var casos = PEP.db.casos.filter(function (c) { return c.pacienteId === u.pacienteId && c.status === 'ativo'; });
     var sessoes = proximasSessoes(casos);
     var p = PEP.regras.pacienteDoUsuario(u);
-    var html = '<h1>Olá, ' + esc(p ? (p.nomeSocial || p.nome) : '') + '</h1><p class="suave">Este é o seu espaço na clínica-escola de Psicologia.</p>' +
+    var html = '<h1>Olá, ' + esc(p ? (p.nomeSocial || p.nome) : '') + '</h1><p class="subtitulo">Este é o seu espaço na clínica-escola de Psicologia.</p>' +
       '<div class="cartao"><h2>Próximas sessões</h2>';
     if (!sessoes.length) html += '<p class="vazio">Nenhuma sessão agendada.</p>';
-    sessoes.forEach(function (s) {
-      html += '<div class="sessao-paciente"><div class="linha entre"><span>' + data(s.data) + ' às ' + esc(s.hora) + (s.sala ? ' · ' + esc(s.sala) : '') + '</span>' +
+    // As 3 próximas; o resto fica em "Sessões" (menu)
+    sessoes.slice(0, 3).forEach(function (s) {
+      html += '<div class="sessao-paciente"><div class="linha entre"><strong>' + PEP.util.diaRelativo(s.data) + ', ' + esc(s.hora) + (s.sala ? ' · ' + esc(s.sala) : '') + '</strong>' +
         (s.confirmada ? '<span class="etiqueta validada">Presença confirmada</span>' :
           '<button class="botao pequeno" data-acao="confirmar-sessao" data-id="' + s.id + '">Confirmar presença</button>') + '</div>' +
         PEP.telas.avisoFaltaPaciente(s) + '</div>';
@@ -219,31 +202,24 @@ PEP.telas = PEP.telas || {};
     var avisadas = PEP.db.sessoes.filter(function (s) { return ids.indexOf(s.casoId) !== -1 && s.avisoPaciente && s.data >= PEP.util.hoje(); });
     var temPlano = casos.some(function (c) { return PEP.regras.planoAtual(c); });
     html += (avisadas.length ? '<p class="pequeno"><strong>Você avisou que não vai:</strong> ' + avisadas.map(function (s) { return data(s.data) + ' às ' + esc(s.hora); }).join(', ') + '.</p>' : '') +
-      '<p class="suave pequeno">Não vai poder vir? Use "Não vou poder ir" na sessão: a falta avisada não conta como abandono.</p></div>' +
-      (temPlano ? '<div class="cartao"><h2>Meu plano de segurança</h2><p>O plano que você fez com quem te atende, para ler quando sentir que uma crise está começando.</p>' +
-        '<a class="botao" href="#/meu-plano">Abrir meu plano</a></div>' : '') +
-      '<div class="aviso perigo pequeno" role="note"><strong>Em crise, não espere a sessão:</strong> ' + PEP.telas.contatosUrgencia(true) + '. Mensagens pelo sistema não são acompanhadas em tempo real.</div>' +
-      '<div class="grade-2"><div class="cartao"><h2>Seu prontuário é seu</h2><p>Você tem direito de acesso ao seu prontuário, a qualquer momento.</p>' +
-      '<a class="botao" href="#/meu-prontuario">Pedir cópia do meu prontuário</a></div>' +
-      '<div class="cartao"><h2>Seus dados e seus direitos</h2><p>Veja os dados que a clínica guarda, seus consentimentos e faça pedidos pela LGPD.</p>' +
-      '<a class="botao secundario" href="#/meus-dados">Meus dados (LGPD)</a> ' +
-      '<a href="https://site.cfp.org.br/wp-content/uploads/2012/07/codigo-de-etica-psicologia.pdf" target="_blank" rel="noopener">Código de Ética (CFP)</a></div></div>';
+      (sessoes.length > 3 ? '<p><a href="#/agenda">Ver todas as ' + sessoes.length + ' sessões</a></p>' : '') +
+      '<p class="suave pequeno" style="margin:0">Não vai poder vir? Use "Não vou poder ir" na sessão: a falta avisada não conta como abandono.</p></div>' +
+      '<div class="aviso perigo" role="note"><strong>Em crise, não espere a sessão:</strong> ' + PEP.telas.contatosUrgencia(true) + '. Mensagens pelo sistema não são acompanhadas em tempo real.' +
+      (temPlano ? ' <a href="#/meu-plano">Abrir meu plano de segurança</a>.' : '') + '</div>' +
+      '<p class="suave pequeno">Você tem direito de acesso ao seu prontuário (menu "Prontuário") e aos seus dados ("Meus dados", pela LGPD). ' +
+      '<a href="https://site.cfp.org.br/wp-content/uploads/2012/07/codigo-de-etica-psicologia.pdf" target="_blank" rel="noopener">Código de Ética do psicólogo (CFP)</a>.</p>';
     return html;
   }
 
   function painelDirecao(u) {
     // Números agregados (com o banco ligado, vêm de app.indicadores(): a direção não lê casos nem a fila)
     var ind = PEP.telas.indicadoresAtuais(u) || { casosAtivos: '…', naFila: '…' };
-    var ativos = ind.casosAtivos, fila = ind.naFila;
     var alocados = PEP.db.alocacoes.filter(PEP.regras.alocacaoAtiva).length;
     var semGrupo = PEP.regras.estagiariosSemGrupo().length;
-    return '<h1>Olá, ' + esc(u.nome) + '</h1><p class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + '</p>' +
-      '<div class="aviso info">Seu perfil vê só <strong>dados agregados</strong>. Prontuários e nomes de pacientes ficam restritos à equipe de cada caso, por sigilo.</div>' +
-      '<div class="grade">' + PEP.ui.numero(ativos, 'casos ativos') + PEP.ui.numero(fila, 'pessoas na fila') +
-      PEP.ui.numero(alocados, 'estagiários alocados') + PEP.ui.numero(semGrupo, 'estudantes sem grupo') + '</div>' +
-      (ind.porMes ? '<div class="cartao">' + PEP.grafico.atendimentosPorMes(ind.porMes, 'Atendimentos por mês no Serviço-Escola') + '</div>' : '') +
-      '<div class="linha"><a class="botao" href="#/indicadores">Ver indicadores</a><a class="botao secundario" href="#/alocacao">Grupos de estágio</a>' +
-      '<a class="botao secundario" href="#/estudantes">Importar estudantes</a></div>';
+    return '<h1>Olá, ' + esc(u.nome) + '</h1><p class="subtitulo">' + esc(PEP.regras.descricaoUsuario(u)) + '</p>' +
+      '<p class="suave pequeno">Seu perfil vê só <strong>dados agregados</strong>. Prontuários e nomes de pacientes ficam restritos à equipe de cada caso, por sigilo.</p>' +
+      PEP.ui.numeros([[ind.casosAtivos, 'casos ativos'], [ind.naFila, 'pessoas na fila'], [alocados, 'estagiários alocados'], [semGrupo, 'estudantes sem grupo']]) +
+      (ind.porMes ? '<div class="cartao">' + PEP.grafico.atendimentosPorMes(ind.porMes, 'Atendimentos por mês no Serviço-Escola') + '</div>' : '');
   }
 
   // Último acesso e tentativas sem sucesso desde então (aparece no painel até a pessoa fechar)
@@ -264,13 +240,17 @@ PEP.telas = PEP.telas || {};
     return aviso + painelDirecao(u);
   };
 
-  // ---------- Busca de paciente (campo no menu de quem atende) ----------
+  // ---------- Busca de paciente (página "Buscar" de quem atende) ----------
   // Procura só entre os casos que a pessoa já pode ver; no modo discreto, o resultado mostra as iniciais
   PEP.telas.busca = function (u) {
     if (['estagiario', 'supervisor', 'tecnico'].indexOf(u.perfil) === -1) return PEP.ui.semPermissao();
     var termo = PEP.telas._busca || '', n = PEP.revisor.normalizar(termo).trim();
-    var html = '<h1>Busca de paciente</h1>';
-    if (n.length < 2) return html + '<p class="suave">Digite pelo menos 2 letras do nome no campo "Buscar paciente" do menu e tecle Enter.</p>';
+    // O termo fica só na memória da tela, nunca no endereço da página (o endereço vai para o histórico do navegador)
+    var html = '<h1>Buscar paciente</h1><form data-form="busca" role="search" class="busca-pagina" novalidate>' +
+      '<label for="busca-paciente" class="sr-only">Nome do paciente ou código do caso</label>' +
+      '<input id="busca-paciente" name="termo" type="search" placeholder="Nome ou código do caso" maxlength="60" autocomplete="off" enterkeyhint="search" value="' + esc(termo) + '">' +
+      '<button class="botao" type="submit">Buscar</button></form>';
+    if (n.length < 2) return html + '<p class="suave">Digite pelo menos 2 letras do nome. A busca procura só entre os casos que você acompanha.</p>';
     var bate = function (t) { return PEP.revisor.normalizar(t || '').indexOf(n) !== -1; };
     var casos = PEP.regras.casosVisiveis(u).filter(function (c) {
       var p = PEP.ui.pacienteDoCaso(c);

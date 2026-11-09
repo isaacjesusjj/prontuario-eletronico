@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "versao": "2026-11-06.13",
-    "descricao": "Dados 100% fictícios para a demonstração do protótipo Vínculo (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
+    "versao": "2026-11-09.1",
+    "descricao": "Dados 100% fictícios para a demonstração do protótipo Vinculum (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
     "sobreSenhas": "Senhas guardadas só como hash PBKDF2-SHA256 com sal (600 mil iterações). A senha das contas de demonstração está em senhaDemonstracao para a apresentação.",

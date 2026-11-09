@@ -1,4 +1,4 @@
-"""Testes automatizados do Vínculo (interface, regras, validadores e acessibilidade).
+"""Testes automatizados do Vinculum (interface, regras, validadores e acessibilidade).
 
 Abre o site num navegador de verdade (Playwright + Chrome), entra com cada perfil e confere
 as regras do prontuário, os validadores, a segurança e a acessibilidade (axe-core, WCAG 2.2 AA).
@@ -91,7 +91,11 @@ class Sessao:
         return self.p.evaluate(codigo, arg)
 
     def clicar(self, seletor):
-        self.p.locator(seletor).first.click()
+        alvo = self.p.locator(seletor).first
+        # Preferências e "Sair" ficam no menu da conta (botão do topo): abre o menu antes, como a pessoa faria
+        if alvo.count() and not alvo.is_visible() and alvo.evaluate("e => !!e.closest('#menu-conta')"):
+            self.p.click("#botao-conta")
+        alvo.click()
         self.p.wait_for_timeout(150)
 
     def entrar(self, login, senha=SENHA, aceitar=True):
@@ -425,7 +429,8 @@ def tecnica(nav, base):
     conferir("CPF", "fila sinaliza a inscrição com CPF já cadastrado", s.p.locator('tr:has-text("Pessoa Inscrita 05") >> text=CPF já cadastrado').count() == 1)
     s.axe("Fila de espera")
     s.ir("#/caso/c01/supervisao")
-    conferir("Permissões", "técnica não vê o registro de supervisão (fica fora do prontuário)", s.p.locator('.abas a:has-text("Supervisão")').count() == 0)
+    conferir("Permissões", "técnica não vê o registro de supervisão (fica fora do prontuário)",
+             s.p.locator('#app a[href="#/caso/c01/supervisao"]').count() == 0 and s.p.locator("#or-texto").count() == 0 and "Registro de supervisão" not in s.p.locator("#app").inner_text())
     s.ir("#/triagem/i05")
     conferir("CPF", "triagem avisa que o CPF já é de um paciente", "CPF já cadastrado: Paciente Exemplo 05" in s.p.locator("#app").inner_text())
     s.axe("Triagem")
@@ -560,7 +565,7 @@ def direcao(nav, base):
     s = Sessao(nav, base, "Direção Marta")
     s.entrar("marta.direcao")
     s.ir("#/indicadores")
-    conferir("Indicadores", "direção vê indicadores agregados", s.p.locator(".numero").first.inner_text() == "6")
+    conferir("Indicadores", "direção vê indicadores agregados", s.p.locator(".numeros strong").first.inner_text() == "6")
     s.axe("Indicadores")
     s.ir("#/casos")
     conferir("Permissões", "direção não navega em prontuários", s.h1() == "Acesso não permitido")
@@ -653,6 +658,103 @@ def celular_e_preferencias(nav, base):
     for _ in range(3):
         s.clicar('[data-acao="fonte-maior"]')
     conferir("Acessibilidade", "texto em 150% sem rolagem lateral", s.js("document.documentElement.style.fontSize") == "150%" and s.js("document.documentElement.scrollWidth <= window.innerWidth + 1"))
+    s.fechar()
+
+
+def navegacao_e_identidade(nav, base):
+    """Redesenho (Vinculum): barra de navegação embaixo no celular, coluna no computador,
+    menu da conta no topo, abas do caso enxutas, painel com pendências e logotipo da faculdade."""
+    sem_rolagem = "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    s = Sessao(nav, base, "Navegação no celular", viewport={"width": 390, "height": 844})
+    s.abrir("#/entrar")
+    logo = s.p.locator("#app img.logo-inst")
+    conferir("Identidade", "entrada mostra o logotipo da faculdade (servido pelo site, com texto alternativo) e o nome Vinculum",
+             logo.count() == 1 and logo.evaluate("i => i.complete && i.naturalWidth > 0") and "Santa Casa" in (logo.get_attribute("alt") or "")
+             and "Vinculum" in s.h1() and "Vinculum" in s.p.title())
+    conferir("Identidade", "uma fonte só (Public Sans) em títulos e textos",
+             s.js("[...document.querySelectorAll('h1, h2, p, button, input')].every(e => getComputedStyle(e).fontFamily.startsWith('\"Public Sans\"'))"))
+    conferir("Celular", "entrada sem rolagem lateral e sem barra de navegação (ainda sem login)", s.js(sem_rolagem) and s.p.locator("#menu a").count() == 0)
+    s.clicar("#botao-conta")
+    conferir("Acessibilidade", "sem login, o botão do topo abre as opções de acessibilidade (aria-expanded)",
+             s.p.get_attribute("#botao-conta", "aria-expanded") == "true" and s.p.is_visible('[data-acao="alto-contraste"]') and s.p.locator('#menu-conta [data-acao="sair"]').count() == 0)
+    s.p.keyboard.press("Escape")
+    s.p.keyboard.press("Escape")
+    s.entrar("bia.estagiaria")
+    barra = s.p.locator("#menu")
+    conferir("Celular", "barra de navegação fixa embaixo, com 4 itens e o atual marcado (aria-current)",
+             barra.evaluate("m => getComputedStyle(m).position") == "fixed" and barra.evaluate("m => Math.round(m.getBoundingClientRect().bottom) === window.innerHeight")
+             and s.p.locator("#menu a:visible").count() == 4 and s.p.locator('#menu a[aria-current="page"]').get_attribute("href") == "#/painel")
+    alvos = s.js("[...document.querySelectorAll('#menu a, #botao-conta')].map(e => Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height))")
+    conferir("Celular", "alvos de toque da navegação e do botão da conta com pelo menos 44 px", min(alvos) >= 44, str(alvos))
+    conferir("Celular", "o conteúdo não fica escondido atrás da barra (espaço reservado embaixo)", s.js("parseFloat(getComputedStyle(document.body).paddingBottom) >= 64"))
+    for rota in ["#/painel", "#/casos", "#/caso/c01/resumo", "#/caso/c01/evolucoes", "#/agenda", "#/busca", "#/conta"]:
+        s.ir(rota)
+        conferir("Celular", f"sem rolagem lateral em {rota} (estagiária)", s.js(sem_rolagem), str(s.js("document.documentElement.scrollWidth")))
+    s.ir("#/painel")
+    conferir("Painel", "números numa linha só e pendências numa lista (sem avisos empilhados no topo)",
+             s.p.locator("#app .numeros > div").count() == 3 and s.p.locator("#app .lista-itens li").count() >= 1 and s.p.locator("#app > .aviso").count() == 0)
+    s.axe("Celular · painel")
+    s.ir("#/caso/c01/evolucoes")
+    conferir("Caso", "a aba atual fica à vista na faixa de abas que rola para o lado",
+             s.p.locator(".abas a.ativa").evaluate("a => { const n = a.parentElement.getBoundingClientRect(), r = a.getBoundingClientRect(); return r.left >= n.left - 1 && r.right <= n.right + 1; }"))
+    # Menu da conta: abre, fecha com Esc (o foco volta ao botão) e fecha ao clicar fora
+    s.clicar("#botao-conta")
+    conferir("Menu da conta", "o botão da conta abre o menu com as preferências, Minha conta e Sair",
+             s.p.get_attribute("#botao-conta", "aria-expanded") == "true" and s.p.is_visible('#menu-conta [data-acao="modo-discreto"]')
+             and s.p.is_visible('#menu-conta a[href="#/conta"]') and s.p.is_visible('#menu-conta [data-acao="sair"]'))
+    s.axe("Celular · menu da conta aberto")
+    s.p.keyboard.press("Escape")
+    conferir("Menu da conta", "Esc fecha o menu e o foco volta ao botão da conta",
+             not s.p.is_visible("#menu-conta") and s.js("document.activeElement.id") == "botao-conta" and s.p.get_attribute("#botao-conta", "aria-expanded") == "false")
+    s.clicar("#botao-conta")
+    s.clicar('#menu-conta [data-acao="modo-discreto"]')
+    conferir("Menu da conta", "ligar o modo discreto redesenha a tela e o menu continua aberto, com o estado à vista",
+             s.p.is_visible("#menu-conta") and s.p.get_attribute('[data-acao="modo-discreto"]', "aria-pressed") == "true"
+             and "ligado" in s.p.locator('[data-acao="modo-discreto"] .estado').inner_text())
+    s.clicar('#menu-conta [data-acao="modo-discreto"]')
+    s.p.locator("#app h1").first.click(position={"x": 4, "y": 4})   # canto do título, fora do menu
+    s.p.wait_for_timeout(150)
+    conferir("Menu da conta", "clicar fora fecha o menu", not s.p.is_visible("#menu-conta"))
+    s.clicar("#botao-conta")
+    s.clicar('#menu-conta a[href="#/conta"]')
+    conferir("Menu da conta", "\"Minha conta\" abre a tela da conta e fecha o menu", s.js("location.hash") == "#/conta" and not s.p.is_visible("#menu-conta"))
+    s.sair()
+    # Supervisora: 7 itens → 4 na barra + "Mais"
+    s.entrar("helena.supervisora")
+    visiveis = s.p.locator("#menu a:visible")
+    conferir("Celular", "quem tem mais de 5 itens vê 4 na barra e o \"Mais\" com o resto",
+             visiveis.count() == 5 and visiveis.nth(4).get_attribute("href") == "#/mais")
+    s.ir("#/mais")
+    conferir("Celular", "\"Mais\" lista Duplas e trios, Indicadores e Buscar, além da conta e das páginas informativas",
+             all(s.p.locator(f'#app .lista-mais a[href="{r}"]').count() == 1 for r in ["#/alocacao", "#/indicadores", "#/busca", "#/conta", "#/sobre", "#/regras"])
+             and s.p.locator('#menu a[aria-current="page"]:visible').get_attribute("href") == "#/mais")
+    s.axe("Celular · Mais")
+    s.ir("#/indicadores")
+    conferir("Celular", "item que mora no \"Mais\" deixa o \"Mais\" marcado na barra", s.p.locator('#menu a[aria-current="page"]:visible').get_attribute("href") == "#/mais")
+    s.ir("#/caso/c01/resumo")
+    abas = [a.strip() for a in s.p.locator(".abas a").all_inner_texts()]
+    conferir("Caso", "seis abas: Resumo, Evoluções, Risco, Sessões, Documentos e Área restrita",
+             abas == ["Resumo", "Evoluções", "Risco", "Sessões", "Documentos", "Área restrita"], ", ".join(abas))
+    s.clicar('#app a[href="#/caso/c01/encerramento"]')
+    conferir("Caso", "o encerramento abre pelo botão no fim do Resumo, com a aba Resumo marcada",
+             s.js("location.hash") == "#/caso/c01/encerramento" and s.p.locator(".abas a.ativa").inner_text().strip() == "Resumo" and s.p.locator("#enc-tipo").count() == 1)
+    s.ir("#/caso/c01/supervisao")
+    conferir("Caso", "a Área restrita junta supervisão e avaliação psicológica, com um seletor entre as duas",
+             s.p.locator(".abas a.ativa").inner_text().strip() == "Área restrita" and s.p.locator('.seletor a[href="#/caso/c01/restrita"]').count() == 1
+             and "Registro de supervisão" in s.p.locator("#app").inner_text())
+    s.sair()
+    s.entrar("ana.tecnica")
+    s.ir("#/pedidos-lgpd")
+    conferir("Pedidos", "a técnica tem um item só, \"Pedidos\", com cópia do prontuário e direitos LGPD lado a lado",
+             s.p.locator('#menu a[href="#/solicitacoes"]').count() == 1 and s.p.locator('#menu a[href="#/pedidos-lgpd"]').count() == 0
+             and s.p.locator('.seletor a[href="#/solicitacoes"]').count() == 1 and s.p.locator('.seletor a[aria-current="page"]').get_attribute("href") == "#/pedidos-lgpd")
+    s.fechar()
+    # Computador: coluna à esquerda com todos os itens, sem "Mais"
+    s = Sessao(nav, base, "Navegação no computador")
+    s.entrar("helena.supervisora")
+    conferir("Computador", "a navegação vira uma coluna à esquerda com os 7 itens, sem o \"Mais\"",
+             s.p.locator("#menu a:visible").count() == 7 and not s.p.is_visible('#menu a[href="#/mais"]')
+             and s.p.locator("#menu").evaluate("m => getComputedStyle(m).position") == "sticky")
     s.fechar()
 
 
@@ -1114,7 +1216,8 @@ def transicao_de_semestre(nav, base):
     s.sair()
     # Supervisora: passa o caso com o resumo validado para a dupla 1
     s.entrar("helena.supervisora")
-    conferir("Transição", "o painel da supervisão avisa o caso sem dupla ativa", s.p.locator('#app .aviso a[href="#/caso/c03"]').count() == 1)
+    conferir("Transição", "o painel da supervisão avisa o caso sem dupla ativa (nas pendências)",
+             s.p.locator('#app .lista-itens li:has(a[href="#/caso/c03"]):has-text("sem dupla ativa")').count() == 1)
     s.ir("#/caso/c03")
     s.axe("Caso · passagem do caso")
     s.p.select_option("#pc-destino", "d-a1")
@@ -1124,7 +1227,8 @@ def transicao_de_semestre(nav, base):
     conferir("Transição", "com o resumo validado, o caso passa para a nova dupla sem pedir justificativa",
              s.js("PEP.util.porId(PEP.db.casos, 'c03').subgrupoId") == "d-a1" and t3.get("resumoId") == resumo.get("id") and t3.get("pacienteAvisado") is True)
     s.ir("#/painel")
-    conferir("Transição", "depois da passagem, o caso sai do aviso", s.p.locator('#app .aviso a[href="#/caso/c03"]').count() == 0)
+    conferir("Transição", "depois da passagem, o caso sai das pendências",
+             s.p.locator('#app .lista-itens li:has(a[href="#/caso/c03"]):has-text("sem dupla ativa")').count() == 0)
     s.sair()
     # Nova dupla: vê o caso inteiro, com o resumo e a passagem
     s.entrar("bia.estagiaria")
@@ -1153,6 +1257,7 @@ def cadastro_busca_e_auditoria(nav, base):
     conferir("Evolução", "\"Inserir modelo\" põe os tópicos no texto; o segundo modelo vai para o fim, sem apagar o que foi escrito",
              t1.startswith("Tema trabalhado:") and "rotina de sono" in t2 and "Demanda trazida:" in t2 and str(len(t2)) in s.p.locator("#nova-texto-contador").inner_text())
     # Busca: só entre os casos da própria dupla, sem o nome no endereço
+    s.ir("#/busca")
     s.p.fill("#busca-paciente", "exemplo 02")
     s.p.press("#busca-paciente", "Enter")
     s.p.wait_for_timeout(300)
@@ -1540,7 +1645,7 @@ def main():
     with sync_playwright() as p:
         chrome = shutil.which("google-chrome") or shutil.which("chrome")
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
-        for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias,
+        for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias, navegacao_e_identidade,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
                       verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, adaptador_supabase, adaptador_supabase_mfa):
             try:

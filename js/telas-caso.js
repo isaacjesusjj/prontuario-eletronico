@@ -11,13 +11,24 @@ PEP.telas = PEP.telas || {};
   var data = function (t) { return PEP.util.formatarData(t); };
   var R = function () { return PEP.regras; };
 
-  // Abas visíveis conforme o perfil (as restritas só aparecem para quem pode ver)
+  // Abas do prontuário (6): a "Área restrita" junta o registro de supervisão e a avaliação psicológica,
+  // que ficam fora do prontuário e da cópia do paciente; cada parte só aparece para quem pode ver.
+  // O encerramento não é aba: abre pelo botão no fim do Resumo (é usado uma vez por caso).
+  function partesRestritas(u, caso) {
+    var l = [];
+    if (R().podeVerOrientacoes(u, caso)) l.push(['supervisao', 'Supervisão']);
+    if (R().podeVerAreaRestrita(u, caso)) l.push(['restrita', 'Avaliação psicológica']);
+    return l;
+  }
   function abasDoCaso(u, caso) {
-    var abas = [['resumo', 'Resumo e anamnese'], ['evolucoes', 'Evoluções'], ['risco', 'Risco e segurança'], ['sessoes', 'Sessões e faltas'], ['documentos', 'Documentos e anexos']];
-    if (R().podeVerAreaRestrita(u, caso)) abas.push(['restrita', 'Avaliação psicológica']);
-    if (R().podeVerOrientacoes(u, caso)) abas.push(['supervisao', 'Supervisão']);
-    abas.push(['encerramento', 'Encerramento']);
+    var abas = [['resumo', 'Resumo', ['encerramento']], ['evolucoes', 'Evoluções'], ['risco', 'Risco'], ['sessoes', 'Sessões'], ['documentos', 'Documentos']];
+    var restritas = partesRestritas(u, caso);
+    if (restritas.length) abas.push([restritas[0][0], 'Área restrita', restritas.map(function (r) { return r[0]; })]);
     return abas;
+  }
+  // Rotas que a pessoa pode abrir neste caso (as abas e as partes que ficam dentro delas)
+  function rotasPermitidas(u, caso) {
+    return ['resumo', 'evolucoes', 'risco', 'sessoes', 'documentos', 'encerramento'].concat(partesRestritas(u, caso).map(function (r) { return r[0]; }));
   }
 
   function cabecalho(u, caso) {
@@ -26,14 +37,13 @@ PEP.telas = PEP.telas || {};
     var sg = R().subgrupoDoCaso(caso);
     var equipe = R().estagiariosDoCaso(caso).map(PEP.ui.nomeUsuario).join(', ') || '—';
     var podePdf = u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, caso);
-    return '<a href="#/casos" class="suave">← Casos</a>' +
-      '<div class="cartao" style="margin-top:.5rem"><div class="linha entre"><div>' +
-      '<h1 style="margin:0">' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</h1>' +
-      '<p class="suave" style="margin:0">' + esc(PEP.ui.idade(p)) + ' anos · caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + '</p></div>' +
+    return '<header class="cabecalho-caso"><a href="#/casos" class="voltar">‹ Casos</a>' +
+      '<h1>' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</h1>' +
+      '<p class="resumo-caso">' + esc(PEP.ui.idade(p)) + ' anos · ' + (g ? esc(g.nome) + (sg ? ', ' + esc(sg.nome) : '') : 'sem grupo') +
+      ' · supervisão: ' + esc(PEP.ui.nomeUsuario(R().supervisorDoCaso(caso)) || '—') + '</p>' +
       '<div class="linha">' + PEP.ui.etiquetaCaso(caso) + seloRisco(caso) +
-      (podePdf ? '<a class="botao secundario pequeno" href="#/imprimir/' + caso.id + '">Cópia em PDF</a>' : '') + '</div></div>' +
-      '<p class="pequeno" style="margin:.6rem 0 0"><strong>Equipe:</strong> ' + (g ? esc(g.nome) + (sg ? ' · ' + esc(sg.nome) : '') : 'sem grupo') +
-      ' — estagiários: ' + esc(equipe) + ' — supervisão: ' + esc(PEP.ui.nomeUsuario(R().supervisorDoCaso(caso)) || '—') + '</p></div>';
+      (podePdf ? '<a class="botao secundario pequeno" href="#/imprimir/' + caso.id + '">Cópia em PDF</a>' : '') + '</div>' +
+      '<p class="equipe">Caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + ' · estagiários: ' + esc(equipe) + '</p></header>';
   }
 
   // Selo no cabeçalho: risco em aberto aparece em toda aba do caso (sem detalhes, com link para a aba)
@@ -46,9 +56,19 @@ PEP.telas = PEP.telas || {};
 
   function abas(u, caso, atual) {
     return '<nav class="abas" aria-label="Seções do prontuário">' + abasDoCaso(u, caso).map(function (a) {
-      return '<a href="#/caso/' + caso.id + '/' + a[0] + '"' + (a[0] === atual ? ' class="ativa" aria-current="page"' : '') + '>' + a[1] + '</a>';
+      var ativa = a[0] === atual || (a[2] || []).indexOf(atual) !== -1;
+      return '<a href="#/caso/' + caso.id + '/' + a[0] + '"' + (ativa ? ' class="ativa" aria-current="page"' : '') + '>' + a[1] + '</a>';
     }).join('') + '</nav>';
   }
+
+  // Dentro da Área restrita: escolha entre supervisão e avaliação (quando a pessoa vê as duas)
+  PEP.telas.seletorRestrito = function (u, caso, atual) {
+    var partes = partesRestritas(u, caso);
+    if (partes.length < 2) return '';
+    return '<nav class="seletor" aria-label="Partes da área restrita" style="margin-bottom:1rem">' + partes.map(function (r) {
+      return '<a href="#/caso/' + caso.id + '/' + r[0] + '"' + (r[0] === atual ? ' class="ativo" aria-current="page"' : '') + '>' + r[1] + '</a>';
+    }).join('') + '</nav>';
+  };
 
   function linhaAssinaturas(tipo, id) {
     var lista = tipo === 'evolucao' ? R().assinaturasVigentes(PEP.util.porId(PEP.db.evolucoes, id)) : R().assinaturasDe(tipo, id);
@@ -194,7 +214,19 @@ PEP.telas = PEP.telas || {};
       '<br><strong>Guarda mínima do prontuário até:</strong> ' + data(R().guardaAte(caso)) + '</p></div>' +
       (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') +
       (u.perfil === 'tecnico' ? blocoPortal(p) : '') + '</div>' +
-      blocoAnamnese(u, caso) + blocoConsentimentos(u, caso) + blocoPassagem(u, caso);
+      blocoAnamnese(u, caso) + blocoConsentimentos(u, caso) + blocoPassagem(u, caso) + blocoEncerramento(u, caso);
+  }
+
+  // Fim do Resumo: o encerramento abre numa tela própria (antes era uma aba)
+  function blocoEncerramento(u, caso) {
+    var e = R().encerramentoDoCaso(caso);
+    if (caso.status === 'encerrado' && e) {
+      return '<div class="cartao linha entre"><span>Caso encerrado em ' + data(e.data) + '.</span>' +
+        '<a class="botao secundario pequeno" href="#/caso/' + caso.id + '/encerramento">Ver o registro do encerramento</a></div>';
+    }
+    if (!R().podeEncerrar(u, caso)) return '';
+    return '<div class="cartao linha entre"><span>Alta, desistência ou encaminhamento para outro serviço.</span>' +
+      '<a class="botao secundario pequeno" href="#/caso/' + caso.id + '/encerramento">Encerrar ou encaminhar</a></div>';
   }
 
   // ---------- Aba: evoluções ----------
@@ -265,7 +297,7 @@ PEP.telas = PEP.telas || {};
     var modelo = R().modeloResumoTransferencia(caso);
     return '<details class="cartao" id="resumo-transferencia"><summary><strong>Resumo de transferência</strong> <span class="suave pequeno">(fim do estágio: para a próxima dupla)</span></summary>' +
       '<p class="dica" id="nova-transf-dica">Período, sessões, demanda e objetivos já vêm do prontuário. Complete: ' + PEP.lista('secoesResumoTransferencia').map(esc).join(', ') +
-      '. A supervisão valida e a nova dupla lê antes da primeira sessão. Não repita aqui o relato de risco: ele está na aba Risco e segurança.</p>' +
+      '. A supervisão valida e a nova dupla lê antes da primeira sessão. Não repita aqui o relato de risco: ele está na aba Risco.</p>' +
       '<div class="campo"><label for="nova-transf">Texto do resumo</label>' +
       '<textarea id="nova-transf" aria-describedby="nova-transf-dica" style="min-height:220px" ' + atributosLimite('nova-transf') + '>' + esc(modelo) + '</textarea>' +
       contador('nova-transf', modelo) + ferramentasDeEscrita('nova-transf', '') + '</div>' +
@@ -318,8 +350,7 @@ PEP.telas = PEP.telas || {};
     if (!R().podeVerCaso(u, caso)) {
       return PEP.ui.semPermissao('Você não está alocado(a) neste caso. Estagiários só acessam os casos da própria dupla ou trio, enquanto o vínculo de estágio estiver ativo; supervisores, os casos dos seus grupos.');
     }
-    var permitidas = abasDoCaso(u, caso).map(function (a) { return a[0]; });
-    if (permitidas.indexOf(aba) === -1) aba = 'resumo';
+    if (rotasPermitidas(u, caso).indexOf(aba) === -1) aba = 'resumo';
     // Técnica fora da equipe do caso: o conteúdo clínico só abre com o motivo do acesso registrado
     if (R().precisaJustificar(u, caso)) return cabecalho(u, caso) + abas(u, caso, aba) + PEP.telas.formularioJustificativa(caso, '#/caso/' + caso.id + '/' + aba);
 

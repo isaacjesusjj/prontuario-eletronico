@@ -1,6 +1,6 @@
 # Progresso do trabalho
 
-Última atualização: 08/11/2026 (etapas A, B, D e os blocos 1, 2 e 3 da etapa E concluídos). Pausa anterior: 06/11/2026, 22h30.
+Última atualização: 09/11/2026 (etapas A, B, D e os blocos 1 a 4 da etapa E concluídos; o bloco 4, redesenho Vinculum, está no branch `redesign-vinculum`, esperando o "pode publicar"). Pausa anterior: 06/11/2026, 22h30.
 
 **Publicado em 08/11/2026:** o branch `andamento-06-11` foi juntado à `main`, e o site no ar tem todas as melhorias.
 
@@ -25,7 +25,7 @@ Depois, rode os três testes (comandos no `CLAUDE.md`) antes de mexer em qualque
 | Teste | Comando | Resultado |
 |---|---|---|
 | Validador do JSON | `python ferramentas/validar_json.py` | **0 problemas**. 1 aviso de propósito: a sessão s40 do caso c03 está sem evolução, para mostrar o alerta de 48 h |
-| Site | `python testes/testar_site.py` | **340 de 340** (68 telas conferidas com axe-core, WCAG 2.2 AA) |
+| Site | `python testes/testar_site.py` | **372 de 372** (71 telas conferidas com axe-core, WCAG 2.2 AA) |
 | Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **174 de 174** |
 
 Antes deste trabalho eram 154 verificações no site e 56 no banco.
@@ -72,7 +72,7 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
 - Bloco 3 (feito no branch `melhorias-bloco-3` e publicado na `main` no mesmo dia): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
-- Falta: bloco 4 (revisão de design, nome Vinculum, mais dados de exemplo), que o grupo vai revisar antes.
+- Bloco 4 (feito em 09/11 no branch `redesign-vinculum`): redesenho aprovado pelo grupo. Nome **Vinculum** no site e em todos os documentos (o endereço continua o mesmo); verde da Faculdade e uma fonte só; logotipo da Faculdade (com autorização) na entrada, no "Sobre" e nos documentos impressos; no celular, topo curto com o menu da conta e barra de navegação embaixo (o resto em "Mais"); no computador, coluna à esquerda; painel com uma linha de números e uma lista de pendências; prontuário com 6 abas; pedidos da técnica num item só; busca numa página própria; entrada curta. Detalhes na seção "Redesenho Vinculum" do `README.md`. Testes novos: etapa "navegação e identidade" (celular, computador, menu da conta, abas, pendências, logotipo).
 
 Ficou **de fora, por decisão do grupo**:
 
@@ -83,7 +83,8 @@ Ficou **de fora, por decisão do grupo**:
 1. Revisão do grupo: cada integrante percorre o passo 9 do roteiro (lista em `relatorio-final.md`).
 2. Validar com a supervisão e o jurídico (lista abaixo e no relatório).
 3. Atualizar o Figma com as telas novas, se a Etapa 3 for cobrada junto.
-4. Próximas conversas: comparar com o prontuário favorito do professor de Psicologia, passo a passo do banco de dados, versão em aplicativo, revisão do design e mudança do nome para Vinculum.
+4. Publicar o redesenho quando o grupo disser "pode publicar" (junta o `redesign-vinculum` na `main`).
+5. Próximas conversas: passo a passo do banco de dados e versão em aplicativo (instalável no celular ou outra opção). O Figma (Etapa 3) precisa ganhar o visual novo.
 
 ## Para validar com quem é de fora do grupo
 

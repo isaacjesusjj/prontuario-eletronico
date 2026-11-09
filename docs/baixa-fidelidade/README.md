@@ -1,6 +1,6 @@
 # Protótipo de baixa fidelidade (Etapa 2 do PIC)
 
-Telas do Vínculo em tons de cinza, sem cor e sem identidade visual, para discutir **estrutura e fluxo** antes do visual final. Foram geradas a partir do protótipo funcional (mesmas telas, mesmos dados fictícios).
+Telas do Vinculum em tons de cinza, sem cor e sem identidade visual, para discutir **estrutura e fluxo** antes do visual final. Foram geradas a partir do protótipo funcional (mesmas telas, mesmos dados fictícios).
 
 | Arquivo | Tela | Perfil |
 |---|---|---|

@@ -1,9 +1,10 @@
-# CLAUDE.md — Vínculo
+# CLAUDE.md — Vinculum
 
 Contexto para o Claude Code trabalhar neste repositório. A visão geral do produto está no `README.md`; aqui ficam as regras de trabalho e o que não pode quebrar.
 
 ## O projeto
 
+- Nome do sistema: **Vinculum** (antes Vínculo). O endereço do site e as chaves guardadas no navegador (`vinculo-*`) continuam iguais.
 - Prontuário eletrônico da clínica-escola de Psicologia, feito no PIC (Projeto Integrador de Curso) de Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.
 - Grupo: Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima.
 - Site: https://isaacjesusjj.github.io/prontuario-eletronico/ (GitHub Pages, branch `main`, pasta raiz). Todo push na `main` publica o site.
@@ -16,7 +17,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 340 de 340 (68 telas no axe-core).
+  - `python testes/testar_site.py` → hoje 372 de 372 (71 telas no axe-core).
   - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 174 de 174.
   - No GitHub, os três rodam sozinhos a cada envio (`.github/workflows/testes.yml`, aba Actions).
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
@@ -67,7 +68,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 
 - Português do Brasil em textos, comentários, commits e respostas.
 - Código simples e comentado: o grupo precisa explicar cada parte na banca.
-- Não mude o visual (lilás + dourado; Source Serif 4 nos títulos e Public Sans no texto; variáveis no topo de `css/estilo.css`) sem pedido do grupo. Correção de erro ou de acessibilidade pode, desde que seja avisada.
+- Não mude o visual (verde da FCMSCSP `#007931`, uma fonte só, Public Sans; logotipo da Faculdade em `img/`; variáveis no topo de `css/estilo.css`) sem pedido do grupo. O site é pensado primeiro para celular: barra de navegação embaixo (até 5 itens, o resto em "Mais", em `PEP.ui` MENUS), preferências e Sair no menu da conta do topo. Correção de erro ou de acessibilidade pode, desde que seja avisada.
 - Quando o grupo mandar uma versão nova, faça primeiro um commit com a versão deles como veio e depois um commit separado com as correções, para a revisão ficar visível.
 - Registre mudanças relevantes no `README.md` (registro de correções e registro de decisões).
 - Ao terminar, relate o que mudou e por quê: o grupo apresenta e precisa saber o que dizer.

@@ -20,7 +20,11 @@ PEP.acessibilidade = (function () {
     document.documentElement.style.fontSize = NIVEIS[pref.fonte] + '%';
     document.documentElement.classList.toggle('contraste', !!pref.contraste);
     var b = document.querySelector('[data-acao="alto-contraste"]');
-    if (b) b.setAttribute('aria-pressed', pref.contraste ? 'true' : 'false');
+    if (b) {
+      b.setAttribute('aria-pressed', pref.contraste ? 'true' : 'false');
+      var estado = b.querySelector('.estado');   // "ligado/desligado" no menu da conta
+      if (estado) estado.textContent = pref.contraste ? 'ligado' : 'desligado';
+    }
   }
 
   function mudarFonte(passo) {

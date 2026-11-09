@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 09/11/2026 02:40, no Chrome (Playwright), com axe-core 4.14.0.
 
-**340 de 340 verificações passaram.** Acessibilidade: 68 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**372 de 372 verificações passaram.** Acessibilidade: 71 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 76 | 0 |
+| Acessibilidade | 80 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -33,7 +33,13 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | Rodízio | 4 | 0 |
 | Sessão | 4 | 0 |
 | Demonstração | 2 | 0 |
-| Celular | 4 | 0 |
+| Celular | 18 | 0 |
+| Identidade | 2 | 0 |
+| Painel | 1 | 0 |
+| Caso | 4 | 0 |
+| Menu da conta | 5 | 0 |
+| Pedidos | 1 | 0 |
+| Computador | 1 | 0 |
 | Risco | 17 | 0 |
 | Revisor | 8 | 0 |
 | Privacidade | 15 | 0 |
@@ -55,7 +61,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 
 | | Área | Verificação | Detalhe |
 |---|---|---|---|
-| ✓ | Público | página inicial abre e o título da aba é neutro | Entrar — Vínculo · Prontuário da Clínica-Escola |
+| ✓ | Público | página inicial abre e o título da aba é neutro | Entrar — Vinculum · Prontuário da Clínica-Escola |
 | ✓ | Acessibilidade | primeiro Tab vai para 'Pular para o conteúdo' |  |
 | ✓ | Acessibilidade | o link de pular leva o foco ao conteúdo |  |
 | ✓ | Acessibilidade | Visitante · Entrar: sem violações WCAG A/AA |  |
@@ -101,7 +107,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Estagiária Bia · Caso · restrita: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Estagiária Bia · Caso · supervisao: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Estagiária Bia · Caso · encerramento: sem violações WCAG A/AA |  |
-| ✓ | Acessibilidade | título da aba no prontuário não leva nome do paciente | Prontuário — Vínculo · Prontuário da Clínica-Escola |
+| ✓ | Acessibilidade | título da aba no prontuário não leva nome do paciente | Prontuário — Vinculum · Prontuário da Clínica-Escola |
 | ✓ | Evolução | contador mostra os caracteres usados e o limite |  |
 | ✓ | Validadores | evolução muito curta é recusada |  |
 | ✓ | Validadores | evolução acima do limite de caracteres é recusada |  |
@@ -221,6 +227,38 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Alto contraste · contraste #/caso/c01: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Alto contraste · contraste #/agenda: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | texto em 150% sem rolagem lateral |  |
+| ✓ | Identidade | entrada mostra o logotipo da faculdade (servido pelo site, com texto alternativo) e o nome Vinculum |  |
+| ✓ | Identidade | uma fonte só (Public Sans) em títulos e textos |  |
+| ✓ | Celular | entrada sem rolagem lateral e sem barra de navegação (ainda sem login) |  |
+| ✓ | Acessibilidade | sem login, o botão do topo abre as opções de acessibilidade (aria-expanded) |  |
+| ✓ | Celular | barra de navegação fixa embaixo, com 4 itens e o atual marcado (aria-current) |  |
+| ✓ | Celular | alvos de toque da navegação e do botão da conta com pelo menos 44 px | [44.375, 64, 64, 64, 64] |
+| ✓ | Celular | o conteúdo não fica escondido atrás da barra (espaço reservado embaixo) |  |
+| ✓ | Celular | sem rolagem lateral em #/painel (estagiária) | 390 |
+| ✓ | Celular | sem rolagem lateral em #/casos (estagiária) | 390 |
+| ✓ | Celular | sem rolagem lateral em #/caso/c01/resumo (estagiária) | 390 |
+| ✓ | Celular | sem rolagem lateral em #/caso/c01/evolucoes (estagiária) | 390 |
+| ✓ | Celular | sem rolagem lateral em #/agenda (estagiária) | 390 |
+| ✓ | Celular | sem rolagem lateral em #/busca (estagiária) | 390 |
+| ✓ | Celular | sem rolagem lateral em #/conta (estagiária) | 390 |
+| ✓ | Painel | números numa linha só e pendências numa lista (sem avisos empilhados no topo) |  |
+| ✓ | Acessibilidade | Navegação no celular · Celular · painel: sem violações WCAG A/AA |  |
+| ✓ | Caso | a aba atual fica à vista na faixa de abas que rola para o lado |  |
+| ✓ | Menu da conta | o botão da conta abre o menu com as preferências, Minha conta e Sair |  |
+| ✓ | Acessibilidade | Navegação no celular · Celular · menu da conta aberto: sem violações WCAG A/AA |  |
+| ✓ | Menu da conta | Esc fecha o menu e o foco volta ao botão da conta |  |
+| ✓ | Menu da conta | ligar o modo discreto redesenha a tela e o menu continua aberto, com o estado à vista |  |
+| ✓ | Menu da conta | clicar fora fecha o menu |  |
+| ✓ | Menu da conta | "Minha conta" abre a tela da conta e fecha o menu |  |
+| ✓ | Celular | quem tem mais de 5 itens vê 4 na barra e o "Mais" com o resto |  |
+| ✓ | Celular | "Mais" lista Duplas e trios, Indicadores e Buscar, além da conta e das páginas informativas |  |
+| ✓ | Acessibilidade | Navegação no celular · Celular · Mais: sem violações WCAG A/AA |  |
+| ✓ | Celular | item que mora no "Mais" deixa o "Mais" marcado na barra |  |
+| ✓ | Caso | seis abas: Resumo, Evoluções, Risco, Sessões, Documentos e Área restrita | Resumo, Evoluções, Risco, Sessões, Documentos, Área restrita |
+| ✓ | Caso | o encerramento abre pelo botão no fim do Resumo, com a aba Resumo marcada |  |
+| ✓ | Caso | a Área restrita junta supervisão e avaliação psicológica, com um seletor entre as duas |  |
+| ✓ | Pedidos | a técnica tem um item só, "Pedidos", com cópia do prontuário e direitos LGPD lado a lado |  |
+| ✓ | Computador | a navegação vira uma coluna à esquerda com os 7 itens, sem o "Mais" |  |
 | ✓ | Acessibilidade | Risco e segurança · Caso · risco e segurança: sem violações WCAG A/AA |  |
 | ✓ | Risco | a aba mostra os números de urgência (SAMU 192, CVV 188) |  |
 | ✓ | Risco | avaliação sem descrição é recusada |  |
@@ -323,10 +361,10 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | ✓ | Transição | com a justificativa, o caso passa para a outra dupla e a passagem fica registrada |  |
 | ✓ | Transição | ao encerrar o estágio, a direção é avisada de que o caso fica sem dupla ativa (só quando sai o último da dupla) | Encerrar o vínculo de estágio de Lia? O acesso aos casos termina agora.  Fica sem dupla ativa: Paciente Exemplo 02, Paciente Exemplo 03. Combine com a supervisã |
 | ✓ | Transição | a técnica vê os casos sem dupla ativa na alocação |  |
-| ✓ | Transição | o painel da supervisão avisa o caso sem dupla ativa |  |
+| ✓ | Transição | o painel da supervisão avisa o caso sem dupla ativa (nas pendências) |  |
 | ✓ | Acessibilidade | Transição de semestre · Caso · passagem do caso: sem violações WCAG A/AA |  |
 | ✓ | Transição | com o resumo validado, o caso passa para a nova dupla sem pedir justificativa |  |
-| ✓ | Transição | depois da passagem, o caso sai do aviso |  |
+| ✓ | Transição | depois da passagem, o caso sai das pendências |  |
 | ✓ | Transição | a nova dupla lê o resumo de transferência no prontuário |  |
 | ✓ | Transição | e vê de onde o caso veio |  |
 | ✓ | Transição | o resumo entra na cópia do prontuário, com o nome |  |
@@ -335,7 +373,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 20:34. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 08/11/2026 23:40. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -345,7 +383,7 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | ✓ | Cadastro | a guarda do prontuário de quem era menor conta a partir dos 18 anos (regra configurável) | 2049-05-09 · 2049-05-09 |
 | ✓ | Auditoria | o filtro da auditoria reduz a lista |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Auditoria com filtro: sem violações WCAG A/AA |  |
-| ✓ | Auditoria | a planilha (CSV) sai com o filtro, separador ponto e vírgula e a fórmula neutralizada (apóstrofo na frente) | ﻿"Clínica-Escola de Psicologia (fictícia, para o protótipo) · Vínculo · trilha d |
+| ✓ | Auditoria | a planilha (CSV) sai com o filtro, separador ponto e vírgula e a fórmula neutralizada (apóstrofo na frente) | ﻿"Clínica-Escola de Psicologia (fictícia, para o protótipo) · Vinculum · trilha  |
 | ✓ | Auditoria | a exportação também fica na auditoria |  |
 | ✓ | Documentos | declaração com termo clínico é recusada e o campo diz qual termo revisar (Res. CFP 06/2019, art. 9º) | Declaração não traz sintoma, diagnóstico nem situação clínica (Res. CFP 06/2019, art. 9º). Revise: ansiedade, crise. |
 | ✓ | Documentos | declaração sem termo clínico é emitida e assinada pela estagiária (falta o supervisor) |  |
@@ -384,10 +422,10 @@ Gerado por `testes/testar_site.py` em 08/11/2026 23:35, no Chrome (Playwright), 
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-08T23:35:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-09T02:40:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw8gzrbm6kgc |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw8nm2781jxi |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

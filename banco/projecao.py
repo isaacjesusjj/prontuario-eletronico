@@ -1,4 +1,4 @@
-"""Projeção do banco de dados do Vínculo (prontuário da clínica-escola).
+"""Projeção do banco de dados do Vinculum (prontuário da clínica-escola).
 
 Estima quantos registros e quanto espaço o banco ocupa por ano e em 20 anos
 (prazo de guarda da Lei 13.787/2018), em três cenários. Todas as premissas

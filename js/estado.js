@@ -65,8 +65,19 @@ PEP.util = (function () {
     return partes[1] ? data + ' ' + partes[1].slice(0, 5) : data;
   }
 
+  // Data curta para listas: "Hoje", "Amanhã" ou "qua, 11/11" (dia da semana ajuda a lembrar a sessão)
+  var SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  function diaRelativo(iso) {
+    if (!iso || String(iso).split('-').length !== 3) return formatarData(iso);
+    var n = diasEntre(hoje(), iso);
+    if (n === 0) return 'Hoje';
+    if (n === 1) return 'Amanhã';
+    var d = String(iso).slice(0, 10).split('-');
+    return SEMANA[diaDaSemana(iso)] + ', ' + d[2] + '/' + d[1] + (d[0] !== hoje().slice(0, 4) ? '/' + d[0] : '');
+  }
+
   return { esc: esc, porId: porId, novoId: novoId, hoje: hoje, agora: agora, diasEntre: diasEntre, somarDias: somarDias,
-    diaDaSemana: diaDaSemana, idade: idade, formatarData: formatarData };
+    diaDaSemana: diaDaSemana, idade: idade, formatarData: formatarData, diaRelativo: diaRelativo };
 })();
 
 PEP.estado = (function () {

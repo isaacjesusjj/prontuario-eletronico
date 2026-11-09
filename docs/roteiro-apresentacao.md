@@ -1,4 +1,4 @@
-# Roteiro de apresentação — Vínculo (03/12/2026)
+# Roteiro de apresentação — Vinculum (03/12/2026)
 
 Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slides. A divisão entre os integrantes é só uma sugestão.
 
@@ -7,7 +7,8 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 1. Abra o site pelo link: https://isaacjesusjj.github.io/prontuario-eletronico/
 2. Na tela de login, clique em **"Restaurar dados de demonstração"** (rodapé). Isso também ajusta as datas: a sessão "de hoje" cai no dia da apresentação.
 3. Navegador em tela cheia, zoom entre 100% e 125%.
-4. Para trocar de perfil, use **"Sair"** no topo. Senha de todas as contas: **demonstracao2026**.
+4. Para trocar de perfil, toque no botão da conta (a letra no canto superior direito) → **Sair**. Senha de todas as contas: **demonstracao2026**.
+5. Para mostrar no celular: abra o mesmo link no telefone, ou no computador use a ferramenta de desenvolvedor (F12 → ícone de celular). A navegação fica na barra de baixo.
 
 ## Cola de logins
 
@@ -43,7 +44,7 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 
 ## 4. Estagiária — Dilson (2 min)
 
-- `bia.estagiaria` → **Paciente Exemplo 01** → **Sessões e faltas** → sessão de **hoje** → **Presente**.
+- `bia.estagiaria` → **Paciente Exemplo 01** → **Sessões** → sessão de **hoje** → **Presente**.
 - **Lembrete WhatsApp** numa sessão futura: a mensagem não tem nome do serviço nem conteúdo clínico.
 - **Evoluções** → **Nova evolução** → tema, intervenção e plano → **Assinar e enviar à supervisão**.
 - **Agenda** → semana e mês.
@@ -52,40 +53,40 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 ## 5. Supervisora — Isaac (1,5 min)
 
 - `helena.supervisora` → **Validação** → **Validar e assinar**. A evolução validada não tem mais campo de edição: correção só por **adendo**.
-- Aba **Supervisão**: orientações fora do prontuário (o paciente não recebe isso na cópia).
+- Aba **Área restrita** → **Supervisão**: orientações fora do prontuário (o paciente não recebe isso na cópia).
 
 ## 6. Abandono de tratamento — Daniel (1 min)
 
-- `bia.estagiaria` → **Paciente Exemplo 02** → **Sessões e faltas**: duas faltas seguidas abriram o **fluxo de abandono**.
+- `bia.estagiaria` → **Paciente Exemplo 02** → **Sessões**: duas faltas seguidas abriram o **fluxo de abandono**.
 - Registre o contato com o motivo → **Encerrar por abandono e liberar a vaga**.
 - Frase-chave: "Antes, a vaga era só realocada. Agora a clínica sabe **por que** o paciente saiu."
 
 ## 7. Paciente e LGPD — Dilson (1,5 min)
 
 - `paciente01` → **Meus dados (LGPD)**: dados guardados, autorizações (revogar lembretes) e pedido ao encarregado.
-- **Meu prontuário** → **Pedir cópia**. Depois, `ana.tecnica` → **Acesso do paciente** → identidade conferida → **gerar link de leitura** (72 h, pede a data de nascimento).
+- **Meu prontuário** → **Pedir cópia**. Depois, `ana.tecnica` → **Pedidos** → **Cópia do prontuário** → identidade conferida → **gerar link de leitura** (72 h, pede a data de nascimento).
 
 ## 8. Direção, rodízio e fechamento — Dilson (1 min)
 
 - `marta.direcao` → **Indicadores** (sem nomes) → **Grupos de estágio** → **Encerrar estágio**: o acesso termina na hora.
 - `iara.estagiaria`: entra, mas não vê nenhum caso (vínculo do semestre passado).
-- Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade** (A−/A+, contraste, Libras).
+- Botão da conta (no topo, à direita): tamanho do texto, alto contraste e Libras. Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade**.
 - Passe para os slides: "Agora, por que isso é viável."
 
 ## 9. Diferenciais — se sobrar tempo, ou para as perguntas (3 min)
 
 Escolha dois ou três, conforme o tempo.
 
-- **Risco e segurança:** `helena.supervisora` → **Paciente Exemplo 03** → **Risco e segurança**: avaliação com nível e condutas, ciência da supervisão e **plano de segurança** em versões (o paciente lê no portal). Depois, `rafael.supervisor` → **Paciente Exemplo 04** (adolescente): **notificação ao Conselho Tutelar**, com a lei e o prazo à vista. Frase: "Só o supervisor registra a notificação; o sistema sugere, a supervisão decide. E o relato de violência não vai na cópia entregue ao responsável."
+- **Risco e segurança:** `helena.supervisora` → **Paciente Exemplo 03** → **Risco**: avaliação com nível e condutas, ciência da supervisão e **plano de segurança** em versões (o paciente lê no portal). Depois, `rafael.supervisor` → **Paciente Exemplo 04** (adolescente): **notificação ao Conselho Tutelar**, com a lei e o prazo à vista. Frase: "Só o supervisor registra a notificação; o sistema sugere, a supervisão decide. E o relato de violência não vai na cópia entregue ao responsável."
 - **Revisor de escrita:** `bia.estagiaria` → **Paciente Exemplo 01** → **Evoluções** → **Nova evolução** → digite "Paciente alega que a mãe é manipuladora": o revisor aponta "alega" e "manipuladora", sem corrigir nem bloquear. Botão **Ver como o paciente lê**. Frase: "Não usa inteligência artificial: o texto não sai do navegador e as regras são da supervisão."
 - **Privacidade:** `ana.tecnica` → abra **Paciente Exemplo 01**: antes do conteúdo clínico, ela registra o **motivo do acesso**. Depois, `paciente01` → **Meus dados** → **Quem acessou o seu prontuário**. No topo, **Discreto** (iniciais no lugar de nomes) e **Cobrir tela**.
 - **Falta avisada:** `paciente01` → próxima sessão → **Não vou poder ir** → motivo da lista. "A falta avisada não conta como abandono, e o motivo vira indicador."
 - **Urgência na fila:** **Entrar na fila de espera** → em "Em poucas palavras, o que te traz aqui?", escreva "Não aguento mais, preciso de ajuda" (um dos sinais de urgência): os contatos de crise aparecem na hora, e a inscrição sobe para o topo da fila da técnica.
 - **Transição de semestre:** `duda.estagiaria` → **Paciente Exemplo 03** → **Evoluções** → **Resumo de transferência**: o rascunho já vem com período, sessões, demanda e objetivos. Complete as três seções e envie; `helena.supervisora` valida. Depois, `marta.direcao` → **Grupos de estágio** → **Encerrar estágio** de Duda e de Lia: o aviso diz que o caso fica sem dupla. `helena.supervisora` → o painel avisa → **Passagem do caso** → **Dupla 1** → paciente avisado → **Passar o caso**. Frase: "O caso não se perde na troca de semestre: a nova dupla lê o resumo, e a anterior perde o acesso na hora."
-- **Documentos psicológicos:** `bia.estagiaria` → **Paciente Exemplo 01** → **Documentos e anexos** → **Emitir documento psicológico** → **Declaração** → escreva "crise de ansiedade" no texto: o sistema recusa (declaração não leva situação clínica). Depois, **Relatório psicológico**: as seções da Res. CFP 06/2019 aparecem sozinhas. `helena.supervisora` → **Abrir** → **Assinar como supervisor** → **Imprimir**: páginas numeradas e protocolo de entrega.
+- **Documentos psicológicos:** `bia.estagiaria` → **Paciente Exemplo 01** → **Documentos** → **Emitir documento psicológico** → **Declaração** → escreva "crise de ansiedade" no texto: o sistema recusa (declaração não leva situação clínica). Depois, **Relatório psicológico**: as seções da Res. CFP 06/2019 aparecem sozinhas. `helena.supervisora` → **Abrir** → **Assinar como supervisor** → **Imprimir**: páginas numeradas e protocolo de entrega.
 - **Comunicações:** na mesma aba, **Registrar comunicação** (encaminhamento, requisição, quebra de sigilo). `paciente01` → **Meus dados** → "Com quem seus dados foram compartilhados".
-- **Busca e contato de emergência:** campo **Buscar paciente** no menu (procura só nos casos da pessoa). No cadastro, o contato de emergência aparece na aba Risco e segurança.
-- **Gráfico e salas:** no painel de `helena.supervisora`, o gráfico de atendimentos por mês: passe o mouse ou use Tab numa coluna; "Ver os números" abre a tabela. Em **Sessões e faltas**, agende escolhendo a sala: a sala ocupada é recusada. Em **Agenda**, o filtro **Sala** mostra a ocupação.
+- **Busca e contato de emergência:** item **Buscar** da barra de navegação (procura só nos casos da pessoa). No cadastro, o contato de emergência aparece na aba Risco.
+- **Gráfico e salas:** no painel de `helena.supervisora`, o gráfico de atendimentos por mês: passe o mouse ou use Tab numa coluna; "Ver os números" abre a tabela. Em **Sessões**, agende escolhendo a sala: a sala ocupada é recusada. Em **Agenda**, o filtro **Sala** mostra a ocupação.
 - **Contas:** `marta.direcao` → **Estudantes e contas** → **Gerar senha provisória** (aparece uma vez; no banco fica só o hash).
 - **Verificação em duas etapas:** **Minha conta** → **Ativar a verificação em duas etapas** → a chave para o aplicativo autenticador. Se alguém do grupo tiver o app no celular, mostre ao vivo: depois de **Sair**, a senha certa não basta. Ao terminar, use **"Restaurar dados de demonstração"**.
 
@@ -103,7 +104,7 @@ Escolha dois ou três, conforme o tempo.
 - **Quais as stacks?** Hoje: HTML, CSS e JavaScript puros no GitHub Pages. Banco: PostgreSQL no Supabase (região São Paulo), com Supabase Auth e Storage. A troca é `js/config-banco.js`.
 - **O banco aguenta?** ~84 MB por ano no cenário atual; ~16 GB em 20 anos no cenário ×10. O pico é de ~47 pessoas ao mesmo tempo. O PostgreSQL aguenta muito mais.
 - **Por que não MySQL?** Também aguentaria, mas não tem regra de acesso por linha: o sigilo ficaria só no código.
-- **Como provam que funciona?** 340 verificações automáticas no site (68 telas conferidas no teste de acessibilidade), 174 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
+- **Como provam que funciona?** 372 verificações automáticas no site (71 telas conferidas no teste de acessibilidade), 174 no banco (PostgreSQL de verdade, quase metade tentando burlar as regras) e o validador do JSON.
 - **E se alguém chamar a API direto?** O banco aplica as mesmas regras (RLS e triggers): a estagiária só recebe as linhas dos casos dela e não consegue, por exemplo, gravar uma evolução já "validada".
 - **E se roubarem a senha?** Com a verificação em duas etapas, a senha sozinha não abre nada, nem no banco. Em produção, ela é obrigatória para a equipe.
 - **E se o paciente estiver em risco?** O risco é registrado no caso, a supervisão precisa dar ciência, a notificação obrigatória tem órgão e prazo à vista e o plano de segurança fica com o paciente. O sistema não é canal de crise: mostra CVV 188 e SAMU 192.

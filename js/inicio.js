@@ -21,12 +21,13 @@ PEP.app = (function () {
   // Títulos da aba: nunca levam nome de paciente
   var TITULOS = {
     entrar: 'Entrar', inscricao: 'Fila de espera', 'inscricao-ok': 'Inscrição recebida', sobre: 'Sobre o projeto', privacidade: 'Aviso de privacidade',
-    termos: 'Termos de uso', acessibilidade: 'Acessibilidade', regras: 'Regras e leis', acesso: 'Leitura do prontuário', painel: 'Painel', casos: 'Casos',
+    termos: 'Termos de uso', acessibilidade: 'Acessibilidade', regras: 'Regras e leis', acesso: 'Leitura do prontuário', painel: 'Início', casos: 'Casos',
     caso: 'Prontuário', imprimir: 'Cópia do prontuário', supervisao: 'Validação de evoluções', fila: 'Fila de espera', triagem: 'Triagem', alocacao: 'Alocação',
-    agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Acesso do paciente', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
+    agenda: 'Agenda', indicadores: 'Indicadores', solicitacoes: 'Pedidos: cópia do prontuário', 'meu-prontuario': 'Meu prontuário', 'meus-dados': 'Meus dados (LGPD)',
     'meu-plano': 'Meu plano de segurança',
-    auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos LGPD', conta: 'Minha conta', estudantes: 'Estudantes e contas', paciente: 'Editar cadastro',
-    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas', busca: 'Busca de paciente', documento: 'Documento psicológico'
+    auditoria: 'Auditoria', 'pedidos-lgpd': 'Pedidos: direitos LGPD', conta: 'Minha conta', estudantes: 'Estudantes e contas', paciente: 'Editar cadastro',
+    'trocar-senha': 'Primeiro acesso', termo: 'Termo de responsabilidade', 'configurar-mfa': 'Verificação em duas etapas', busca: 'Busca de paciente', documento: 'Documento psicológico',
+    mais: 'Mais'
   };
 
   function lerRota() {
@@ -83,7 +84,8 @@ PEP.app = (function () {
       case 'meu-plano': return T.meuPlano(u);
       case 'auditoria': return T.auditoria(u);
       case 'conta': return T.conta(u);
-      default: return '<h1>Página não encontrada</h1><a href="#/painel">Voltar ao painel</a>';
+      case 'mais': return PEP.ui.telaMais(u);
+      default: return '<h1>Página não encontrada</h1><a href="#/painel">Voltar ao início</a>';
     }
   }
 
@@ -111,6 +113,7 @@ PEP.app = (function () {
     var app = document.getElementById('app');
     try {
       app.innerHTML = conteudo(u, rota);
+      PEP.ui.mostrarAbaAtual();
     } catch (erro) {
       app.innerHTML = '<h1>Erro ao montar a tela</h1><div class="aviso perigo">Use "Sair" e entre de novo. Se continuar, restaure os dados de demonstração.</div>';
       if (window.console) console.error(erro);
@@ -172,6 +175,7 @@ PEP.app = (function () {
 
   window.addEventListener('hashchange', function () {
     navegou = true;
+    PEP.ui.fecharConta(false);   // trocar de tela fecha o menu da conta
     document.getElementById('toast').classList.remove('visivel');
     var rota = lerRota();
     if (rota.nome !== 'solicitacoes') PEP.telas._ultimoLink = null;

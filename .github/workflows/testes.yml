@@ -1,4 +1,4 @@
-# Roda os três testes do Vínculo a cada envio (push) e a cada pedido de junção (pull request).
+# Roda os três testes do Vinculum a cada envio (push) e a cada pedido de junção (pull request).
 # O resultado aparece na aba "Actions" do GitHub e no selo do README.
 name: testes
 

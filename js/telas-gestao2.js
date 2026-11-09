@@ -43,9 +43,9 @@ PEP.telas = PEP.telas || {};
     var media = Number(ind.mediaSessoes || 0).toFixed(1).replace('.', ',');
 
     return '<h1>Indicadores</h1><div class="aviso info pequeno">Dados agregados, sem identificação de pacientes. São calculados na hora a partir dos registros (nada fica guardado).' + (u.perfil === 'supervisor' ? ' Escopo: seus grupos.' : '') + '</div>' +
-      '<div class="grade">' + PEP.ui.numero(ind.atendidos, 'pacientes atendidos') + PEP.ui.numero(ind.taxaRetorno + '%', 'voltaram após a 1ª sessão') +
-      PEP.ui.numero(media, 'sessões por paciente (média)') + PEP.ui.numero(ind.emRisco, 'casos em risco de abandono agora') +
-      (u.perfil !== 'supervisor' ? PEP.ui.numero(ind.esperaMediaDias + ' dias', 'espera média na fila') : '') + '</div>' +
+      PEP.ui.numeros([[ind.atendidos, 'pacientes atendidos'], [ind.taxaRetorno + '%', 'voltaram após a 1ª sessão'],
+        [media, 'sessões por paciente (média)'], [ind.emRisco, 'casos em risco de abandono agora']]
+        .concat(u.perfil !== 'supervisor' ? [[ind.esperaMediaDias + ' dias', 'espera média na fila']] : [])) +
       (ind.porMes ? '<div class="cartao">' + PEP.grafico.atendimentosPorMes(ind.porMes) + '</div>' : '') +
       '<div class="grade-2"><div class="cartao"><h2>Motivos de abandono</h2>' + barras(motivos) +
       '<p class="suave pequeno">Vem do fluxo de contato: é o dado que faltava para entender por que o paciente não volta.</p></div>' +
@@ -60,10 +60,20 @@ PEP.telas = PEP.telas || {};
 
   function linksDaSolicitacao(s) { return PEP.db.linksAcesso.filter(function (l) { return l.solicitacaoId === s.id; }); }
 
+  // "Pedidos" da técnica: os dois tipos de pedido do paciente ficam juntos, com um seletor no topo
+  function seletorPedidos(atual) {
+    var abertos = PEP.db.solicitacoes.filter(function (s) { return s.status !== 'entregue'; }).length;
+    var lgpd = PEP.db.pedidosTitular.filter(function (p) { return p.status === 'aberto'; }).length;
+    var item = function (rota, nome, n) {
+      return '<a href="#/' + rota + '"' + (rota === atual ? ' class="ativo" aria-current="page"' : '') + '>' + nome + (n ? ' (' + n + ')' : '') + '</a>';
+    };
+    return '<nav class="seletor" aria-label="Tipos de pedido" style="margin-bottom:1rem">' + item('solicitacoes', 'Cópia do prontuário', abertos) + item('pedidos-lgpd', 'Direitos LGPD', lgpd) + '</nav>';
+  }
+
   PEP.telas.solicitacoes = function (u) {
     if (u.perfil !== 'tecnico') return PEP.ui.semPermissao();
     var lista = PEP.db.solicitacoes.slice().sort(function (a, b) { return b.em.localeCompare(a.em); });
-    var html = '<h1>Acesso do paciente ao prontuário</h1>' +
+    var html = '<h1>Pedidos dos pacientes</h1>' + seletorPedidos('solicitacoes') +
       '<div class="aviso info">O acesso é um <strong>direito do paciente</strong> (Res. CFP 05/2025, art. 13). Você organiza a entrega: confere a identidade e entrega a cópia — não decide se libera.</div>';
     var ul = PEP.telas._ultimoLink;
     if (ul) {
@@ -122,7 +132,7 @@ PEP.telas = PEP.telas || {};
     var tipos = {};
     PEP.lista('tiposPedidoTitular').forEach(function (t) { tipos[t.valor] = t.nome; });
     var lista = PEP.db.pedidosTitular.slice().sort(function (a, b) { return b.em.localeCompare(a.em); });
-    var html = '<h1>Pedidos dos titulares (LGPD)</h1><p class="suave">Pedidos feitos pelos pacientes sobre os próprios dados (LGPD, art. 18). Prazo de resposta adotado: ' + prazo + ' dias (art. 19, II). ' +
+    var html = '<h1>Pedidos dos pacientes</h1>' + (u.perfil === 'tecnico' ? seletorPedidos('pedidos-lgpd') : '') + '<p class="suave">Pedidos feitos pelos pacientes sobre os próprios dados (LGPD, art. 18). Prazo de resposta adotado: ' + prazo + ' dias (art. 19, II). ' +
       'No sistema real, quem responde é o encarregado de dados; aqui, a psicóloga técnica faz esse papel.</p>';
     if (!lista.length) return html + '<p class="vazio">Nenhum pedido.</p>';
     return html + lista.map(function (p) {

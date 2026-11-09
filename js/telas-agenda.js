@@ -87,9 +87,9 @@ PEP.telas = PEP.telas || {};
     for (var i = 0; i < 7; i++) {
       var dia = U().somarDias(ini, i);
       var doDia = lista.filter(function (s) { return s.data === dia; });
-      html += '<section class="dia-semana' + (dia === U().hoje() ? ' hoje' : '') + '" aria-labelledby="dia-' + dia + '">' +
+      html += '<section class="dia-semana' + (dia === U().hoje() ? ' hoje' : '') + (doDia.length ? '' : ' sem-sessao') + '" aria-labelledby="dia-' + dia + '">' +
         '<h3 id="dia-' + dia + '"><a href="#/agenda/dia/' + dia + '">' + DIAS[U().diaDaSemana(dia)].slice(0, 3) + ' ' + dia.slice(8) + '/' + dia.slice(5, 7) + '</a>' + (dia === U().hoje() ? ' <span class="sr-only">(hoje)</span>' : '') + '</h3>' +
-        (doDia.length ? '<ul class="lista-sessoes">' + doDia.map(function (s) { return itemSessao(u, s, false); }).join('') + '</ul>' : '<p class="vazio pequeno">—</p>') + '</section>';
+        (doDia.length ? '<ul class="lista-sessoes">' + doDia.map(function (s) { return itemSessao(u, s, false); }).join('') + '</ul>' : '<p class="vazio pequeno">sem sessões</p>') + '</section>';
     }
     return html + '</div>';
   }

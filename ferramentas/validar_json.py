@@ -1,4 +1,4 @@
-"""Validador do arquivo dados/dados-iniciais.json do Vínculo.
+"""Validador do arquivo dados/dados-iniciais.json do Vinculum.
 
 Confere o que o banco também vai conferir (banco/schema.sql), antes de migrar:
 sintaxe, ids únicos, chaves estrangeiras entre coleções, valores das listas fechadas,

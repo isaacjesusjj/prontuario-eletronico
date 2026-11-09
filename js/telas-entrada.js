@@ -21,46 +21,46 @@ PEP.telas = PEP.telas || {};
       '<button type="button" class="botao secundario" data-acao="cancelar-mfa">Voltar</button></div></form>';
   };
 
+  // Logotipo da Faculdade (uso autorizado para o projeto acadêmico), servido pelo próprio site
+  PEP.telas.logoFaculdade = function (altura) {
+    var h = altura || 40, w = Math.round(h * 303 / 85);
+    return '<img class="logo-inst" src="img/logo-fcmsantacasa.png" width="' + w + '" height="' + h + '" alt="Faculdade de Ciências Médicas da Santa Casa de São Paulo">';
+  };
+
   PEP.telas.entrar = function () {
     if (PEP.estado.lerMfaPendente()) return PEP.telas.entrarCodigo();
     var meta = PEP.db._meta || {};
     var motivo = PEP.estado.lerMotivoSaida();
-    var cartoes = PEP.config().demo.contasDestaque.map(function (id) {
+    var contas = PEP.config().demo.contasDestaque.map(function (id) {
       var u = PEP.util.porId(PEP.db.usuarios, id);
       if (!u) return '';
-      return '<button type="button" class="cartao perfil-cartao" data-acao="preencher-login" data-login="' + esc(u.login) + '">' +
-        '<span class="perfil-tipo">' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span>' +
-        '<strong>' + esc(PEP.ui.nomeUsuario(u.id)) + '</strong>' +
-        '<span class="suave">' + esc(PEP.regras.descricaoUsuario(u)) + '</span>' +
-        '<span class="suave pequeno">Usuário: ' + esc(u.login) + '</span></button>';
+      return '<button type="button" class="perfil-cartao" data-acao="preencher-login" data-login="' + esc(u.login) + '">' +
+        '<strong>' + esc(PEP.ui.nomeUsuario(u.id)) + '</strong><span class="perfil-tipo">' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span></button>';
     }).join('');
 
-    return '<h1>Bem-vindo ao Vínculo</h1>' +
-      '<p class="suave">Prontuário eletrônico da clínica-escola de Psicologia: do primeiro contato na fila de espera até o encerramento do caso, com supervisão em cada registro.</p>' +
+    return '<div class="entrada">' + PEP.telas.logoFaculdade(40) +
+      '<h1 class="marca-grande">' + PEP.ui.aneis() + 'Vinculum</h1>' +
+      '<p class="apresentacao">Prontuário eletrônico da clínica-escola de Psicologia: da fila de espera ao encerramento do caso, com supervisão em cada registro.</p>' +
       (motivo ? '<div class="aviso alerta" role="status">Sua sessão foi encerrada por ' + (motivo === 'inatividade' ? PEP.regra('inatividadeMinutos') + ' minutos sem uso' : 'tempo máximo de uso') + '. Entre de novo para continuar.</div>' : '') +
-      '<form class="cartao" data-form="login" style="max-width:480px" novalidate>' +
-      '<h2>Entrar</h2>' +
+      '<form class="cartao" data-form="login" novalidate aria-labelledby="titulo-entrar">' +
+      '<h2 id="titulo-entrar" class="sr-only">Entrar</h2>' +
       '<div class="aviso perigo" id="login-erro" role="alert" hidden></div>' +
       '<div class="campo"><label for="lg-usuario">Usuário ou e-mail</label>' +
       '<input id="lg-usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>' +
       '<div class="campo"><label for="lg-senha">Senha</label>' +
       '<div class="senha-linha"><input id="lg-senha" name="senha" type="password" autocomplete="current-password" required>' +
-      '<button type="button" class="botao secundario pequeno" data-acao="mostrar-senha" data-alvo="lg-senha" aria-pressed="false">Mostrar</button></div>' +
-      '<span class="dica">Pode colar a senha ou usar o gerenciador de senhas do navegador.</span></div>' +
-      '<button class="botao" type="submit" id="lg-entrar">Entrar</button>' +
+      '<button type="button" class="botao secundario pequeno" data-acao="mostrar-senha" data-alvo="lg-senha" aria-pressed="false">Mostrar</button></div></div>' +
+      '<button class="botao largo" type="submit" id="lg-entrar">Entrar</button>' +
       (PEP.repo.adaptador().remoto ?
         '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? Digite seu e-mail acima e <button type="button" class="botao secundario pequeno" data-acao="recuperar-senha">receba um link</button> para criar outra.</p>' :
         '<p class="suave pequeno" style="margin:.8rem 0 0">Esqueceu a senha? A coordenação (equipe) ou a psicóloga técnica (pacientes) gera uma senha provisória, que você troca no primeiro acesso.</p>') +
       '</form>' +
-      '<h2 style="margin-top:1.6rem">Contas de demonstração</h2>' +
-      '<p class="suave">Contas fictícias para a apresentação. Clique numa conta para preencher o login e depois em <strong>Entrar</strong>. ' +
-      'Senha de todas: <strong>' + esc(meta.senhaDemonstracao || '') + '</strong> (no banco, só fica o hash).</p>' +
-      '<div class="grade">' + cartoes + '</div>' +
-      '<div class="cartao linha entre" style="margin-top:1rem">' +
-      '<div><h2>Quer ser atendido(a)?</h2><p class="suave">Entre na fila de espera da clínica-escola. Leva 2 minutos.</p></div>' +
-      '<a class="botao" href="#/inscricao">Entrar na fila de espera</a></div>' +
-      '<div class="linha entre" style="margin-top:1rem">' +
-      '<span class="suave pequeno">Grupo: Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima · <a href="#/sobre">sobre o projeto</a></span>' +
+      '<h2>Contas de demonstração</h2>' +
+      '<p class="suave pequeno" style="margin:0">Contas fictícias: toque numa conta e depois em <strong>Entrar</strong>. Senha de todas: <strong>' + esc(meta.senhaDemonstracao || '') + '</strong>.</p>' +
+      '<div class="contas-demo">' + contas + '</div>' +
+      '<div class="cartao"><h2>Quer ser atendido(a)?</h2><p class="suave">Entre na fila de espera da clínica-escola. Leva 2 minutos.</p>' +
+      '<a class="botao secundario largo" href="#/inscricao">Entrar na fila de espera</a></div>' +
+      '<p class="suave pequeno">Grupo: Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima · <a href="#/sobre">sobre o projeto</a></p>' +
       '<button class="botao secundario pequeno" data-acao="restaurar">Restaurar dados de demonstração</button></div>';
   };
 
@@ -75,8 +75,8 @@ PEP.telas = PEP.telas || {};
   // Fila de espera online: poucos campos, aviso de urgência, aviso de privacidade e CPF validado
   PEP.telas.inscricao = function () {
     var periodos = PEP.ui.opcoes(PEP.lista('periodos'));
-    return '<a href="#/entrar" class="suave">← Voltar</a>' +
-      '<h1 style="margin-top:.5rem">Fila de espera da clínica-escola</h1>' + avisoPrototipo() +
+    return '<a href="#/entrar" class="voltar">‹ Voltar</a>' +
+      '<h1>Fila de espera da clínica-escola</h1>' + avisoPrototipo() +
       '<div class="aviso perigo" role="note"><strong>É urgente?</strong> Se você está em risco ou pensando em se machucar, não espere a fila: ' +
       'ligue <strong>192 (SAMU)</strong>, fale com o <strong>CVV pelo 188</strong> (24 horas, gratuito) ou procure a UPA ou o pronto-socorro mais próximo.</div>' +
       '<form class="cartao" data-form="inscricao" id="form-inscricao" novalidate>' +
@@ -115,14 +115,15 @@ PEP.telas = PEP.telas || {};
   };
 
   PEP.telas.sobre = function () {
-    return '<h1>Sobre o Vínculo</h1>' +
+    return '<h1>Sobre o Vinculum</h1>' + PEP.telas.logoFaculdade(40) +
       '<div class="cartao"><h2>O projeto</h2>' +
       '<p>Protótipo funcional do Projeto Integrador de Curso (PIC) — Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.</p>' +
       '<p><strong>Grupo:</strong> Daniel Dantas, Dilson Rodrigues e Isaac de Jesus Lima.</p>' +
+      '<p><strong>O nome:</strong> <em>vinculum</em> é "laço", em latim. O sistema existe para manter o vínculo entre o paciente e a clínica-escola, e o acesso de cada pessoa nasce e termina com o vínculo de estágio.</p>' +
       '<p class="suave"><strong>Versões anteriores:</strong> Etapa 1 — requisitos (Adônis Silveira, Isaac Jesus, Felipe Moretti e Giovane Guedes, 1º semestre de 2026); ' +
       'protótipo de telas v1 (Daniel Dantas, Dilson Rodrigues, Gustavo Santos e Ryan Mendes).</p></div>' +
       '<div class="cartao"><h2>O problema que o sistema ataca</h2>' +
-      '<p>Registros em papel e pacientes que vêm uma vez e não voltam. O Vínculo registra faltas, abre um fluxo de contato quando há duas faltas seguidas e mostra os motivos de abandono nos indicadores.</p></div>' +
+      '<p>Registros em papel e pacientes que vêm uma vez e não voltam. O Vinculum registra faltas, abre um fluxo de contato quando há duas faltas seguidas e mostra os motivos de abandono nos indicadores.</p></div>' +
       '<div class="cartao"><h2>Como está construído</h2><div class="tabela-rolagem"><table><caption class="sr-only">Arquitetura atual e alvo</caption>' +
       '<thead><tr><th scope="col">Camada</th><th scope="col">Hoje (protótipo)</th><th scope="col">Produção (próxima etapa)</th></tr></thead><tbody>' +
       '<tr><td>Telas</td><td>HTML, CSS e JavaScript puros, no GitHub Pages</td><td>As mesmas telas, no mesmo endereço</td></tr>' +

@@ -1,4 +1,4 @@
-# Vínculo — Prontuário Eletrônico da Clínica-Escola de Psicologia
+# Vinculum — Prontuário Eletrônico da Clínica-Escola de Psicologia
 
 Protótipo funcional do **Projeto Integrador de Curso (PIC)** — Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.
 
@@ -16,7 +16,7 @@ Na clínica-escola, os registros são feitos em papel, e muitos pacientes vêm �
 
 ## A solução
 
-O Vínculo acompanha o paciente da fila de espera até o encerramento, com a supervisão presente em cada registro:
+O Vinculum acompanha o paciente da fila de espera até o encerramento, com a supervisão presente em cada registro:
 
 - **Fila de espera online** com aviso de urgência (SAMU 192, CVV 188), validação de CPF, telefone e data de nascimento, e regra para menores (responsável legal autoriza).
 - **CPF já cadastrado:** o formulário público não revela (mesma mensagem para todos); a equipe vê a duplicidade na fila e, na triagem, o novo caso é ligado ao cadastro existente.
@@ -25,7 +25,7 @@ O Vínculo acompanha o paciente da fila de espera até o encerramento, com a sup
 - **Prontuário do caso:** anamnese, demanda e objetivos com versões, evoluções (com modelo de sessão e de acolhimento), anexos com upload real e cópia em PDF.
 - **Documentos psicológicos (Res. CFP 06/2019):** declaração, atestado, relatório, laudo e parecer, cada um com as suas seções; prazo de validade; declaração sem termo clínico; laudo só com avaliação psicológica; impressão com páginas numeradas e protocolo de entrega; registro da entrega e da devolutiva; anulação com motivo.
 - **Comunicações e compartilhamentos:** tudo o que é passado a terceiros fica registrado com data, destinatário, finalidade e fundamento; quebra de sigilo só pela supervisão ou pela técnica; o paciente vê com quem os dados dele foram compartilhados (LGPD, art. 18, VII).
-- **Busca de paciente** no menu (só entre os casos que a pessoa pode ver, sem o nome no endereço da página) e **contato de emergência** no cadastro.
+- **Busca de paciente** no item "Buscar" (só entre os casos que a pessoa pode ver, sem o nome no endereço da página) e **contato de emergência** no cadastro.
 - **Evolução com validação:** rascunho → enviada → validada (assinatura do estagiário e do supervisor, com hash do texto) → bloqueada. Correção só por adendo.
 - **Fluxo de abandono:** duas faltas seguidas sem justificativa abrem o registro de contato e motivo antes de liberar a vaga.
 - **Agenda com sala**: cada sessão tem sala, e a mesma sala não recebe duas sessões que se sobrepõem; filtro por sala para ver a ocupação.
@@ -40,7 +40,8 @@ O Vínculo acompanha o paciente da fila de espera até o encerramento, com a sup
 - **Transição de semestre:** no fim do estágio, o estagiário escreve o **resumo de transferência** (o rascunho já vem com período, sessões, demanda e objetivos tirados do prontuário) e a supervisão valida. A **passagem do caso** para a nova dupla tem lista de conferência, exige o paciente avisado e o resumo validado (ou uma justificativa) e fica registrada; a dupla anterior perde o acesso e o prontuário continua inteiro. Os casos sem dupla ativa aparecem no painel.
 - **Contas:** a direção gera senha provisória e desativa ou reativa contas da equipe; a técnica cria e cuida do acesso do paciente ao portal.
 - **Segurança:** senhas só como hash (PBKDF2, 600 mil iterações), política de senha do NIST (15 caracteres, sem regra de símbolo), senha provisória com troca obrigatória, bloqueio progressivo por tentativas (30 s até 15 min), **verificação em duas etapas** (código do aplicativo autenticador e códigos de recuperação), sessão que encerra por inatividade com aviso (o texto em edição vira rascunho), auditoria com cadeia de hash verificável, filtros e exportação em planilha, aviso de último acesso e tentativas sem sucesso depois do login. No banco, as mesmas regras valem para quem chamar a API direto.
-- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras, erros ligados aos campos, títulos por tela. 68 telas conferidas com axe-core, sem violações.
+- **Feito para celular e tablet:** barra de navegação embaixo (até 5 itens; o resto fica em "Mais"), topo curto com o menu da conta, campos e botões com área de toque grande, abas do prontuário que rolam para o lado. No computador, a navegação vira uma coluna à esquerda.
+- **Acessibilidade** (ABNT NBR 17225 / WCAG 2.2 AA): pular para o conteúdo, A−/A+, alto contraste, VLibras (no menu da conta), erros ligados aos campos, títulos por tela. Telas conferidas com axe-core, também no celular, sem violações.
 - **Indicadores agregados:** pacientes atendidos, taxa de retorno, média de sessões, motivos de abandono e de falta avisada, casos ativos e espera na fila.
 
 As regras e as normas de onde elas vêm estão no próprio site, em **Regras e leis** (`#/regras`).
@@ -73,8 +74,9 @@ O roteiro da apresentação está em [`docs/roteiro-apresentacao.md`](docs/rotei
 
 ```
 index.html                  página única; carrega os scripts na ordem
-css/estilo.css              identidade visual, acessibilidade e alto contraste
-fontes/                     fontes servidas pelo próprio site (licença SIL OFL)
+css/estilo.css              identidade visual (verde da FCMSCSP), celular primeiro, alto contraste
+fontes/                     fonte Public Sans servida pelo próprio site (licença SIL OFL)
+img/                        logotipo da Faculdade (uso autorizado para o projeto)
 dados/dados-iniciais.json   dados fictícios: uma coleção por tabela do banco, + _config (listas e regras)
 js/config-banco.js          ÚNICO lugar para trocar o JSON pelo banco
 js/repositorio.js           camada de dados: toda gravação passa por aqui
@@ -85,7 +87,7 @@ js/estado.js                sessão, login (com duas etapas), bloqueio progressi
 js/validadores.js           CPF, telefone, e-mail, datas, arquivos, máscaras e erros acessíveis
 js/arquivos.js              upload real (IndexedDB hoje; Supabase Storage com o banco)
 js/permissoes.js            regras de acesso e de negócio (iguais às políticas RLS do banco)
-js/ui.js, acessibilidade.js topo, menu, rodapé, A−/A+, contraste, VLibras
+js/ui.js, acessibilidade.js topo e menu da conta, navegação (barra embaixo ou coluna), rodapé, A−/A+, contraste, VLibras
 js/privacidade.js           modo discreto e "Cobrir tela"
 js/revisor.js               revisor de escrita clínica (regras em _config.revisorEscrita)
 js/telas-*.js               telas (entrada, painéis, prontuário, risco e segurança, gestão, agenda, conta, LGPD)
@@ -107,7 +109,7 @@ PostgreSQL no Supabase (região São Paulo). Projeção: ~84 MB por ano no cená
 
 | O quê | Como rodar | Resultado |
 |---|---|---|
-| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 340 de 340 |
+| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 372 de 372 |
 | Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 174 de 174 |
 | JSON antes de migrar | `python ferramentas/validar_json.py` | 0 problemas |
 
@@ -150,12 +152,33 @@ Falhas encontradas na revisão do protótipo e corrigidas. Os commits do branch 
 | No alto contraste, o aviso flutuante ("toast") ficava com letra branca em fundo branco | Fundo preto, letra branca e borda amarela | Justamente quem precisa do contraste não lia as confirmações |
 | Técnica abria qualquer prontuário sem registro do porquê | Motivo registrado antes de abrir o conteúdo clínico de caso que não é dela | Princípio da necessidade (LGPD, art. 6º, III) e prestação de contas ao paciente |
 
+## Redesenho Vinculum (novembro de 2026)
+
+Pedido do grupo: visual mais limpo, identidade da Faculdade Santa Casa, foco em celular e tablet e menos redundância. Os testes do site ganharam a etapa "navegação e identidade".
+
+| O que estava | O que ficou | Por quê |
+|---|---|---|
+| Nome Vínculo | **Vinculum** ("laço", em latim), no site e em todos os documentos; o endereço do site continua o mesmo | Decisão do grupo |
+| Lilás e dourado, duas fontes (serifa nos títulos) | Verde da FCMSCSP (`#007931`), uma fonte só (Public Sans), fundo claro, logotipo da Faculdade na entrada, no "Sobre" e nos documentos impressos | Identidade da instituição; menos peso visual e menos arquivos para baixar |
+| No celular, topo com 9 botões ocupava um terço da tela | Topo de 56 px: marca e um botão da conta, que abre modo discreto, cobrir a tela, tamanho do texto, contraste, Libras, Minha conta e Sair | O conteúdo aparece logo na primeira tela |
+| Menu em faixa que rolava para o lado, no alto | Barra fixa embaixo, ao alcance do polegar (até 5 itens; o resto em "Mais"); no computador, coluna à esquerda | Padrão de aplicativo de celular; o técnico tinha 10 itens numa faixa |
+| Painel com até 5 avisos coloridos empilhados, 3 a 4 cartões de número e cartões que repetiam o menu | Uma linha de números, uma lista única de "Pendências" (cada item diz o que fazer) e as próximas sessões | Menos coisa para ler; nada importante fica escondido |
+| Prontuário com 8 abas em 4 linhas no celular | 6 abas que rolam para o lado: Resumo, Evoluções, Risco, Sessões, Documentos e Área restrita (supervisão + avaliação psicológica, que ficam fora do prontuário); encerramento por um botão no fim do Resumo | O encerramento é usado uma vez por caso; supervisão e avaliação têm a mesma regra (fora da cópia do paciente) |
+| Técnica com "Acesso do paciente" e "Pedidos LGPD" em itens separados | Um item, "Pedidos", com as duas partes lado a lado | São os dois tipos de pedido do paciente |
+| Campo de busca no menu, em toda tela | Página "Buscar" | Um lugar só; no celular não cabia no menu |
+| Entrada com 2.900 px de altura no celular | Entrada curta: login, contas de demonstração em grade de duas colunas e a fila de espera | O que importa aparece sem rolar |
+| Rótulos e cabeçalhos de tabela em caixa alta | Texto normal, selos arredondados | Caixa alta é mais difícil de ler |
+| Campos com letra de 15,5 px | Campos com 16 px e 44 px de altura | Abaixo de 16 px o iPhone dá zoom ao tocar no campo; 44 px é o alvo de toque recomendado |
+
+Os 5 pedidos de confirmação (`window.confirm`) continuam: restaurar dados, falta sem justificativa, encerrar estágio, desativar conta e desligar a verificação em duas etapas. Todos protegem ações difíceis de desfazer.
+
 ## Registro de decisões
 
 | Decisão | Escolha | Motivo |
 |---|---|---|
-| Nome | Vínculo | Remete ao vínculo terapêutico e ao problema do paciente que não volta |
-| Identidade visual | Lilás institucional com detalhes dourados e títulos em serifa | Escolha do grupo; tons ajustáveis no topo de `css/estilo.css` |
+| Nome | Vinculum (antes Vínculo) | "Laço", em latim: remete ao vínculo terapêutico, ao problema do paciente que não volta e ao acesso que nasce e morre com o vínculo de estágio |
+| Identidade visual | Verde da Faculdade Santa Casa (`#007931`), uma fonte só (Public Sans), logotipo da Faculdade com autorização | Escolha do grupo; tons ajustáveis no topo de `css/estilo.css` |
+| Navegação | Barra embaixo no celular e no tablet em pé; coluna à esquerda a partir de 960 px; preferências e Sair no menu da conta | O sistema será usado mais em celular e tablet |
 | Tecnologia das telas | HTML, CSS e JS puros | Exigência da Etapa 4 e facilidade para explicar o código |
 | Banco | PostgreSQL no Supabase, região São Paulo | Volume pequeno; regras de acesso no próprio banco (RLS); login com MFA; dados no Brasil; custo zero no PIC |
 | Dados | JSON com uma coleção por tabela, sem dados repetidos; listas e regras em `_config` | A migração vira "uma coleção = uma tabela"; regra muda sem mexer no código |

@@ -59,7 +59,7 @@ PEP.telas = PEP.telas || {};
     }
     var grupos = String(n.segredo).match(/.{1,4}/g).join(' ');
     return html + '<ol><li>No aplicativo autenticador, escolha <strong>adicionar conta</strong> e depois <strong>inserir uma chave de configuração</strong>.</li>' +
-      '<li>Nome da conta: <strong>Vínculo</strong>. Chave: <span class="codigo" id="mfa-chave">' + esc(grupos) + '</span> (tipo: baseado no tempo).</li>' +
+      '<li>Nome da conta: <strong>Vinculum</strong>. Chave: <span class="codigo" id="mfa-chave">' + esc(grupos) + '</span> (tipo: baseado no tempo).</li>' +
       '<li>Digite abaixo o código de 6 dígitos que o aplicativo mostrar.</li></ol>' +
       '<details><summary class="pequeno">Endereço para aplicativos que aceitam link (otpauth)</summary><p class="codigo pequeno">' + esc(n.uri) + '</p></details>' +
       '<form data-form="mfa-ativar" id="form-mfa" novalidate><div class="campo"><label for="mfa-codigo-novo">Código do aplicativo</label>' +

@@ -1,4 +1,4 @@
-// Teste do banco do Vínculo num PostgreSQL de verdade (PGlite = PostgreSQL compilado para rodar no Node).
+// Teste do banco do Vinculum num PostgreSQL de verdade (PGlite = PostgreSQL compilado para rodar no Node).
 // Roda o schema, migra o JSON e confere: contagens, validações, imutabilidade, auditoria encadeada,
 // regras de acesso (RLS) de cada perfil e indicadores.
 // Uso:  cd banco && npm install && python3 migrar_json.py && node testar_banco.mjs

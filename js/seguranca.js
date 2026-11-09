@@ -240,7 +240,7 @@ PEP.seguranca = (function () {
   }
   // Endereço otpauth:// que os apps aceitam (a chave também pode ser digitada à mão)
   function enderecoOtp(segredo, conta) {
-    return 'otpauth://totp/' + encodeURIComponent('Vínculo:' + conta) + '?secret=' + segredo + '&issuer=' + encodeURIComponent('Vínculo') + '&digits=6&period=30';
+    return 'otpauth://totp/' + encodeURIComponent('Vinculum:' + conta) + '?secret=' + segredo + '&issuer=' + encodeURIComponent('Vinculum') + '&digits=6&period=30';
   }
   // Códigos de recuperação (celular perdido): cada um vale uma vez; o sistema guarda só o hash
   function codigosRecuperacao() {

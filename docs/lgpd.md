@@ -1,4 +1,4 @@
-# Documentação LGPD do Vínculo
+# Documentação LGPD do Vinculum
 
 Rascunho preparado pelo grupo para a instituição completar e validar com o jurídico e o encarregado de dados. Nomes da instituição e do encarregado são fictícios no protótipo. O texto público para os titulares está no site, em **Aviso de privacidade** (`#/privacidade`).
 
@@ -30,7 +30,7 @@ Operador: provedor do banco em nuvem (Supabase, região São Paulo), sob contrat
 
 **Por que fazer:** o sistema trata dado sensível de saúde, inclusive de crianças e adolescentes, em larga escala ao longo dos anos.
 
-| Risco | Probabilidade | Impacto | Medidas no Vínculo | Risco residual |
+| Risco | Probabilidade | Impacto | Medidas no Vinculum | Risco residual |
 |---|---|---|---|---|
 | Estagiário acessar caso que não é dele | Média | Alto | Acesso por vínculo ativo (RLS no banco); auditoria de toda abertura e tentativa negada | Baixo |
 | Ex-estagiário continuar acessando | Média | Alto | Vínculo com data de fim; direção encerra no fim do semestre; acesso cai na hora; o caso passa para a nova dupla por registro próprio (a dupla anterior perde o acesso) | Baixo |

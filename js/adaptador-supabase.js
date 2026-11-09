@@ -1,5 +1,5 @@
 /* =========================================================
-   adaptador-supabase.js — liga o Vínculo ao PostgreSQL do
+   adaptador-supabase.js — liga o Vinculum ao PostgreSQL do
    Supabase. Fica DESLIGADO até js/config-banco.js dizer
    adaptador: 'supabase'.
 
@@ -52,7 +52,7 @@ PEP.adaptadores.supabase = (function () {
   }
   function token() { var s = lerSessao(); return s ? s.acesso : null; }
 
-  // A sessão do Vínculo pode durar até 12 horas: o token é renovado um minuto antes de vencer
+  // A sessão do Vinculum pode durar até 12 horas: o token é renovado um minuto antes de vencer
   var renovando = null;
   function garantirToken() {
     var s = lerSessao();
@@ -156,7 +156,7 @@ PEP.adaptadores.supabase = (function () {
   }
   function cadastrarMfa() {
     return garantirToken().then(function () {
-      return fetch(cfg().supabaseUrl + '/auth/v1/factors', { method: 'POST', headers: cabecalhoAuth(), body: JSON.stringify({ factor_type: 'totp', friendly_name: 'Vínculo' }) });
+      return fetch(cfg().supabaseUrl + '/auth/v1/factors', { method: 'POST', headers: cabecalhoAuth(), body: JSON.stringify({ factor_type: 'totp', friendly_name: 'Vinculum' }) });
     }).then(function (r) { if (!r.ok) throw new Error('MFA ' + r.status); return r.json(); })
       .then(function (f) { return { fatorId: f.id, segredo: f.totp.secret, uri: f.totp.uri }; });
   }

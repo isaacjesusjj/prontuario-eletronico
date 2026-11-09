@@ -1,4 +1,4 @@
-# Banco de dados do Vínculo — PostgreSQL no Supabase
+# Banco de dados do Vinculum — PostgreSQL no Supabase
 
 O site já está pronto para trocar o JSON pelo banco. Esta pasta tem tudo o que essa troca precisa, testado num PostgreSQL de verdade.
 

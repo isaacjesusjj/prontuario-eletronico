@@ -118,7 +118,8 @@ window.PEP = PEP;
   }
 
   PEP.acoes = {
-    // ----- Acessibilidade e entrada -----
+    // ----- Menu da conta, acessibilidade e entrada -----
+    'menu-conta': function () { PEP.ui.alternarConta(); },
     'fonte-menor': function () { PEP.acessibilidade.mudarFonte(-1); },
     'fonte-maior': function () { PEP.acessibilidade.mudarFonte(1); },
     'alto-contraste': function () { PEP.acessibilidade.alternarContraste(); },
@@ -255,7 +256,7 @@ window.PEP = PEP;
       var u = usuario();
       if (!R().podeVerAuditoria(u)) return negar();
       var celula = function (v) { var t = String(v === undefined || v === null ? '' : v); if (/^[=+\-@]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
-      var linhas = [[PEP.config().instituicao.nome + ' · Vínculo · trilha de auditoria exportada em ' + U().formatarData(U().agora()) + ' por ' + u.nome]].concat([[]],
+      var linhas = [[PEP.config().instituicao.nome + ' · Vinculum · trilha de auditoria exportada em ' + U().formatarData(U().agora()) + ' por ' + u.nome]].concat([[]],
         [['Quando', 'Usuário (id)', 'Nome', 'Perfil', 'Ação', 'Alvo', 'Hash anterior', 'Hash']],
         PEP.telas.auditoriaFiltrada().map(function (a) {
           var x = PEP.util.porId(PEP.db.usuarios, a.usuarioId);
@@ -1085,7 +1086,9 @@ window.PEP = PEP;
     // paciente não vai para o histórico do navegador
     busca: function (form) {
       PEP.telas._busca = form.elements.termo.value.trim().slice(0, 60);
-      if (window.location.hash !== '#/busca') window.location.hash = '#/busca'; else PEP.app.renderizar();
+      if (window.location.hash !== '#/busca') { window.location.hash = '#/busca'; return; }
+      PEP.app.renderizar();
+      if (el('busca-paciente')) el('busca-paciente').focus();   // continua no campo para refinar a busca
     },
     'filtrar-auditoria': function (form) {
       var f = form.elements;
