@@ -1,0 +1,17 @@
+# Missão do revisor `paridade`
+
+Leia primeiro, por inteiro, as instruções comuns em docs/revisao/INSTRUCOES.md e siga-as à risca (fase somente leitura; não edite o repositório).
+
+Seu nome: `paridade` (sigla dos achados: PA). Entregue em docs/revisao/achados/paridade.md.
+
+## Sua missão: o site, o banco e o JSON dizem a mesma coisa?
+
+O projeto promete que `js/permissoes.js` (e as validações de `js/acoes.js`) espelham as políticas RLS, os gatilhos e os `check` de `banco/schema.sql`, e que cada coleção do JSON é uma tabela. Quando o banco for ligado (`js/adaptador-supabase.js`), qualquer divergência vira defeito: o site deixa fazer e o banco recusa (erro genérico na tela), ou o site proíbe e o banco deixaria (brecha pela API).
+
+1. **Tabela de paridade, regra a regra.** Para cada permissão/validação do site (funções de `PEP.regras` em `js/permissoes.js`; validações dentro das ações e formulários de `js/acoes.js`; validadores de `js/validadores.js`), ache o equivalente no banco (policy, trigger, `check`, índice único) e vice-versa. Classifique: igual · só no site · só no banco · diferente (diga a diferença exata: limite de caracteres, lista de valores, prazo, quem pode, condição de estado). Dê atenção a: tamanhos máximos de texto; listas fechadas (`_config.listas` do JSON × `check (... in (...))`); regras numéricas de `_config.regras` × números fixos no SQL (ex.: 50 minutos da sessão, 72 h do link, 12 h do motivo, 48 h, faltas seguidas, 2 MB, 12 meses); transições de estado (evolução, caso, sessão, documento, risco, alocação, transferência); quem pode inserir/alterar cada tabela.
+2. **JSON × schema × migração × validador × adaptador.** Para as 32 coleções: campos do JSON (camelCase) × colunas (snake_case) × o que `banco/migrar_json.py` gera × o que `ferramentas/validar_json.py` confere × o que `js/adaptador-supabase.js` lê e grava (lista `COLECOES`, conversão de nomes e de datas, campos omitidos). Procure: campo do JSON sem coluna (a migração quebra ou descarta em silêncio?); coluna obrigatória que o site nunca preenche; tipo diferente (texto × data × booleano × jsonb); valor padrão diferente; campo que o site grava ao criar um registro novo (veja os `repo().inserir(...)` em `js/acoes.js`) e que não existe no banco, ou com nome que a conversão automática não acerta (siglas, números, plural); coleção que o adaptador não carrega; o que acontece com `_config` e `_meta` no modo banco.
+3. **Indicadores:** `PEP.regras.indicadores()` (site) × `app.indicadores()` (banco). Mesmas contas em todos os campos? Confira bordas (caso sem sessão, divisão por zero, meses sem atendimento, arredondamento, fuso na virada do mês).
+4. **Auditoria:** a corrente de hash do site (`js/estado.js`/`js/seguranca.js`) × `app.auditoria_encadear` do banco: mesma fórmula, mesmos campos, mesma ordem, mesma normalização de data? O que o adaptador manda (sem hora e sem hash) é o que o banco espera?
+5. **Prove as divergências com o banco de verdade** (PGlite): para cada caso "o site deixa, o banco recusa" ou "o site proíbe, o banco aceita", escreva um script curto que carrega stub + schema + dados e executa a operação como o usuário certo (use o padrão dos ajudantes de `banco/testar_banco.mjs`). Guarde os scripts.
+
+Entregue a tabela de paridade completa no arquivo (pode ser longa, é o produto principal) e, à parte, os achados no formato pedido. Diga também quais divergências já estão cobertas por teste e quais não.
