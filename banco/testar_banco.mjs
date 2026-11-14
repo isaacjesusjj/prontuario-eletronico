@@ -498,6 +498,20 @@ await como('u-pac1', async () => {
 });
 await db.exec("set app.migracao = 'on'; update sessoes set presenca = 'cancelada' where id = 's-hoje-cedo'; reset app.migracao;");
 
+// Triagem só uma vez; auditoria só sobre caso que a pessoa vê
+await como('u-tec', async () => {
+  await db.query("update inscricoes set status = 'cancelada' where id = 'i05'");
+  await recusaCom('inscrição que já saiu da fila não volta para ela nem muda de destino', "update inscricoes set status = 'aguardando' where id = 'i05'", 'já triada');
+});
+// desfaz (como administrador, no modo de migração) para não mudar a fila que os indicadores conferem adiante
+await db.exec("set app.migracao = 'on'; update inscricoes set status = 'aguardando' where id = 'i05'; reset app.migracao;");
+await como('u-est1', async () => {
+  await recusaCom('estagiária não grava evento de auditoria em caso que não vê', "insert into auditoria (usuario_id, acao, alvo) values ('u-est1', 'Gerou cópia do prontuário (PDF)', 'c04')", 'row-level security');
+  let erro = '';
+  try { await db.query("insert into auditoria (usuario_id, acao, alvo) values ('u-est1', 'Gerou cópia do prontuário (PDF)', 'c01')"); } catch (e) { erro = e.message.split('\n')[0]; }
+  conferir('estagiária grava evento de auditoria no próprio caso', !erro, erro);
+});
+
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');
 await comoVisitante(async () => {

@@ -1255,6 +1255,17 @@ begin
 end $$;
 create trigger ao_inserir before insert on inscricoes for each row execute function app.inscricao_ao_inserir();
 
+-- Inscrição já triada (ou encaminhada, duplicada, cancelada) não muda mais: a triagem acontece uma
+-- vez só e não volta atrás. Quem volta depois faz uma inscrição nova (mesma regra do site).
+create or replace function app.inscricao_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if old.status <> 'aguardando' then raise exception 'Inscrição já triada não muda: quem volta faz uma inscrição nova.'; end if;
+  return new;
+end $$;
+create trigger regras before update on inscricoes for each row execute function app.inscricao_regras();
+
 -- ---------------------------------------------------------------------
 -- Indicadores agregados (sem nomes) — a direção chama esta função e não lê tabelas clínicas
 -- ---------------------------------------------------------------------
@@ -1535,7 +1546,14 @@ create policy aceitar on aceites for insert to authenticated with check (usuario
 
 -- Cada um registra só os próprios eventos. Eventos de visitante vêm do próprio banco (trigger da
 -- inscrição) e as tentativas de login ficam no registro do Supabase Auth: ninguém grava "em nome" de outro.
-create policy registrar on auditoria for insert to authenticated with check (usuario_id = app.usuario_atual());
+-- E só sobre o que vê: evento com alvo num caso exige ver o caso (ou ser o paciente dele). Sem isso, qualquer
+-- um gravaria "Gerou cópia do prontuário" num caso alheio, e o evento falso apareceria ao paciente em
+-- "Quem acessou o seu prontuário".
+create or replace function app.alvo_de_auditoria_ok(p_alvo text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select not exists (select 1 from casos c where c.id = p_alvo) or app.pode_ver_caso(p_alvo) or app.eh_paciente_do_caso(p_alvo)
+$$;
+create policy registrar on auditoria for insert to authenticated with check (usuario_id = app.usuario_atual() and app.alvo_de_auditoria_ok(alvo));
 create policy tecnico_le on auditoria for select to authenticated using (app.perfil_atual() = 'tecnico');
 
 -- ---------------------------------------------------------------------
