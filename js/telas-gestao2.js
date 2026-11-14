@@ -74,7 +74,7 @@ PEP.telas = PEP.telas || {};
     if (u.perfil !== 'tecnico') return PEP.ui.semPermissao();
     var lista = PEP.db.solicitacoes.slice().sort(function (a, b) { return b.em.localeCompare(a.em); });
     var html = '<h1>Pedidos dos pacientes</h1>' + seletorPedidos('solicitacoes') +
-      '<div class="aviso info">O acesso é um <strong>direito do paciente</strong> (Res. CFP 05/2025, art. 13). Você organiza a entrega: confere a identidade e entrega a cópia — não decide se libera.</div>';
+      '<div class="aviso info">O acesso é um <strong>direito do paciente</strong> (Res. CFP 05/2025, art. 13). Você organiza a entrega: confere a identidade e entrega a cópia. Não decide se libera.</div>';
     var ul = PEP.telas._ultimoLink;
     if (ul) {
       html += '<div class="cartao destaque-sucesso" role="status"><h2>Link de leitura gerado</h2>' +
@@ -119,7 +119,7 @@ PEP.telas = PEP.telas || {};
       (aberto ? '<p class="etiqueta enviada">Você já tem um pedido em andamento</p>' : '<button class="botao" data-acao="solicitar-copia">Pedir cópia do meu prontuário</button>') + '</div>';
     if (pedidos.length) {
       html += '<div class="cartao"><h2>Meus pedidos</h2><ul>' + pedidos.map(function (s) {
-        return '<li>' + data(s.em) + ' — ' + esc(nomes[s.status]) + (s.status === 'entregue' ? ' em ' + data(s.entregueEm) + ' (' + esc(s.forma) + ')' : '') + '</li>';
+        return '<li>' + data(s.em) + ' · ' + esc(nomes[s.status]) + (s.status === 'entregue' ? ' em ' + data(s.entregueEm) + ' (' + esc(s.forma) + ')' : '') + '</li>';
       }).join('') + '</ul></div>';
     }
     return html;

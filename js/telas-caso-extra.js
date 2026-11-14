@@ -30,7 +30,7 @@ PEP.telas = PEP.telas || {};
     var contatos = PEP.db.contatos.filter(function (c) { return c.casoId === caso.id; });
     if (R().emRiscoDeAbandono(caso)) {
       html += '<div class="cartao destaque-alerta"><h2>Fluxo de abandono</h2>' +
-        '<p>' + R().faltasSeguidas(caso) + ' faltas seguidas sem justificativa. Antes de liberar a vaga, registre a tentativa de contato e o motivo — é esse dado que mostra <em>por que</em> os pacientes não voltam.</p>';
+        '<p>' + R().faltasSeguidas(caso) + ' faltas seguidas sem justificativa. Antes de liberar a vaga, registre a tentativa de contato e o motivo. É esse dado que mostra <em>por que</em> os pacientes não voltam.</p>';
       if (pode) {
         html += '<div class="grade-2">' +
           '<div class="campo"><label for="ct-canal">Canal</label><select id="ct-canal">' + PEP.ui.opcoes(PEP.lista('canaisContato')) + '</select></div>' +
@@ -170,7 +170,7 @@ PEP.telas = PEP.telas || {};
     html += '<div class="cartao"><h2>Anexos externos</h2><p class="suave pequeno">Ex.: encaminhamento da UBS, exames trazidos pelo paciente. Testes psicológicos não entram aqui: ficam na área restrita.</p>';
     html += anexos.length ? '<ul class="lista-anexos">' + anexos.map(function (a) {
       var tam = a.tamanho ? ' · ' + (a.tamanho / 1024).toFixed(0) + ' KB' : '';
-      return '<li><strong>' + esc(a.nome) + '</strong> — ' + esc(a.descricao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.enviadoPor)) + ', ' + data(a.em) + tam + ')</span> ' +
+      return '<li><strong>' + esc(a.nome) + '</strong>: ' + esc(a.descricao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.enviadoPor)) + ', ' + data(a.em) + tam + ')</span> ' +
         (a.arquivoId ? '<button class="botao secundario pequeno" data-acao="abrir-anexo" data-id="' + a.id + '">Abrir</button>' : '<span class="suave pequeno">(anexo de demonstração, sem conteúdo)</span>') +
         (a.hash ? '<br><span class="suave pequeno codigo">SHA-256: ' + esc(a.hash.slice(0, 16)) + '…</span>' : '') + '</li>';
     }).join('') + '</ul>' : '<p class="vazio">Nenhum anexo.</p>';
@@ -188,7 +188,7 @@ PEP.telas = PEP.telas || {};
     var html = '<div class="aviso restrito"><strong>Área restrita.</strong> Material de avaliação psicológica fica fora do prontuário e da cópia entregue ao paciente (Res. CFP 05/2025, art. 14). ' +
       'Use só testes com parecer favorável no SATEPSI (Res. CFP 31/2022).</div><div class="cartao"><h2>Instrumentos aplicados</h2>';
     html += lista.length ? '<ul>' + lista.map(function (a) {
-      return '<li><strong>' + esc(a.instrumento) + '</strong> — ' + esc(a.observacao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.aplicadoPor)) + ', ' + data(a.em) + ')</span></li>';
+      return '<li><strong>' + esc(a.instrumento) + '</strong>: ' + esc(a.observacao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.aplicadoPor)) + ', ' + data(a.em) + ')</span></li>';
     }).join('') + '</ul>' : '<p class="vazio">Nenhum instrumento registrado.</p>';
     if ((R().ehEstagiarioDoCaso(u, caso) || R().ehSupervisorDoCaso(u, caso)) && caso.status === 'ativo') {
       html += '<div class="campo"><label for="av-inst">Instrumento</label><input id="av-inst" type="text" maxlength="120"></div>' +
@@ -271,7 +271,7 @@ PEP.telas = PEP.telas || {};
       var l = tipo === 'evolucao' ? R().assinaturasVigentes(PEP.util.porId(PEP.db.evolucoes, id)) : R().assinaturasDe(tipo, id);
       return l.map(function (s) { return esc(PEP.ui.nomeUsuario(s.usuarioId)) + ' em ' + data(s.em); }).join(' · ');
     };
-    return '<div class="cartao">' + PEP.telas.logoFaculdade(38) + '<h1 style="margin-top:.6rem">Prontuário psicológico — cópia</h1>' +
+    return '<div class="cartao">' + PEP.telas.logoFaculdade(38) + '<h1 style="margin-top:.6rem">Cópia do prontuário psicológico</h1>' +
       '<p class="suave pequeno">' + esc(PEP.config().instituicao.nome) + ' · gerada em ' + data(PEP.util.agora()) + ' ' + esc(geradoPara) + ' · documento sigiloso</p>' +
       '<h2>Identificação</h2><p>' + esc(p.nome) + (p.nomeSocial ? ' (' + esc(p.nomeSocial) + ')' : '') + ' · nascimento ' + data(p.dataNascimento) + (p.responsavelNome ? ' · responsável: ' + esc(p.responsavelNome) : '') + '</p>' +
       '<h2>Avaliação de demanda</h2><p>' + esc(a.demanda) + '</p><h2>Objetivos</h2><p>' + esc(a.objetivos) + '</p>' +
@@ -285,8 +285,8 @@ PEP.telas = PEP.telas || {};
       PEP.telas.riscoNaCopia(caso).html +
       '<h2>Documentos emitidos</h2>' + (docs.length ? '<ul>' + docs.map(function (d) {
         var m = R().modalidadeDocumento(d.tipo);
-        return '<li>' + esc(m ? m.nome : d.tipo) + ': ' + esc(d.titulo) + ' — ' + esc(d.finalidade) + ' — para ' + esc(d.destinatario) + ' (' + data(d.emitidoEm) + ')' +
-          (R().eventoDoDocumento(d, 'anulacao') ? ' — anulado' : '') + '</li>';
+        return '<li>' + esc(m ? m.nome : d.tipo) + ': ' + esc(d.titulo) + ' · ' + esc(d.finalidade) + ' · para ' + esc(d.destinatario) + ' (' + data(d.emitidoEm) + ')' +
+          (R().eventoDoDocumento(d, 'anulacao') ? ' · anulado' : '') + '</li>';
       }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
       '<h2>Comunicações a terceiros</h2>' + (function () {
         var l = R().comunicacoesDoCaso(caso).filter(function (x) { return x.visivelPaciente; });
@@ -295,7 +295,7 @@ PEP.telas = PEP.telas || {};
           return '<li>' + data(x.data) + ' · ' + esc(t ? t.nome : x.tipo) + ' · para ' + esc(x.destinatario) + ' · ' + esc(x.finalidade) + '</li>';
         }).join('') + '</ul>' : '<p class="vazio">Nenhuma.</p>';
       })() +
-      '<h2>Anexos externos</h2>' + (anexos.length ? '<ul>' + anexos.map(function (x) { return '<li>' + esc(x.nome) + ' — ' + esc(x.descricao) + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
+      '<h2>Anexos externos</h2>' + (anexos.length ? '<ul>' + anexos.map(function (x) { return '<li>' + esc(x.nome) + ': ' + esc(x.descricao) + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
       (enc ? '<h2>Encerramento</h2><p>' + data(enc.data) + ' · ' + esc(enc.tipo) + ' · ' + esc(enc.registro) + '</p>' : '') +
       '<p class="suave pequeno" style="margin-top:1rem">Não fazem parte desta cópia: rascunhos, registros de supervisão e material de avaliação psicológica (Res. CFP 05/2025, arts. 14 e 17).</p></div>';
   };

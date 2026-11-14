@@ -102,7 +102,7 @@ PEP.telas = PEP.telas || {};
       '<h2>Acolhimento</h2>' +
       '<div class="campo"><label for="tr-demanda">Demanda identificada no acolhimento *</label><textarea id="tr-demanda" style="min-height:80px">' + esc(i.resumo) + '</textarea></div>' +
       '<div class="grade-2"><div class="campo"><label for="tr-risco">Avaliação de risco</label><select id="tr-risco">' +
-      '<option value="sem">Sem risco aparente</option><option value="risco">Risco identificado — encaminhar agora</option></select></div>' +
+      '<option value="sem">Sem risco aparente</option><option value="risco">Risco identificado: encaminhar agora</option></select></div>' +
       '<div class="campo"><label for="tr-destino">Encaminhamento</label><select id="tr-destino">' +
       '<option value="clinica">Atendimento na clínica-escola</option><option value="externo">Encaminhamento externo (CAPS, UBS, CRAS)</option></select></div></div>' +
       // Risco visto na triagem vira uma avaliação de risco no caso (a supervisão vê no painel)

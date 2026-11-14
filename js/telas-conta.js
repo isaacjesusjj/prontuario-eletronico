@@ -22,7 +22,7 @@ PEP.telas = PEP.telas || {};
       '<div class="medidor" aria-hidden="true"><span id="ts-barra"></span></div>' +
       '<span class="dica" id="ts-forca" aria-live="polite">Força: —</span>' +
       '<ul class="regras-senha dica" id="ts-regras">' +
-      '<li>Pelo menos ' + min + ' caracteres — uma frase curta é mais fácil de lembrar e mais difícil de adivinhar.</li>' +
+      '<li>Pelo menos ' + min + ' caracteres. Uma frase curta é mais fácil de lembrar e mais difícil de adivinhar.</li>' +
       '<li>Não precisa de símbolo nem de maiúscula obrigatória (recomendação do NIST, 2025).</li>' +
       '<li>Não pode ter seu nome, seu usuário, a palavra "senha" nem estar entre as senhas mais usadas.</li></ul></div>' +
       '<div class="campo"><label for="ts-confirma">Repita a nova senha</label><input id="ts-confirma" type="password" autocomplete="new-password"></div>' +
@@ -134,7 +134,7 @@ PEP.telas = PEP.telas || {};
         lista.slice(0, 30).map(function (a) {
           return '<tr><td>' + data(a.quando) + '</td><td>' + esc(a.quem) +
             (a.papel && a.quem !== 'Você' ? '<br><span class="suave pequeno">' + esc(PEP.regras.nomePerfil(a.papel)) + '</span>' : '') + '</td><td>' + esc(a.acao) +
-            (a.motivo ? '<br><span class="suave pequeno">Motivo: ' + esc(motivos[a.motivo] || a.motivo) + (a.detalhe ? ' — ' + esc(a.detalhe) : '') + '</span>' : '') + '</td></tr>';
+            (a.motivo ? '<br><span class="suave pequeno">Motivo: ' + esc(motivos[a.motivo] || a.motivo) + (a.detalhe ? ' · ' + esc(a.detalhe) : '') + '</span>' : '') + '</td></tr>';
         }).join('') + '</tbody></table></div>' : '<p class="vazio">Nenhum acesso registrado.</p>') + '</div>';
   }
 
@@ -183,7 +183,7 @@ PEP.telas = PEP.telas || {};
       '<p class="suave pequeno">Pedidos de eliminação têm um limite: o prontuário precisa ser guardado por pelo menos ' + PEP.regra('guardaMinimaCfpAnos') + ' anos (Res. CFP 05/2025, art. 18) e a instituição adota ' + PEP.regra('guardaProntuarioAnos') + ' anos (Lei 13.787/2018). Dados que não são do prontuário podem ser eliminados.</p>' +
       '<button class="botao" data-acao="pedido-titular">Enviar pedido</button></div>' +
       (meus.length ? '<div class="cartao"><h2>Meus pedidos</h2><ul>' + meus.map(function (x) {
-        return '<li>' + data(x.em) + ' — ' + esc(nomesTipo[x.tipo] || x.tipo) + ': ' + (x.status === 'respondido' ? '<strong>respondido</strong> — ' + esc(x.resposta) : 'em análise') + '</li>';
+        return '<li>' + data(x.em) + ' · ' + esc(nomesTipo[x.tipo] || x.tipo) + ': ' + (x.status === 'respondido' ? '<strong>respondido</strong>. ' + esc(x.resposta) : 'em análise') + '</li>';
       }).join('') + '</ul></div>' : '') +
       cartaoAcessos(u) +
       '<p class="pequeno">Encarregado de dados: ' + esc(PEP.config().instituicao.encarregado.nome) + ' · ' + esc(PEP.config().instituicao.encarregado.email) + '</p>';

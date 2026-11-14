@@ -39,7 +39,7 @@ PEP.telas = PEP.telas || {};
       '<div class="cartao"><h2>3. Com quem compartilhamos</h2><ul>' +
       '<li>Dentro da clínica: só a equipe do seu caso (estagiários da dupla ou trio e supervisor) e a psicóloga técnica responsável. A direção do curso vê apenas números agregados.</li>' +
       '<li>Fornecedor de infraestrutura (operador): banco de dados em nuvem com servidores em São Paulo, sob contrato que proíbe outros usos.</li>' +
-      '<li>Autoridades, só quando a lei obrigar (por exemplo, notificação compulsória de violência — ECA, art. 13; Lei 13.819/2019).</li>' +
+      '<li>Autoridades, só quando a lei obrigar (por exemplo, notificação compulsória de violência: ECA, art. 13; Lei 13.819/2019).</li>' +
       '<li>Não vendemos dados, não usamos para publicidade e o site não tem rastreadores nem análise de navegação.</li></ul></div>' +
       '<div class="cartao"><h2>4. Por quanto tempo guardamos</h2>' +
       tabela(['Dado', 'Prazo', 'Fundamento'], [
@@ -153,7 +153,7 @@ PEP.telas = PEP.telas || {};
       ['Lembretes sem nome do serviço, do profissional ou conteúdo clínico, só com autorização', 'Código de Ética, art. 9º; LGPD, art. 7º, I', 'Caso → Sessões', 'Sim'],
       ['Incidente com risco relevante comunicado à ANPD e aos titulares em até 3 dias úteis', 'LGPD, art. 48; Res. CD/ANPD 15/2024', 'Plano de resposta (docs)', '—'],
       ['Acessibilidade nível AA', 'Lei 13.146/2015, art. 63; ABNT NBR 17225:2025 (WCAG 2.2)', 'Menu do topo (tamanho do texto, contraste, Libras); Declaração de acessibilidade', 'Sim (axe-core)'],
-      ['Limite de estagiários por grupo de orientação vira só alerta configurável', 'Res. CFP 05/2025, art. 5º — suspenso por liminar do STF (ADI 7911)', 'Painel do supervisor', '—']
+      ['Limite de estagiários por grupo de orientação vira só alerta configurável', 'Res. CFP 05/2025, art. 5º (suspenso por liminar do STF, ADI 7911)', 'Painel do supervisor', '—']
     ];
     return '<h1>Regras e leis</h1><p class="suave">Cada regra do sistema, a norma de onde ela vem, onde ver na tela e se há teste automático. Normas conferidas em novembro de 2026; o que depende da instituição está marcado "a validar" no aviso de privacidade.</p>' +
       '<div class="cartao">' + tabela(['Regra no sistema', 'Norma', 'Onde ver', 'Teste automático'], L.map(function (l) { return l.map(esc); }), 'Matriz de regras, normas e telas') + '</div>' +

@@ -326,7 +326,7 @@ PEP.telas = PEP.telas || {};
       return true;
     }).sort(function (a, b) { return b.data.localeCompare(a.data); });
 
-    var html = '<div class="aviso info pequeno"><strong>Lembrete:</strong> o paciente pode pedir cópia do prontuário. Registre tema, intervenção e plano — não o relato detalhado. ' +
+    var html = '<div class="aviso info pequeno"><strong>Lembrete:</strong> o paciente pode pedir cópia do prontuário. Registre tema, intervenção e plano, sem o relato detalhado. ' +
       'Depois de validada, a evolução fica bloqueada: correção só por adendo.</div>';
 
     var atrasadas = R().sessoesSemEvolucao(caso);

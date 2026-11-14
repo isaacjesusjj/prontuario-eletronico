@@ -87,7 +87,7 @@ PEP.revisor = (function () {
     return '<div class="revisor"><p class="pequeno"><strong>Revisor de escrita: ' + achados.length + ' ponto(s) para olhar.</strong> ' +
       (paraSupervisao ? 'Para orientar a supervisão; o texto é do estagiário.' : 'Ele aponta, não corrige: quem decide é você, com a supervisão.') + '</p><ul>' +
       achados.map(function (a) {
-        return '<li><span class="etiqueta alerta">' + esc(a.nomeTipo) + '</span> ' + (a.trecho ? '<q>' + esc(a.trecho) + '</q> — ' : '') + esc(a.sugestao) +
+        return '<li><span class="etiqueta alerta">' + esc(a.nomeTipo) + '</span> ' + (a.trecho ? '<q>' + esc(a.trecho) + '</q>: ' : '') + esc(a.sugestao) +
           ' <span class="suave">' + esc(a.motivo) + '</span></li>';
       }).join('') + '</ul></div>';
   }

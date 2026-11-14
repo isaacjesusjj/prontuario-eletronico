@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "versao": "2026-11-09.1",
-    "descricao": "Dados 100% fictícios para a demonstração do protótipo Vinculum (PIC — ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
+    "versao": "2026-11-14.1",
+    "descricao": "Dados 100% fictícios para a demonstração do protótipo Vinculum (PIC de ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
     "sobreSenhas": "Senhas guardadas só como hash PBKDF2-SHA256 com sal (600 mil iterações). A senha das contas de demonstração está em senhaDemonstracao para a apresentação.",
@@ -282,7 +282,7 @@
           "quando": "Risco de vida agora (tentativa, intoxicação, ferimento)"
         },
         {
-          "nome": "CVV — Centro de Valorização da Vida",
+          "nome": "CVV, Centro de Valorização da Vida",
           "numero": "188",
           "curto": "CVV",
           "quando": "Apoio emocional 24 horas, ligação gratuita (também por chat no site do CVV)"
@@ -294,13 +294,13 @@
           "quando": "Violência acontecendo agora"
         },
         {
-          "nome": "Disque 100 — Direitos Humanos",
+          "nome": "Disque 100, Direitos Humanos",
           "numero": "100",
           "curto": "Direitos Humanos",
           "quando": "Violência contra criança, adolescente, pessoa idosa ou pessoa com deficiência"
         },
         {
-          "nome": "Ligue 180 — Central de Atendimento à Mulher",
+          "nome": "Ligue 180, Central de Atendimento à Mulher",
           "numero": "180",
           "curto": "Atendimento à Mulher",
           "quando": "Violência contra a mulher"
@@ -483,7 +483,7 @@
       },
       "statusSolicitacao": {
         "recebida": "Pedido recebido",
-        "identidade-conferida": "Identidade conferida — preparando a cópia",
+        "identidade-conferida": "Identidade conferida, preparando a cópia",
         "entregue": "Entregue"
       },
       "perfis": {

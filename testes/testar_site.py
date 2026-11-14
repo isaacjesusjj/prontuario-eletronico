@@ -151,6 +151,14 @@ def publico(nav, base):
         s.ir(rota)
         s.axe(nome)
     conferir("Público", "link de leitura inexistente mostra 'Link indisponível'", s.h1() == "Link indisponível")
+    # Texto de tela sem travessão no meio da frase (sinal de texto escrito por máquina); "—" sozinho
+    # numa célula vazia é outro assunto (vira "sem registro")
+    com_travessao = []
+    for rota in ("#/entrar", "#/inscricao", "#/sobre", "#/privacidade", "#/termos", "#/acessibilidade", "#/regras"):
+        s.ir(rota)
+        if s.js("[...document.querySelectorAll('#app *')].some(e => [...e.childNodes].some(n => n.nodeType === 3 && /\\S\\s*—|—\\s*\\S/.test(n.textContent)))"):
+            com_travessao.append(rota)
+    conferir("Público", "telas públicas sem travessão no meio das frases", not com_travessao, ", ".join(com_travessao))
     # A matriz "Regras e leis" diz onde ver cada regra: o menu citado precisa existir com esse nome
     s.ir("#/regras")
     regras_txt = s.p.locator("#app").inner_text()
@@ -542,7 +550,7 @@ def tecnica(nav, base):
     leitor.click('#form-link button[type="submit"]')
     leitor.wait_for_timeout(300)
     copia = leitor.locator("#app").inner_text()
-    conferir("Acesso do paciente", "com a data certa, o paciente lê a cópia", "Prontuário psicológico — cópia" in copia)
+    conferir("Acesso do paciente", "com a data certa, o paciente lê a cópia", "Cópia do prontuário psicológico" in copia)
     conferir("Acesso do paciente", "a cópia não traz supervisão, testes nem rascunho (Res. CFP 05/2025, arts. 14 e 17)",
              "Bom início" not in copia and "Instrumento" not in copia and "Rascunho:" not in copia)
     leitor.close()
@@ -969,7 +977,7 @@ def risco_e_seguranca(nav, base):
     s.justificar("c04", "pedido-paciente")
     s.ir("#/imprimir/c04")
     tela = s.p.locator("#app").inner_text()
-    copia = tela.split("Prontuário psicológico — cópia")[-1]
+    copia = tela.split("Cópia do prontuário psicológico")[-1]
     conferir("Risco", "cópia de adolescente omite o relato de violência e a notificação (Código de Ética, art. 13); só a equipe é avisada",
              "Relata agressão física" not in copia and "Conselho Tutelar" not in copia and "omite 2 registro(s)" in tela)
     s.justificar("c03", "pedido-paciente")

@@ -154,10 +154,10 @@ PEP.telas = PEP.telas || {};
   PEP.telas.sobre = function () {
     return '<h1>Sobre o Vinculum</h1>' + PEP.telas.logoFaculdade(32) +
       '<div class="cartao"><h2>O projeto</h2>' +
-      '<p>Protótipo funcional do Projeto Integrador de Curso (PIC) — Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.</p>' +
+      '<p>Protótipo funcional do Projeto Integrador de Curso (PIC) de Análise e Desenvolvimento de Sistemas, Faculdade de Ciências Médicas da Santa Casa de São Paulo, 2º semestre de 2026.</p>' +
       '<p><strong>Grupo:</strong> ' + esc(PEP.telas.GRUPO.slice(0, -1).join(', ') + ' e ' + PEP.telas.GRUPO.slice(-1)) + '.</p>' +
       '<p><strong>O nome:</strong> <em>vinculum</em> é "laço", em latim. O sistema existe para manter o vínculo entre o paciente e a clínica-escola, e o acesso de cada pessoa nasce e termina com o vínculo de estágio.</p>' +
-      '<p class="suave"><strong>Versões anteriores:</strong> Etapa 1 — requisitos (Adônis Silveira, Isaac Jesus, Felipe Moretti e Giovane Guedes, 1º semestre de 2026); ' +
+      '<p class="suave"><strong>Versões anteriores:</strong> Etapa 1, requisitos (Adônis Silveira, Isaac Jesus, Felipe Moretti e Giovane Guedes, 1º semestre de 2026); ' +
       'protótipo de telas v1 (Daniel Dantas, Dilson Rodrigues, Gustavo Santos e Ryan Mendes).</p></div>' +
       '<div class="cartao"><h2>O problema que o sistema ataca</h2>' +
       '<p>Registros em papel e pacientes que vêm uma vez e não voltam. O Vinculum registra faltas, abre um fluxo de contato quando há duas faltas seguidas e mostra os motivos de abandono nos indicadores.</p></div>' +
@@ -174,8 +174,8 @@ PEP.telas = PEP.telas || {};
       '<p class="suave pequeno">Projeção de volume (cenário atual: 800 estudantes, 400 pacientes por semestre): cerca de 109 MB de banco por ano e 2,1 GB em 20 anos de guarda (mais 2,9 GB de anexos). Premissas em <code>banco/projecao.py</code>.</p></div>' +
       '<div class="cartao"><h2>Regras e leis</h2><p>Cada regra do sistema tem a norma de origem e a tela em que aparece: <a href="#/regras">ver a matriz de regras e leis</a>. ' +
       'Veja também o <a href="#/privacidade">aviso de privacidade</a>, os <a href="#/termos">termos de uso</a> e a <a href="#/acessibilidade">declaração de acessibilidade</a>.</p></div>' +
-      '<div class="cartao"><h2>ODS (ONU)</h2><p><strong>ODS 3 — Saúde e bem-estar:</strong> mais continuidade no cuidado em saúde mental. ' +
-      '<strong>ODS 4 — Educação de qualidade:</strong> formação supervisionada dos estudantes de Psicologia.</p></div>' +
+      '<div class="cartao"><h2>ODS (ONU)</h2><p><strong>ODS 3, Saúde e bem-estar:</strong> mais continuidade no cuidado em saúde mental. ' +
+      '<strong>ODS 4, Educação de qualidade:</strong> formação supervisionada dos estudantes de Psicologia.</p></div>' +
       '<div class="aviso alerta"><strong>O que ainda é simulado:</strong> os dados ficam no navegador de quem usa, e as regras rodam no navegador. ' +
       'Com o banco ligado, as mesmas regras passam a ser aplicadas pelo servidor.</div>';
   };

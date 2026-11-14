@@ -231,7 +231,7 @@ PEP.ui = (function () {
 
   function definirTitulo(texto) {
     // Título neutro: nunca nome de paciente na aba do navegador
-    document.title = (texto ? texto + ' — ' : '') + 'Vinculum · Prontuário da Clínica-Escola';
+    document.title = (texto ? texto + ' · ' : '') + 'Vinculum · Prontuário da Clínica-Escola';
   }
 
   // Abas que rolam para o lado (celular): a aba atual fica visível sem mexer na rolagem da página
