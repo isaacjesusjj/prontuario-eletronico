@@ -201,6 +201,19 @@ Revisão de todo o projeto, com autonomia para corrigir. Relatório completo, co
 | Texto em 150% no celular empurrava a tela para o lado | Sem rolagem lateral em nenhuma tela (320 e 390 px) | WCAG 1.4.4 e 1.4.10 |
 | Três regras centrais sem teste que as protegesse (achado por teste de mutação) | Testes novos; site 389 → 417, banco 174 → 201 | Teste que não falha quando a regra quebra não prova nada |
 
+## Visual sem "cara de IA" (novembro de 2026, branch `visual-sem-cara-de-ia`)
+
+Auditoria com o método da skill "tirar cara de IA". A base já estava boa: cores em variáveis, uma fonte própria, alvos de 44 px e rótulos ligados aos campos. O grupo votou item a item e trocou 6 dos 7 pontos; a saudação "Olá, Bia" ficou.
+
+| O que estava | O que ficou | Por quê |
+|---|---|---|
+| ✓ ✗ ! como marca na lista da passagem do caso | Ícones desenhados, do mesmo conjunto do menu | O símbolo de texto muda de aparelho para aparelho |
+| Travessão (—) no meio de ~30 frases | Ponto, dois-pontos, vírgula ou "·" | É o sinal de texto mais típico de conteúdo gerado por máquina |
+| "—" sozinho em campo vazio | "não informado", "sem sala", "ainda sem dupla", "Não se aplica"... | O leitor de tela lê "travessão"; a palavra diz o que falta |
+| Confirmação na janela cinza do navegador | Diálogo do próprio Vinculum (`PEP.ui.confirmar`) | Segue o visual e o alto contraste; foco em "Cancelar"; Esc cancela |
+| "Quer ser atendido(a)?", "Supervisor(a)", "Psicólogo(a) técnico(a)" | "Quer atendimento?", "Supervisão", "Psicologia técnica"; o cargo da pessoa no menu da conta | Mais natural de ler |
+| Ficha de identificação em parágrafos, com linha em branco no meio | Rótulo e valor, em duas colunas no computador | Leitura rápida, sem buraco |
+
 ## Registro de decisões
 
 | Decisão | Escolha | Motivo |
