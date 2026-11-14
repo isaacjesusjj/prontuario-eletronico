@@ -145,6 +145,7 @@ window.PEP = PEP;
 
     'mostrar-senha': function (b) {
       var campo = el(b.getAttribute('data-alvo'));
+      if (!campo) return;
       var mostrar = campo.type === 'password';
       campo.type = mostrar ? 'text' : 'password';
       b.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
@@ -152,6 +153,7 @@ window.PEP = PEP;
     },
     // Conta de demonstração: só preenche o formulário; quem entra é o botão "Entrar"
     'preencher-login': function (b) {
+      if (!el('lg-usuario')) return;
       el('lg-usuario').value = b.getAttribute('data-login');
       el('lg-senha').value = PEP.db._meta.senhaDemonstracao;
       el('login-erro').hidden = true;
@@ -222,7 +224,7 @@ window.PEP = PEP;
     'paciente-consentimento': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso')), fin = b.getAttribute('data-fin');
       var f = PEP.lista('finalidadesConsentimento').filter(function (x) { return x.id === fin; })[0];
-      if (u.perfil !== 'paciente' || c.pacienteId !== u.pacienteId || !f || f.obrigatoria) return negar();
+      if (u.perfil !== 'paciente' || !c || c.pacienteId !== u.pacienteId || !f || f.obrigatoria) return negar();
       var conceder = b.getAttribute('data-valor') === 'sim';
       repo().inserir('consentimentos', { casoId: c.id, finalidade: fin, concedido: conceder, termoVersao: PEP.config().termos.consentimento, registradoPor: u.id, em: U().agora() });
       concluir(conceder ? 'Autorização registrada.' : 'Autorização revogada. Vale a partir de agora.', (conceder ? 'Concedeu' : 'Revogou') + ' consentimento: ' + fin, c.id);
@@ -329,8 +331,8 @@ window.PEP = PEP;
         enviar ? 'Assinou e enviou ' + nome : 'Salvou rascunho de ' + nome, c.id);
     },
     'salvar-evolucao': function (b) {
-      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
-      if (e.autorId !== u.id || !R().podeEscreverEvolucao(u, c) || e.status === 'validada' || e.status === 'enviada') return PEP.ui.toast('Esta evolução não pode ser editada.');
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e && e.casoId);
+      if (!e || e.autorId !== u.id || !R().podeEscreverEvolucao(u, c) || e.status === 'validada' || e.status === 'enviada') return PEP.ui.toast('Esta evolução não pode ser editada.');
       var texto = val('ev-' + e.id), enviar = b.getAttribute('data-modo') === 'enviar';
       var erros = erroTextoEvolucao('ev-' + e.id, texto);
       if (e.tipo === 'transferencia' && enviar && !erros.length) erros = erroSecoesResumo('ev-' + e.id, texto);
@@ -345,14 +347,14 @@ window.PEP = PEP;
       }
     },
     'validar-evolucao': function (b) {
-      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e && e.casoId);
       if (!R().podeValidar(u, c) || e.status !== 'enviada') return negar();
       repo().atualizar('evolucoes', e.id, { status: 'validada' });
       assinar('evolucao', e.id, u, 'supervisor', e.texto);
       concluir('Evolução validada e bloqueada.', 'Validou e assinou evolução', c.id);
     },
     'devolver-evolucao': function (b) {
-      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e && e.casoId);
       if (!R().podeValidar(u, c) || e.status !== 'enviada') return negar();
       var comentario = val('com-' + e.id);
       if (comentario.length < 5) { PEP.form.aplicar(document, [['com-' + e.id, 'Escreva um comentário para o estagiário.']]); return; }
@@ -360,7 +362,7 @@ window.PEP = PEP;
       concluir('Evolução devolvida com comentário.', 'Devolveu evolução para ajuste', c.id);
     },
     'adicionar-adendo': function (b) {
-      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
+      var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e && e.casoId);
       if (!R().podeAdendo(u, c) || e.status !== 'validada') return negar();
       var texto = val('adtxt-' + e.id), motivo = val('admot-' + e.id), erros = [];
       // Adendo tem autor, data e motivo (da lista): é a única forma de corrigir uma evolução validada
@@ -373,7 +375,7 @@ window.PEP = PEP;
 
     // ----- Sessões, faltas, lembretes e abandono -----
     'registrar-presenca': function (b) {
-      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s && s.casoId);
       if (!R().podeRegistrarPresenca(u, c) || s.presenca !== 'agendada') return negar();
       var valor = b.getAttribute('data-valor');
       if (['presente', 'falta', 'falta-justificada'].indexOf(valor) === -1) return negar();
@@ -495,7 +497,7 @@ window.PEP = PEP;
       if (el('dp-solicitante')) el('dp-solicitante').focus();
     },
     'assinar-documento': function (b) {
-      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), c = caso(d.casoId);
+      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), c = caso(d && d.casoId);
       if (!R().ehSupervisorDoCaso(u, c) || R().eventoDoDocumento(d, 'anulacao')) return negar();
       if (!R().assinadoPeloSupervisor('documento', d.id)) assinar('documento', d.id, u, 'supervisor', R().conteudoAssinadoDocumento(d));
       concluir('Documento assinado: agora tem validade.', 'Assinou documento psicológico', c.id);
@@ -612,13 +614,13 @@ window.PEP = PEP;
         'Registrou avaliação de risco (' + nivel.value + ')', c.id);
     },
     'dar-ciencia-risco': function (b) {
-      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r.casoId);
+      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r && r.casoId);
       if (!R().podeDarCiencia(u, c) || r.cienciaEm) return negar();
       repo().atualizar('riscos', r.id, { cienciaEm: U().agora(), cienciaPor: u.id });
       concluir('Ciência da supervisão registrada.', 'Deu ciência à avaliação de risco', c.id);
     },
     'registrar-notificacao': function (b) {
-      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r.casoId);
+      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r && r.casoId);
       if (!R().podeNotificar(u, c)) return negar();
       var orgao = val('nt-orgao-' + r.id);
       if (!PEP.lista('notificacoes').some(function (n) { return n.id === orgao; })) return PEP.ui.toast('Escolha o órgão notificado.');
@@ -627,7 +629,7 @@ window.PEP = PEP;
       concluir('Notificação registrada.', 'Registrou notificação compulsória (' + orgao + ')', c.id);
     },
     'encerrar-risco': function (b) {
-      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r.casoId);
+      var u = usuario(), r = repo().porId('riscos', b.getAttribute('data-id')), c = caso(r && r.casoId);
       if (!R().podeEncerrarRisco(u, c) || !r.cienciaEm || r.encerradoEm) return negar();
       var nota = val('rk-nota-' + r.id);
       if (nota.length < 5) { PEP.form.aplicar(document, [['rk-nota-' + r.id, 'Escreva por que o acompanhamento deste risco pode ser encerrado.']]); return; }
@@ -652,7 +654,7 @@ window.PEP = PEP;
       concluir('Plano de segurança salvo (versão ' + novo.versao + '). O paciente vê no portal.', 'Registrou plano de segurança (versão ' + novo.versao + ')', c.id);
     },
     'assinar-plano': function (b) {
-      var u = usuario(), p = repo().porId('planosSeguranca', b.getAttribute('data-id')), c = caso(p.casoId);
+      var u = usuario(), p = repo().porId('planosSeguranca', b.getAttribute('data-id')), c = caso(p && p.casoId);
       if (!R().ehSupervisorDoCaso(u, c)) return negar();
       if (!R().assinadoPeloSupervisor('plano', p.id)) assinar('plano', p.id, u, 'supervisor', null);
       concluir('Plano assinado pela supervisão.', 'Assinou plano de segurança (versão ' + p.versao + ')', c.id);
@@ -722,6 +724,7 @@ window.PEP = PEP;
       var u = usuario();
       if (!R().podeEditarCadastro(u)) return negar();
       var p = repo().porId('pacientes', b.getAttribute('data-id'));
+      if (!p) return negar();
       var d = lerIdentificacao('pc');
       var erros = errosIdentificacao('pc', d, { semCpfPermitido: !p.cpf, ignorar: { pacienteId: p.id } });
       if (!PEP.form.aplicar(el('form-paciente'), erros)) return;
@@ -767,7 +770,7 @@ window.PEP = PEP;
     'definir-dupla': function (b) {
       var u = usuario(), g = repo().porId('grupos', b.getAttribute('data-grupo')), id = b.getAttribute('data-id');
       var a = R().alocacaoDoEstagiario(id);
-      if (g.supervisorId !== u.id || !a || a.grupoId !== g.id) return negar();
+      if (!g || g.supervisorId !== u.id || !a || a.grupoId !== g.id) return negar();
       var sub = repo().porId('subgrupos', val('dup-' + id));
       if (!sub || sub.grupoId !== g.id) return PEP.ui.toast('Crie uma dupla ou trio primeiro.');
       repo().atualizar('alocacoes', a.id, { subgrupoId: sub.id });
@@ -775,7 +778,7 @@ window.PEP = PEP;
     },
     'nova-dupla': function (b) {
       var g = repo().porId('grupos', b.getAttribute('data-grupo'));
-      if (g.supervisorId !== usuario().id) return negar();
+      if (!g || g.supervisorId !== usuario().id) return negar();
       var n = R().subgruposDoGrupo(g.id).length + 1;
       repo().inserir('subgrupos', { grupoId: g.id, nome: 'Dupla/Trio ' + n });
       concluir('Nova dupla/trio criada.', 'Criou dupla/trio', g.id);
@@ -931,7 +934,7 @@ window.PEP = PEP;
       var u = usuario();
       if (u.perfil !== 'tecnico') return negar();
       var s = repo().porId('solicitacoes', b.getAttribute('data-id'));
-      if (s.status !== 'identidade-conferida') return negar();
+      if (!s || s.status !== 'identidade-conferida') return negar();
       var token = PEP.seguranca.tokenAleatorio(24);
       repo().inserir('linksAcesso', { solicitacaoId: s.id, casoId: s.casoId, tokenHash: PEP.seguranca.sha256(token), criadoPor: u.id, criadoEm: U().agora(),
         expiraEm: dataHora(PEP.regra('linkPacienteHoras') * 3600000), revogadoEm: null, acessos: 0, falhas: 0 });

@@ -529,7 +529,7 @@ PEP.regras = (function () {
     };
   }
 
-  return {
+  var regras = {
     nomePerfil: nomePerfil, alocacaoAtiva: alocacaoAtiva, alocacaoDoEstagiario: alocacaoDoEstagiario,
     estagiariosDoSubgrupo: estagiariosDoSubgrupo, estagiariosSemDupla: estagiariosSemDupla, estagiariosSemGrupo: estagiariosSemGrupo,
     estagiariosDoGrupo: estagiariosDoGrupo, subgruposDoGrupo: subgruposDoGrupo,
@@ -567,4 +567,17 @@ PEP.regras = (function () {
     tipoComunicacao: tipoComunicacao, comunicacoesDoCaso: comunicacoesDoCaso, podeRegistrarComunicacao: podeRegistrarComunicacao,
     comunicacoesVisiveisAoPaciente: comunicacoesVisiveisAoPaciente
   };
+
+  // Permissão sobre um registro que não existe é sempre "não". Toda função pode... e eh... recebe a pessoa
+  // e o registro (caso, evolução, sessão...): se um dos dois faltar (id errado, registro de outra
+  // base, chamada pelo console), a resposta é false em vez de um erro no meio da ação.
+  Object.keys(regras).forEach(function (nome) {
+    if (nome.indexOf('pode') !== 0 && nome.indexOf('eh') !== 0) return;
+    var original = regras[nome];
+    regras[nome] = function () {
+      for (var i = 0; i < arguments.length; i++) if (arguments[i] === null || arguments[i] === undefined) return false;
+      return original.apply(null, arguments);
+    };
+  });
+  return regras;
 })();

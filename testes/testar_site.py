@@ -1882,6 +1882,21 @@ def regras_nas_acoes(nav, base):
              s.js(f"PEP.db.auditoria.slice({au0}).filter(a => a.alvo === 'c01').length") == 0)
     s.sair()
 
+    # Id que não existe: toda ação nega sem estourar erro (RS-31). Ficam de fora as que abrem
+    # diálogo do sistema, saem da conta ou apagam os dados de demonstração.
+    fora = ["sair", "restaurar", "imprimir", "imprimir-documento", "imprimir-plano", "exportar-auditoria", "anexar", "copiar-link",
+            "vlibras", "cobrir-tela", "descobrir-tela", "modo-discreto", "menu-conta", "alto-contraste", "fonte-menor", "fonte-maior"]
+    for login in ("ana.tecnica", "helena.supervisora", "bia.estagiaria", "paciente01"):
+        s.entrar(login)
+        erros = s.js("""(fora) => Object.keys(PEP.acoes).filter(n => fora.indexOf(n) === -1).map(n => {
+            var b = document.createElement('button');
+            ['id', 'caso', 'grupo', 'alvo', 'fin', 'tipo'].forEach(k => b.setAttribute('data-' + k, 'nao-existe'));
+            try { PEP.acoes[n](b); return ''; } catch (e) { return n + ': ' + e.message; }
+        }).filter(Boolean)""", fora)
+        conferir("Regras nas ações", f"{login}: nenhuma ação estoura erro com id que não existe (RS-31)", not erros, "; ".join(erros)[:250])
+        s.abrir("#/")
+        s.sair()
+    s.fechar()
 
     # Direção encerra o estágio da Bia: a autora do documento perde o direito de anulá-lo
     s = Sessao(nav, base, "Regras nas ações")
