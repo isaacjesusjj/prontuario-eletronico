@@ -5,12 +5,12 @@ sem bypass de CSP, diálogos registrados (e aceitos), erros de console guardados
 """
 import sys
 sys.argv = ["x"]
-sys.path.insert(0, "/home/user/isaacjesusjj/prontuario-eletronico/testes")
+import pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "testes"))
 import testar_site as t  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402,F401
 
-PASTA = "/tmp/claude-0/-home-user/874b50e8-de17-525e-9269-1db64f1d00a2/scratchpad/revisao/exploratorio"
-SENHA = "demonstracao2026"
+import tempfile; PASTA = tempfile.gettempdir() + "/revisao/exploratorio"  # saídas dos scripts, fora do repositório
+SENHA = t.SENHA  # a mesma dos testes (vem de _meta.senhaDemonstracao)
 CEL = {"width": 390, "height": 844}
 PC = {"width": 1280, "height": 900}
 

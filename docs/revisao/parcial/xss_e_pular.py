@@ -1,7 +1,7 @@
 # Orquestrador: (1) link "Pular para o conteúdo" com rotas por hash; (2) varredura de saída sem escape:
 # injeta uma carga em todos os campos de texto livre do PEP.db e visita todas as rotas de cada perfil.
 import sys, json
-sys.argv = ["x"]; sys.path.insert(0, "/home/user/isaacjesusjj/prontuario-eletronico/testes")
+sys.argv = ["x"]; import pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "testes"))
 import testar_site as t
 from playwright.sync_api import sync_playwright
 CARGA = '"><img src=x onerror="window.__xss=(window.__xss||0)+1"><b class="xssmark">X</b>\''

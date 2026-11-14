@@ -1,6 +1,6 @@
 # Revisão técnica do Vinculum — como continuar
 
-> **Para quem assume (outra sessão ou outro modelo):** leia este arquivo inteiro, depois o `CLAUDE.md` e os dois prompts em `docs/prompts/`. Ele diz o que foi pedido, onde o trabalho parou e o próximo passo. Atualizado em 13/11/2026.
+> **Para quem assume (outra sessão ou outro modelo):** leia este arquivo inteiro, depois o `CLAUDE.md` e os dois prompts em `docs/prompts/`. Ele diz o que foi pedido, onde o trabalho parou e o próximo passo. Atualizado em 14/11/2026.
 
 ## O pedido do Isaac
 
@@ -15,17 +15,18 @@ Travas que continuam valendo:
 
 ## Onde parou
 
-**Fase 1 de 5 (revisão), no começo.** O plano tem cinco fases:
+Atualizado em 14/11/2026. **Revisão feita em sequência, na própria sessão** (os dez revisores em paralelo esgotaram o limite de uso).
 
-1. Revisão independente, por área, só de leitura (dez revisores).
-2. Triagem: conferir cada achado, tirar duplicados e decidir.
-3. Correções, com teste novo para cada defeito.
-4. Segunda revisão das mudanças e validação final (testes, GitHub Actions, telas nos três tamanhos).
-5. Relatório `docs/revisao-tecnica.md`, `README.md` e `docs/progresso.md` atualizados, e pedido de publicação.
+| Área | Estado |
+|---|---|
+| `regras-site` | revisada: 36 achados em [`achados/regras-site.md`](achados/regras-site.md); RS-01 a RS-19 e a maior parte dos baixos corrigidos (commit `d31dd54`), com a etapa de teste `regras_nas_acoes` |
+| `banco` (regras de estado) | gatilhos novos e seção 6k do teste (commit `3072579`) |
+| ORQ-01, ORQ-02, ORQ-03 | corrigidos (commit `d31dd54`) |
+| `seguranca`, `paridade`, `exploratorio`, `acessibilidade`, `testes`, `codigo`, `documentacao`, `normas` | a fazer, uma por vez |
 
-**Por que parou:** os dez revisores foram disparados em paralelo e a conta bateu no limite de uso duas vezes, em poucos minutos. Nenhum revisor chegou a entregar relatório. O que eles tinham começado está em `docs/revisao/parcial/` (só scripts de apoio, sem conclusões).
+Testes no commit `d31dd54`: validador sem problemas · site 404 de 404 · banco 197 de 197.
 
-**Lição para quem continua:** não rode os dez de uma vez. Rode um ou dois revisores por vez, ou faça a revisão em sequência na própria sessão.
+**Lição para quem continua:** não rode os dez revisores de uma vez. Faça uma área por vez.
 
 ## Linha de base (medida em 13/11, no commit `31bd555` da `main`)
 

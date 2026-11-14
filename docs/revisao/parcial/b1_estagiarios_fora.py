@@ -71,7 +71,10 @@ ROTAS = ["#/caso/c01", "#/caso/c01/evolucoes", "#/caso/c01/risco", "#/caso/c01/s
 def rodar(nav, base, login, extra_formularios=True):
     print(f"\n===== {login} =====")
     s = sessao(nav, base, login)
-    s.entrar(login)
+    if login == 'visitante':
+        s.abrir("#/entrar"); s.inj()
+    else:
+        s.entrar(login)
     ids = s.js("() => ({an: PEP.regras.anamneseAtual(PEP.db.casos[0]).id, pl: (PEP.db.planosSeguranca[0]||{}).id, plc: (PEP.db.planosSeguranca[0]||{}).casoId})")
     antes = s.js(FOTO)
     furos = []
@@ -87,7 +90,7 @@ def rodar(nav, base, login, extra_formularios=True):
             furos.append((nome, dados, cols, r))
             print(f"  !!! {nome} {dados} MUDOU {cols} -> {r}")
         else:
-            print(f"  ok  {nome}: {r['r'][:60]} | toast={r['toast'] or r['toast2']}")
+            if (r['toast'] or r['toast2']) != 'Sem permissão.': print(f"  ok  {nome}: {r['r'][:60]} | toast={r['toast'] or r['toast2']}")
         antes = depois
     # formulários
     forms = [
@@ -109,14 +112,14 @@ def rodar(nav, base, login, extra_formularios=True):
             furos.append((nome, attrs, cols, r))
             print(f"  !!! FORM {nome} MUDOU {cols} -> {r}")
         else:
-            print(f"  ok  FORM {nome}: {r['r'][:60]} | toast={r['toast'] or r['toast2']}")
+            if (r['toast'] or r['toast2']) != 'Sem permissão.': print(f"  ok  FORM {nome}: {r['r'][:60]} | toast={r['toast'] or r['toast2']}")
         antes = depois
     # rotas
     for rota in ROTAS:
         s.ir(rota)
         s.p.wait_for_timeout(100)
         txt = s.texto().replace("\n", " ")
-        print(f"  rota {rota} -> hash={s.js('location.hash')} h1={s.h1()!r} | {txt[:110]}")
+        if s.p.locator("#app h1").count() == 0 or s.h1() != 'Acesso não permitido': print(f"  rota {rota} -> hash={s.js('location.hash')} | {txt[:260]}")
     print("  auditoria nova:", s.js("() => PEP.db.auditoria.slice(5).map(a => a.usuarioId + '|' + a.acao + '|' + a.alvo)"))
     s.fechar()
     return furos

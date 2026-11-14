@@ -3,11 +3,11 @@
 import sys, json, contextlib
 ARGS = sys.argv[1:]
 sys.argv = ["x"]
-sys.path.insert(0, "/home/user/isaacjesusjj/prontuario-eletronico/testes")
+import pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "testes"))
 import testar_site as t
 from playwright.sync_api import sync_playwright
 
-PASTA = "/tmp/claude-0/-home-user/874b50e8-de17-525e-9269-1db64f1d00a2/scratchpad/revisao/regras-site"
+import tempfile; PASTA = tempfile.gettempdir() + "/revisao/regras-site"  # saídas dos scripts, fora do repositório
 
 # Funções injetadas na página: chamam a ação "por fora", com botão falso e campos montados no DOM
 JS = r"""
