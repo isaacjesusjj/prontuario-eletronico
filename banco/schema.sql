@@ -18,6 +18,15 @@
 
 create schema if not exists app;
 
+-- Fuso horário: "hoje" e "agora" do sistema são os de São Paulo. O Supabase vem em UTC: sem isto, depois
+-- das 21h o banco já estaria no dia seguinte (a evolução escrita à noite sairia com a data de amanhã).
+-- A primeira linha vale para as próximas conexões da API; a segunda, para esta execução.
+do $$ begin
+  execute format('alter database %I set timezone to %L', current_database(), 'America/Sao_Paulo');
+exception when others then null;   -- bancos de teste sem esse comando seguem com o "set" abaixo
+end $$;
+set timezone to 'America/Sao_Paulo';
+
 -- ---------------------------------------------------------------------
 -- Validadores (os mesmos de js/validadores.js)
 -- ---------------------------------------------------------------------
@@ -233,7 +242,7 @@ create table adendos (
   evolucao_id text not null references evolucoes (id),
   autor_id    text not null references usuarios (id),
   em          timestamptz not null default now(),
-  motivo      text not null,
+  motivo      text not null check (motivo in ('Correção de informação', 'Complemento', 'Esclarecimento da supervisão')),   -- _config.listas.motivosAdendo
   texto       text not null check (length(texto) >= 5)
 );
 
@@ -377,9 +386,11 @@ create table contatos (
   id             text primary key default gen_random_uuid()::text,
   caso_id        text not null references casos (id),
   em             date not null default current_date,
-  canal          text not null,
-  resultado      text not null,
-  motivo         text not null default '',
+  -- listas iguais às de _config.listas (canaisContato, resultadosContato, motivosAbandono)
+  canal          text not null check (canal in ('Telefone', 'WhatsApp (sem conteúdo clínico)', 'E-mail (sem conteúdo clínico)')),
+  resultado      text not null check (resultado in ('Não atendeu', 'Retornará', 'Desistiu')),
+  motivo         text not null default '' check (motivo in ('', 'Horário incompatível', 'Transporte ou distância', 'Melhora percebida',
+                   'Não se adaptou ao atendimento', 'Trabalho ou questão financeira', 'Outro')),
   registrado_por text not null references usuarios (id)
 );
 
@@ -711,7 +722,7 @@ begin
      is distinct from (old.presenca, old.data, old.hora, old.aviso_paciente, old.motivo_falta) then
     -- o paciente só confirma presença ou avisa, antes da sessão, que não vai (com motivo da lista)
     if not (old.presenca = 'agendada' and new.presenca = 'falta-justificada' and new.aviso_paciente and new.motivo_falta <> ''
-            and old.data >= current_date and (new.data, new.hora) = (old.data, old.hora)) then
+            and (old.data + old.hora) > localtimestamp and (new.data, new.hora) = (old.data, old.hora)) then
       raise exception 'Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai.';
     end if;
     new.avisado_em := now();
@@ -794,11 +805,20 @@ language plpgsql security definer set search_path = public as $$
 begin
   if app.em_migracao() then return new; end if;
   if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then raise exception 'Só caso ativo é encerrado.'; end if;
+  if new.tipo = 'abandono' then
+    -- Abandono só pelo fluxo de faltas (2 seguidas sem justificativa, regras.faltasSeguidasLimite) e com
+    -- tentativa de contato feita neste fluxo: a partir da primeira falta depois da última presença
+    if not exists (select 1 from app.faltas_seguidas f where f.caso_id = new.caso_id and f.faltas >= 2) then
+      raise exception 'Abandono só pelo fluxo de faltas: são precisas 2 faltas seguidas sem justificativa.';
+    end if;
+    if not exists (select 1 from contatos ct where ct.caso_id = new.caso_id and ct.em >= (
+        select min(s.data) from sessoes s where s.caso_id = new.caso_id and s.presenca = 'falta'
+          and (s.data + s.hora) > coalesce((select max(p.data + p.hora) from sessoes p where p.caso_id = new.caso_id and p.presenca = 'presente'), '-infinity'::timestamp))) then
+      raise exception 'Abandono só depois de registrar a tentativa de contato.';
+    end if;
+  end if;
   if exists (select 1 from evolucoes e where e.caso_id = new.caso_id and e.status in ('enviada', 'devolvida')) then
     raise exception 'Há evolução aguardando a supervisão ou devolvida: conclua antes de encerrar.';
-  end if;
-  if new.tipo = 'abandono' and not exists (select 1 from contatos ct where ct.caso_id = new.caso_id) then
-    raise exception 'Abandono só depois de registrar a tentativa de contato.';
   end if;
   if new.tipo <> 'abandono' and length(new.registro) < 10 then raise exception 'Escreva o registro do encerramento.'; end if;
   return new;
@@ -1037,6 +1057,101 @@ begin
   return new;
 end $$;
 create trigger regras before insert on comunicacoes for each row execute function app.comunicacao_regras();
+
+-- ---------------------------------------------------------------------
+-- Regras que antes valiam só nas telas (revisão técnica de novembro de 2026).
+-- Cada uma repete, no banco, a conferência que a ação do site faz (js/acoes.js).
+-- ---------------------------------------------------------------------
+-- Tentativa de contato: faz parte do fluxo de abandono (só com as faltas seguidas da regra)
+create or replace function app.contato_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  new.registrado_por := app.usuario_atual();
+  if not exists (select 1 from casos c join app.faltas_seguidas f on f.caso_id = c.id
+                 where c.id = new.caso_id and c.status = 'ativo' and f.faltas >= 2) then
+    raise exception 'Tentativa de contato só no fluxo de abandono (2 faltas seguidas sem justificativa).';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on contatos for each row execute function app.contato_regras();
+
+-- Uma evolução por sessão, e uma assinatura da supervisão por registro
+create unique index evolucao_por_sessao on evolucoes (sessao_id) where sessao_id is not null;
+create unique index assinatura_supervisor_unica on assinaturas (alvo_tipo, alvo_id) where papel = 'supervisor';
+
+-- Pedido do titular (LGPD): a resposta dada não é sobrescrita; quem responde e quando vêm do banco
+create or replace function app.pedido_titular_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if old.status <> 'aberto' then raise exception 'A resposta ao titular não é alterada: um complemento vira pedido novo.'; end if;
+  if (new.titular_tipo, new.titular_id, new.tipo, new.descricao, new.em) is distinct from (old.titular_tipo, old.titular_id, old.tipo, old.descricao, old.em) then
+    raise exception 'O pedido do titular não é alterado.';
+  end if;
+  if new.status = 'respondido' then
+    if length(new.resposta) < 5 then raise exception 'Escreva a resposta ao titular.'; end if;
+    new.respondido_por := app.usuario_atual();
+    new.respondido_em := now();
+  end if;
+  return new;
+end $$;
+create trigger regras before update on pedidos_titular for each row execute function app.pedido_titular_regras();
+
+-- Pedido de cópia do prontuário: um por vez, e cada passo depois do anterior
+-- (recebida → identidade conferida → entregue, com a forma de entrega da lista)
+create or replace function app.solicitacao_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if tg_op = 'INSERT' then
+    if exists (select 1 from solicitacoes x where x.paciente_id = new.paciente_id and x.status <> 'entregue') then
+      raise exception 'Já existe um pedido de cópia em andamento.';
+    end if;
+    return new;
+  end if;
+  if (new.paciente_id, new.caso_id, new.em) is distinct from (old.paciente_id, old.caso_id, old.em) then raise exception 'O pedido de cópia não é alterado.'; end if;
+  if old.status = 'recebida' and new.status = 'identidade-conferida' then
+    new.conferido_por := app.usuario_atual();
+  elsif old.status = 'identidade-conferida' and new.status = 'entregue' then
+    if new.forma not in ('PDF por e-mail', 'Cópia impressa', 'Link de leitura (72 h)') then raise exception 'Escolha a forma de entrega.'; end if;   -- _config.listas.formasEntrega
+    new.entregue_por := app.usuario_atual();
+  else
+    raise exception 'O pedido de cópia segue a ordem: recebido, identidade conferida, entregue.';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert or update on solicitacoes for each row execute function app.solicitacao_regras();
+
+-- Avaliação psicológica e orientação de supervisão: só em caso ativo
+create or replace function app.exige_caso_ativo() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if not exists (select 1 from casos c where c.id = new.caso_id and c.status = 'ativo') then
+    raise exception 'Caso encerrado não recebe novos registros.';
+  end if;
+  return new;
+end $$;
+create trigger caso_ativo before insert on avaliacoes for each row execute function app.exige_caso_ativo();
+create trigger caso_ativo before insert on orientacoes for each row execute function app.exige_caso_ativo();
+
+-- Consentimento: só em caso em andamento; o contrato terapêutico, depois de concedido, não é revogado
+-- (quem não quer continuar encerra o caso)
+create or replace function app.consentimento_regras() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if app.em_migracao() then return new; end if;
+  if exists (select 1 from casos c where c.id = new.caso_id and c.status = 'encerrado') then
+    raise exception 'Caso encerrado não recebe novos consentimentos.';
+  end if;
+  if new.finalidade = 'contrato' and not new.concedido and exists (
+      select 1 from consentimentos x where x.caso_id = new.caso_id and x.finalidade = 'contrato' and x.concedido) then
+    raise exception 'O contrato terapêutico não é revogado: para parar o atendimento, registre o encerramento do caso.';
+  end if;
+  return new;
+end $$;
+create trigger regras before insert on consentimentos for each row execute function app.consentimento_regras();
 
 -- Carimbo de tempo: a data e a hora de cada registro vêm do relógio do servidor, não do computador
 -- de quem registra (ninguém "volta no tempo" para assinar ou registrar). Argumentos: coluna e tipo.
@@ -1367,7 +1482,8 @@ create policy ver on comunicacoes for select to authenticated
 create policy registrar on comunicacoes for insert to authenticated
   with check (registrado_por = app.usuario_atual() and app.pode_ver_clinico(caso_id) and app.perfil_atual() in ('estagiario', 'supervisor', 'tecnico'));
 create policy ver on anexos for select to authenticated using (app.pode_ver_clinico(caso_id));
-create policy anexar on anexos for insert to authenticated with check (enviado_por = app.usuario_atual() and app.pode_ver_caso(caso_id));
+create policy anexar on anexos for insert to authenticated with check (enviado_por = app.usuario_atual() and app.pode_ver_clinico(caso_id)
+  and exists (select 1 from casos c where c.id = caso_id and c.status = 'ativo'));
 
 create policy ver on avaliacoes for select to authenticated using (app.pode_ver_clinico(caso_id));
 create policy registrar on avaliacoes for insert to authenticated with check (aplicado_por = app.usuario_atual()

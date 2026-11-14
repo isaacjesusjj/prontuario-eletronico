@@ -21,6 +21,12 @@ async function erroEsperado(nome, sql, params = []) {
   try { await db.query(sql, params); conferir(nome, false, 'o banco aceitou'); }
   catch (e) { conferir(nome, true, 'recusado: ' + e.message.split('\n')[0].slice(0, 90)); }
 }
+// Recusa pelo motivo certo: além de recusar, a mensagem do banco precisa trazer o trecho esperado
+// (um teste negativo que "passa" porque o banco recusou por OUTRO motivo não prova a regra)
+async function recusaCom(nome, sql, trecho) {
+  try { await db.query(sql); conferir(nome, false, 'o banco aceitou'); }
+  catch (e) { const m = e.message.split('\n')[0]; conferir(nome, m.includes(trecho), (m.includes(trecho) ? 'recusado: ' : 'recusado por outro motivo: ') + m.slice(0, 90)); }
+}
 const valores = async (sql, params = []) => (await db.query(sql, params)).rows;
 
 // Executa como um usuário logado (igual ao Supabase: papel "authenticated" + id e nível do token).
@@ -423,6 +429,74 @@ await como('u-est5', async () => {
   conferir('a mesma sala vale logo depois que a sessão anterior termina (50 min)', true);
 });
 await como('u-pac1', () => erroEsperado('o paciente não troca a sala da sessão', "update sessoes set sala = 'Sala 2' where id = 's31'"));
+
+// ---------- 6k. Regras que antes valiam só nas telas (revisão técnica de novembro de 2026) ----------
+conferir('o banco trabalha no fuso de São Paulo ("hoje" não vira amanhã às 21h)', (await valores('show timezone'))[0].TimeZone === 'America/Sao_Paulo');
+// Fluxo de abandono: c02 tem 2 faltas seguidas; c04 não tem
+const [{ faltas: faltasC02 }] = await valores("select coalesce((select faltas from app.faltas_seguidas where caso_id = 'c02'), 0)::int as faltas");
+await como('u-est5', async () => {
+  await recusaCom('tentativa de contato fora do fluxo de abandono (caso sem faltas seguidas) é recusada',
+    "insert into contatos (caso_id, canal, resultado, registrado_por) values ('c04', 'Telefone', 'Desistiu', 'u-est5')", 'fluxo de abandono');
+  await recusaCom('encerramento por abandono sem as faltas seguidas é recusado',
+    "insert into encerramentos (caso_id, tipo, motivo, registro, registrado_por) values ('c04', 'abandono', 'Outro', 'Encerrado por abandono sem faltas', 'u-est5')", 'fluxo de faltas');
+});
+await como('u-est1', async () => {
+  await recusaCom('tentativa de contato com canal fora da lista é recusada',
+    "insert into contatos (caso_id, canal, resultado, registrado_por) values ('c02', 'Sinal de fumaça', 'Desistiu', 'u-est1')", 'contatos_canal_check');
+  await recusaCom('abandono com as faltas, mas sem tentativa de contato neste fluxo, é recusado',
+    "insert into encerramentos (caso_id, tipo, motivo, registro, registrado_por) values ('c02', 'abandono', 'Outro', 'Encerrado por abandono sem contato', 'u-est1')", 'tentativa de contato');
+  const r = await db.query("insert into contatos (caso_id, canal, resultado, motivo, registrado_por) values ('c02', 'Telefone', 'Não atendeu', '', 'u-est1')");
+  conferir('no fluxo de abandono (2 faltas seguidas), a tentativa de contato é aceita', faltasC02 >= 2 && r.affectedRows === 1, faltasC02 + ' faltas seguidas em c02');
+  await recusaCom('adendo sem motivo é recusado', "insert into adendos (evolucao_id, autor_id, motivo, texto) values ('e01', 'u-est1', '', 'Texto do adendo')", 'adendos_motivo_check');
+  await recusaCom('adendo com motivo fora da lista é recusado', "insert into adendos (evolucao_id, autor_id, motivo, texto) values ('e01', 'u-est1', 'Qualquer coisa', 'Texto do adendo')", 'adendos_motivo_check');
+  await recusaCom('segunda evolução para a mesma sessão é recusada',
+    "insert into evolucoes (caso_id, sessao_id, autor_id, status, texto) values ('c01', 's01', 'u-est1', 'rascunho', 'Segunda evolução da mesma sessão')", 'evolucao_por_sessao');
+});
+await como('u-sup1', async () => {
+  await recusaCom('segunda assinatura da supervisão no mesmo registro é recusada',
+    "insert into assinaturas (alvo_tipo, alvo_id, usuario_id, papel) select 'anamnese', alvo_id, 'u-sup1', 'supervisor' from assinaturas where alvo_tipo = 'anamnese' and papel = 'supervisor' limit 1", 'assinatura_supervisor_unica');
+});
+await como('u-sup2', async () => {
+  await recusaCom('avaliação psicológica em caso encerrado é recusada', "insert into avaliacoes (caso_id, instrumento, aplicado_por) values ('c05', 'Instrumento fictício', 'u-sup2')", 'Caso encerrado');
+  await recusaCom('orientação de supervisão em caso encerrado é recusada', "insert into orientacoes (caso_id, supervisor_id, texto) values ('c05', 'u-sup2', 'Orientação depois do encerramento')", 'Caso encerrado');
+});
+await como('u-tec', async () => {
+  await recusaCom('resposta a pedido do titular já respondido não é sobrescrita', "update pedidos_titular set resposta = 'Resposta trocada depois' where id = 'pt01'", 'não é alterada');
+  await recusaCom('o contrato terapêutico, depois de concedido, não é revogado',
+    "insert into consentimentos (caso_id, finalidade, concedido, termo_versao, registrado_por) values ('c01', 'contrato', false, '2026.1', 'u-tec')", 'não é revogado');
+  await recusaCom('caso encerrado não recebe consentimento novo',
+    "insert into consentimentos (caso_id, finalidade, concedido, termo_versao, registrado_por) values ('c05', 'lembretes', true, '2026.1', 'u-tec')", 'Caso encerrado');
+  // Anexo é conteúdo clínico: num caso em que a técnica não registrou o motivo do acesso, a política recusa
+  const [semMotivo] = await valores(`select c.id from casos c where c.status = 'ativo' and not exists (
+    select 1 from acessos_justificados j where j.caso_id = c.id and j.usuario_id = 'u-tec') order by c.id limit 1`);
+  await recusaCom('técnica sem motivo de acesso não anexa arquivo ao caso',
+    `insert into anexos (caso_id, nome, tipo, tamanho, enviado_por) values ('${semMotivo.id}', 'exame.pdf', 'application/pdf', 1000, 'u-tec')`, 'row-level security');
+});
+// Pedido de cópia: um por vez, e na ordem (recebido → identidade conferida → entregue)
+await db.exec("set app.migracao = 'on'; update solicitacoes set status = 'entregue', forma = 'Cópia impressa' where paciente_id = 'p01' and status <> 'entregue'; reset app.migracao;");
+await como('u-pac1', async () => {
+  const r = await db.query("insert into solicitacoes (paciente_id, caso_id, status) values ('p01', 'c01', 'recebida')");
+  conferir('paciente pede a cópia do prontuário', r.affectedRows === 1);
+  await recusaCom('segundo pedido de cópia com um em andamento é recusado', "insert into solicitacoes (paciente_id, caso_id, status) values ('p01', 'c01', 'recebida')", 'em andamento');
+});
+await como('u-tec', async () => {
+  await recusaCom('cópia não é entregue sem conferir a identidade', "update solicitacoes set status = 'entregue', forma = 'Cópia impressa' where paciente_id = 'p01' and status = 'recebida'", 'segue a ordem');
+  await db.query("update solicitacoes set status = 'identidade-conferida' where paciente_id = 'p01' and status = 'recebida'");
+  await recusaCom('entrega com forma fora da lista é recusada', "update solicitacoes set status = 'entregue', forma = 'pombo-correio' where paciente_id = 'p01' and status = 'identidade-conferida'", 'forma de entrega');
+  const r = await db.query("update solicitacoes set status = 'entregue', forma = 'Cópia impressa' where paciente_id = 'p01' and status = 'identidade-conferida'");
+  conferir('na ordem certa, a cópia é entregue (quem conferiu e quem entregou vêm do banco)', r.affectedRows === 1 &&
+    (await valores("select 1 from solicitacoes where paciente_id = 'p01' and conferido_por = 'u-tec' and entregue_por = 'u-tec'")).length >= 1);
+  await recusaCom('pedido entregue não volta a "identidade conferida"', "update solicitacoes set status = 'identidade-conferida' where paciente_id = 'p01' and entregue_por = 'u-tec'", 'segue a ordem');
+});
+// "Antes da sessão" é pela data e pela hora: sessão de hoje às 7h (a clínica abre às 7h)
+const [{ passou }] = await valores("select localtime > time '07:00' as passou");
+await db.exec("set app.migracao = 'on'; insert into sessoes (id, caso_id, data, hora, sala, presenca) values ('s-hoje-cedo', 'c01', current_date, '07:00', 'Sala 4', 'agendada'); reset app.migracao;");
+await como('u-pac1', async () => {
+  if (passou) await recusaCom('paciente não avisa falta de sessão de hoje que já passou do horário',
+    "update sessoes set presenca = 'falta-justificada', aviso_paciente = true, motivo_falta = 'saude' where id = 's-hoje-cedo'", 'antes da sessão');
+  else conferir('paciente não avisa falta de sessão de hoje que já passou do horário', true, 'não conferido agora: o teste rodou antes das 7h de São Paulo');
+});
+await db.exec("set app.migracao = 'on'; update sessoes set presenca = 'cancelada' where id = 's-hoje-cedo'; reset app.migracao;");
 
 // ---------- 7. Visitante (formulário público da fila) ----------
 const p05 = json.pacientes.find((p) => p.id === 'p05');

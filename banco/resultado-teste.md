@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-08 23:33 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-14 17:29 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**174 de 174 verificações passaram.**
+**197 de 197 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 36 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1617 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1736 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -55,7 +55,7 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 23:33 (UTC), num PostgreSQL 18
 | ✓ | paciente confirma presença na própria sessão |  |
 | ✓ | paciente não altera a presença | recusado: Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai. |
 | ✓ | paciente revoga um consentimento opcional |  |
-| ✓ | paciente não mexe no contrato terapêutico | recusado: new row violates row-level security policy for table "consentimentos" |
+| ✓ | paciente não mexe no contrato terapêutico | recusado: O contrato terapêutico não é revogado: para parar o atendimento, registre o encerramento d |
 | ✓ | paciente não consegue ver indicadores | recusado: Perfil sem acesso aos indicadores. |
 | ✓ | estagiária não se promove a técnica pela API (perfil e CRP não mudam) | recusado: permission denied for table usuarios |
 | ✓ | a única coluna da própria conta que muda pela API é "senha provisória" |  |
@@ -171,6 +171,29 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 23:33 (UTC), num PostgreSQL 18
 | ✓ | outra dupla não agenda a mesma sala em horário que se sobrepõe (sessão de 50 min) | recusado: A sala Sala 4 já está ocupada nesse horário (cada sessão ocupa 50 minutos). |
 | ✓ | a mesma sala vale logo depois que a sessão anterior termina (50 min) |  |
 | ✓ | o paciente não troca a sala da sessão | recusado: A sala é definida pela equipe. |
+| ✓ | o banco trabalha no fuso de São Paulo ("hoje" não vira amanhã às 21h) |  |
+| ✓ | tentativa de contato fora do fluxo de abandono (caso sem faltas seguidas) é recusada | recusado: Tentativa de contato só no fluxo de abandono (2 faltas seguidas sem justificativa). |
+| ✓ | encerramento por abandono sem as faltas seguidas é recusado | recusado: Abandono só pelo fluxo de faltas: são precisas 2 faltas seguidas sem justificativa. |
+| ✓ | tentativa de contato com canal fora da lista é recusada | recusado: new row for relation "contatos" violates check constraint "contatos_canal_check" |
+| ✓ | abandono com as faltas, mas sem tentativa de contato neste fluxo, é recusado | recusado: Abandono só depois de registrar a tentativa de contato. |
+| ✓ | no fluxo de abandono (2 faltas seguidas), a tentativa de contato é aceita | 2 faltas seguidas em c02 |
+| ✓ | adendo sem motivo é recusado | recusado: new row for relation "adendos" violates check constraint "adendos_motivo_check" |
+| ✓ | adendo com motivo fora da lista é recusado | recusado: new row for relation "adendos" violates check constraint "adendos_motivo_check" |
+| ✓ | segunda evolução para a mesma sessão é recusada | recusado: duplicate key value violates unique constraint "evolucao_por_sessao" |
+| ✓ | segunda assinatura da supervisão no mesmo registro é recusada | recusado: duplicate key value violates unique constraint "assinatura_supervisor_unica" |
+| ✓ | avaliação psicológica em caso encerrado é recusada | recusado: Caso encerrado não recebe novos registros. |
+| ✓ | orientação de supervisão em caso encerrado é recusada | recusado: Caso encerrado não recebe novos registros. |
+| ✓ | resposta a pedido do titular já respondido não é sobrescrita | recusado: A resposta ao titular não é alterada: um complemento vira pedido novo. |
+| ✓ | o contrato terapêutico, depois de concedido, não é revogado | recusado: O contrato terapêutico não é revogado: para parar o atendimento, registre o encerramento d |
+| ✓ | caso encerrado não recebe consentimento novo | recusado: Caso encerrado não recebe novos consentimentos. |
+| ✓ | técnica sem motivo de acesso não anexa arquivo ao caso | recusado: new row violates row-level security policy for table "anexos" |
+| ✓ | paciente pede a cópia do prontuário |  |
+| ✓ | segundo pedido de cópia com um em andamento é recusado | recusado: Já existe um pedido de cópia em andamento. |
+| ✓ | cópia não é entregue sem conferir a identidade | recusado: O pedido de cópia segue a ordem: recebido, identidade conferida, entregue. |
+| ✓ | entrega com forma fora da lista é recusada | recusado: Escolha a forma de entrega. |
+| ✓ | na ordem certa, a cópia é entregue (quem conferiu e quem entregou vêm do banco) |  |
+| ✓ | pedido entregue não volta a "identidade conferida" | recusado: O pedido de cópia segue a ordem: recebido, identidade conferida, entregue. |
+| ✓ | paciente não avisa falta de sessão de hoje que já passou do horário | recusado: Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai. |
 | ✓ | visitante se inscreve na fila sem login |  |
 | ✓ | visitante não lê a fila | recusado: permission denied for table inscricoes |
 | ✓ | visitante não lê pacientes | recusado: permission denied for table pacientes |
@@ -181,4 +204,4 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-08 23:33 (UTC), num PostgreSQL 18
 | ✓ | atendimentos por mês do banco = contagem direta das sessões (6 meses, presença e os dois tipos de falta) | 2026-06: 0/0/0 · 2026-07: 0/0/0 · 2026-08: 4/0/2 · 2026-09: 14/1/0 · 2026-10: 9/1/2 · 2026-11: 1/3/0 |
 | ✓ | indicadores trazem os motivos das faltas avisadas pelo paciente | {"transporte":1,"trabalho-estudo":1} |
 
-Tamanho do banco de demonstração: 10.2 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 80 KB, auditoria_2026 64 KB, casos 64 KB, alocacoes 64 KB.
+Tamanho do banco de demonstração: 10.3 MB (inclui o catálogo do PostgreSQL). Maiores tabelas: usuarios 96 KB, assinaturas 96 KB, casos 64 KB, alocacoes 64 KB, auditoria_2026 64 KB.
