@@ -61,8 +61,9 @@ PEP.telas = PEP.telas || {};
 
   // Selo no cabeçalho: risco em aberto aparece em toda aba do caso (sem detalhes, com link para a aba)
   function seloRisco(caso) {
-    var abertos = R().riscosAbertos(caso);
-    if (!abertos.length) return '';
+    var abertos = R().riscosAbertos(caso), u = PEP.estado.usuarioAtual();
+    // A técnica de fora da equipe só vê o risco depois de registrar o motivo do acesso (é conteúdo clínico)
+    if (!abertos.length || (u && R().precisaJustificar(u, caso))) return '';
     var semCiencia = abertos.some(function (r) { return !r.cienciaEm; });
     return '<a class="etiqueta perigo" href="#/caso/' + caso.id + '/risco">' + (semCiencia ? 'Risco · aguardando ciência' : 'Risco em acompanhamento') + '</a>';
   }

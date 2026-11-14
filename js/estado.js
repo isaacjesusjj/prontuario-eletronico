@@ -216,10 +216,12 @@ PEP.estado = (function () {
   }
 
   // Senha ou código errados: conta a tentativa e, a cada N erros, bloqueia por um tempo cada vez maior
-  function registrarFalha(alvo, acao) {
+  // rotulo = o que vai para a auditoria como alvo (o login da conta, ou "(usuário não cadastrado)")
+  function registrarFalha(alvo, acao, rotulo) {
     var t = lerTentativas(), reg = registroDe(t, alvo);
     reg.falhas++;
-    registrarAuditoria(acao, alvo || '—', 'visitante'); // nunca grava a senha nem o código
+    rotulo = rotulo || alvo;
+    registrarAuditoria(acao, rotulo || '—', 'visitante'); // nunca grava a senha nem o código
     if (reg.falhas >= (PEP.regra('tentativasLogin') || 5)) {
       reg.falhas = 0;
       reg.bloqueios = (reg.bloqueios || 0) + 1;
@@ -228,7 +230,7 @@ PEP.estado = (function () {
       var base = PEP.regra('bloqueioLoginSegundos') || 30, teto = PEP.regra('bloqueioLoginMaximoSegundos') || 900;
       var segundos = Math.min(base * Math.pow(2, reg.bloqueios - 1), teto);
       reg.bloqueadoAte = Date.now() + segundos * 1000;
-      registrarAuditoria('Login bloqueado temporariamente (' + segundos + ' s)', alvo || '—', 'visitante');
+      registrarAuditoria('Login bloqueado temporariamente (' + segundos + ' s)', rotulo || '—', 'visitante');
     }
     t[alvo] = reg;
     gravar('localStorage', CHAVE_TENTATIVAS, JSON.stringify(t));
@@ -248,10 +250,19 @@ PEP.estado = (function () {
   function cancelarMfa() { mfaPendente = null; }
 
   function autenticar(login, senha) {
-    var alvo = String(login || '').trim().toLowerCase();
+    var digitado = String(login || '').trim().toLowerCase(), remoto = PEP.repo.adaptador().remoto;
+    var achado = null;
+    (PEP.db.usuarios || []).forEach(function (u) {
+      if (String(u.login).toLowerCase() === digitado || String(u.email || '').toLowerCase() === digitado) achado = u;
+    });
+    // Os erros são contados por conta (login e e-mail da mesma pessoa somam no mesmo contador). Na auditoria
+    // vai o login da conta; texto que não é de nenhuma conta não é gravado (quem digita a senha no campo
+    // errado não deixa a senha na trilha).
+    var alvo = achado ? String(achado.login).toLowerCase() : digitado;
+    var rotulo = achado || remoto ? alvo : '(usuário não cadastrado)';
     var espera = segundosBloqueado(alvo);
     if (espera) return Promise.resolve({ ok: false, motivo: 'bloqueado', segundos: espera });
-    var falhou = function () { return registrarFalha(alvo, 'Tentativa de login sem sucesso'); };
+    var falhou = function () { return registrarFalha(alvo, 'Tentativa de login sem sucesso', rotulo); };
     var deuCerto = function (usuario) { limparFalhas(alvo); entrar(usuario); return { ok: true, usuario: usuario }; };
     var pedirCodigo = function (usuario, fatorId) {
       mfaPendente = { usuarioId: usuario.id, alvo: alvo, ate: Date.now() + 5 * 60000, fatorId: fatorId || null };
@@ -261,17 +272,13 @@ PEP.estado = (function () {
     // Banco ligado: quem confere a senha (e diz se há segundo fator) é o Supabase Auth, no servidor
     var ad = PEP.repo.adaptador();
     if (ad.remoto) {
-      return ad.autenticar(alvo, senha).then(function (r) {
+      return ad.autenticar(digitado, senha).then(function (r) {
         if (r.ok) return deuCerto(r.usuario);
         return r.motivo === 'mfa' ? pedirCodigo(r.usuario, r.fatorId) : falhou();
       });
     }
 
     if (!PEP.seguranca.suportaCripto()) return Promise.resolve({ ok: false, motivo: 'sem-cripto' });
-    var achado = null;
-    PEP.db.usuarios.forEach(function (u) {
-      if (String(u.login).toLowerCase() === alvo || String(u.email || '').toLowerCase() === alvo) achado = u;
-    });
     // Mesmo sem usuário, calcula um hash: o tempo de resposta não denuncia se a conta existe
     var guardado = achado ? achado.senhaHash : PEP.db.usuarios[0].senhaHash;
     return PEP.seguranca.conferirSenha(senha, guardado).then(function (confere) {

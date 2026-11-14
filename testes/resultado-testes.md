@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 14/11/2026 17:31, no Chrome (Playwright), com axe-core 4.14.0.
 
-**389 de 389 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**404 de 404 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 3 | 0 |
-| Acessibilidade | 82 | 0 |
+| Acessibilidade | 83 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -57,6 +57,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | Documentos | 12 | 0 |
 | Comunicações | 7 | 0 |
 | Gráfico | 7 | 0 |
+| Regras nas ações | 14 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
@@ -66,7 +67,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 |---|---|---|---|
 | ✓ | Público | página inicial abre e o título da aba é neutro | Entrar — Vinculum · Prontuário da Clínica-Escola |
 | ✓ | Acessibilidade | primeiro Tab vai para 'Pular para o conteúdo' |  |
-| ✓ | Acessibilidade | o link de pular leva o foco ao conteúdo |  |
+| ✓ | Acessibilidade | o link de pular leva o foco ao conteúdo sem mudar o endereço (as rotas usam o #) |  |
 | ✓ | Acessibilidade | Visitante · Entrar: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Visitante · Fila de espera: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Visitante · Sobre: sem violações WCAG A/AA |  |
@@ -261,6 +262,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | ✓ | Caso | o encerramento abre pelo botão no fim do Resumo, com a aba Resumo marcada |  |
 | ✓ | Caso | a Área restrita junta supervisão e avaliação psicológica, com um seletor entre as duas |  |
 | ✓ | Pedidos | a técnica tem um item só, "Pedidos", com cópia do prontuário e direitos LGPD lado a lado |  |
+| ✓ | Acessibilidade | com login, "Pular para o conteúdo" leva o foco ao conteúdo e a pessoa continua na mesma tela | #/caso/c01/evolucoes · Paciente Exemplo 01 |
 | ✓ | Computador | a navegação vira uma coluna à esquerda com os 7 itens, sem o "Mais" |  |
 | ✓ | Identidade | topo verde (menos branco) e, na entrada, a marca grande fica na faixa verde (a do topo some para não repetir) |  |
 | ✓ | Identidade | logotipo da Faculdade embaixo do Vinculum, menor (até 34 px de altura) e nítido em tela densa (o arquivo tem o dobro dos pixels mostrados) |  |
@@ -371,7 +373,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | ✓ | Duas etapas | configurou: os códigos de recuperação aparecem antes de seguir, e não há botão de desativar (é obrigatória) |  |
 | ✓ | Duas etapas | ... e só depois de "Já guardei" segue para o termo de sigilo | #/termo |
 | ✓ | Duas etapas | para o paciente, não é obrigatória (o portal precisa ser simples) |  |
-| ✓ | Transição | o resumo de transferência já vem com período, sessões, demanda e objetivos tirados do prontuário | Período: de 29/08/2026 a 09/11/2026 · 7 sessões com presença · 1 falta(s), 1 justificada(s). Demanda: Dificuldade em lid |
+| ✓ | Transição | o resumo de transferência já vem com período, sessões, demanda e objetivos tirados do prontuário | Período: de 03/09/2026 a 14/11/2026 · 7 sessões com presença · 1 falta(s), 1 justificada(s). Demanda: Dificuldade em lid |
 | ✓ | Acessibilidade | Transição de semestre · Caso · resumo de transferência: sem violações WCAG A/AA |  |
 | ✓ | Transição | sem completar as seções, o resumo não é enviado (o campo diz o que falta) |  |
 | ✓ | Transição | completo, o resumo é assinado e enviado à supervisão (sem sessão vinculada) |  |
@@ -379,7 +381,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | ✓ | Transição | a supervisora valida o resumo de transferência como valida uma evolução |  |
 | ✓ | Transição | sem resumo validado, a passagem pede justificativa e a confirmação de que o paciente foi avisado |  |
 | ✓ | Transição | com a justificativa, o caso passa para a outra dupla e a passagem fica registrada |  |
-| ✓ | Transição | ao encerrar o estágio, a direção é avisada de que o caso fica sem dupla ativa (só quando sai o último da dupla) | Encerrar o vínculo de estágio de Lia? O acesso aos casos termina agora.  Fica sem dupla ativa: Paciente Exemplo 02, Paciente Exemplo 03. Combine com a supervisã |
+| ✓ | Transição | ao encerrar o estágio, a direção é avisada de quantos casos ficam sem dupla ativa (só quando sai o último da dupla), sem nome de paciente | Encerrar o vínculo de estágio de Lia? O acesso aos casos termina agora.  2 caso(s) ficam sem dupla ativa. Combine com a supervisão a passagem (resumo de transfe |
 | ✓ | Transição | a técnica vê os casos sem dupla ativa na alocação |  |
 | ✓ | Transição | o painel da supervisão avisa o caso sem dupla ativa (nas pendências) |  |
 | ✓ | Acessibilidade | Transição de semestre · Caso · passagem do caso: sem violações WCAG A/AA |  |
@@ -393,7 +395,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 09/11/2026 15:53. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 14:31. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -428,7 +430,7 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | ✓ | Comunicações | a cópia do prontuário leva as comunicações visíveis, e não a escondida |  |
 | ✓ | Comunicações | a paciente vê com quem os dados foram compartilhados (LGPD, art. 18, VII), menos o que a equipe escondeu com motivo |  |
 | ✓ | Gráfico | o painel da supervisão mostra os 6 meses, com a legenda das três séries e o total no topo das colunas |  |
-| ✓ | Gráfico | cada coluna diz, para quem usa leitor de tela, o mês e os três números | outubro de 2026: 8 presença, 1 falta justificada, 2 falta sem justificativa |
+| ✓ | Gráfico | cada coluna diz, para quem usa leitor de tela, o mês e os três números | outubro de 2026: 8 presença, 1 falta justificada, 1 falta sem justificativa |
 | ✓ | Gráfico | com o teclado (Tab), a coluna mostra o detalhe do mês |  |
 | ✓ | Gráfico | Esc fecha o detalhe |  |
 | ✓ | Gráfico | "Ver os números" abre a tabela com todos os valores |  |
@@ -439,13 +441,27 @@ Gerado por `testes/testar_site.py` em 09/11/2026 18:53, no Chrome (Playwright), 
 | ✓ | Gráfico | o gráfico também aparece em Indicadores |  |
 | ✓ | Sala | o filtro da agenda mostra só a ocupação da sala escolhida | 10 sessões |
 | ✓ | Acessibilidade | Gráfico e salas · Agenda filtrada por sala: sem violações WCAG A/AA |  |
+| ✓ | Regras nas ações | antes de aceitar o termo de sigilo, as ações clínicas são negadas (RS-12) | Sem permissão. |
+| ✓ | Regras nas ações | abandono: sem as faltas seguidas, contato e encerramento por abandono são negados (RS-01) |  |
+| ✓ | Regras nas ações | evolução só se liga a sessão do próprio caso, com presença e ainda sem evolução (RS-17) |  |
+| ✓ | Regras nas ações | adendo sem motivo da lista é negado (RS-18) |  |
+| ✓ | Regras nas ações | documento: a entrega não é registrada duas vezes e tipo fora da lista não é gravado (RS-21) |  |
+| ✓ | Regras nas ações | supervisora não troca a dupla de um caso que já tem dupla sem a passagem (RS-02) | Este caso já tem dupla: use a "Passagem do caso", no Resumo. |
+| ✓ | Regras nas ações | técnica não reabre caso encerrado nem realoca caso em andamento (RS-03) |  |
+| ✓ | Regras nas ações | técnica sem o motivo do acesso não abre anexo (conteúdo clínico) (RS-06) | Sem permissão. |
+| ✓ | Regras nas ações | resposta a pedido do titular já respondido não é sobrescrita (RS-15) |  |
+| ✓ | Regras nas ações | inscrição já triada não cria paciente e caso de novo nem vira duplicada (RS-16) |  |
+| ✓ | Regras nas ações | paciente com pedido de cópia em aberto não abre outro (RS-14) |  |
+| ✓ | Regras nas ações | paciente não avisa falta de sessão de hoje cujo horário já passou (RS-08) |  |
+| ✓ | Regras nas ações | quem não vê o caso não grava "Gerou cópia do prontuário" na auditoria dele (RS-13) |  |
+| ✓ | Regras nas ações | autora sem vínculo com o caso não anula o documento (RS-04) | Sem permissão. |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-09T18:53:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T17:31:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mw9md7kkyejq |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgon86uu5hf |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

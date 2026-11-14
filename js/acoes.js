@@ -22,6 +22,20 @@ window.PEP = PEP;
   function evolucao(id) { return repo().porId('evolucoes', id); }
   function negar() { PEP.ui.toast('Sem permissão.'); }
 
+  // Cada ação confere por conta própria o que a tela já confere para mostrar o botão (esconder o botão
+  // não é defesa). Estes ajudantes servem para isso.
+  // Valor de lista fechada do JSON: aceita lista de textos ou de objetos com "id" ou "valor"
+  function naLista(nome, valor) {
+    return PEP.lista(nome).some(function (x) { return (typeof x === 'string' ? x : (x.id || x.valor)) === valor; });
+  }
+  // Data AAAA-MM-DD que existe de verdade (31/02 não passa) e hora HH:MM válida
+  function dataExiste(d) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+    var p = d.split('-').map(Number), x = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    return x.getUTCFullYear() === p[0] && x.getUTCMonth() === p[1] - 1 && x.getUTCDate() === p[2];
+  }
+  function horaExiste(h) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(h); }
+
   // Data e hora local (AAAA-MM-DDTHH:MM) daqui a "ms" milissegundos
   function dataHora(ms) {
     var d = new Date(Date.now() + (ms || 0)), dd = function (n) { return n < 10 ? '0' + n : '' + n; };
@@ -144,7 +158,7 @@ window.PEP = PEP;
       el('lg-entrar').focus();
     },
     sair: function () {
-      PEP.estado.sair();
+      if (usuario()) PEP.estado.sair();   // se a sessão já expirou, só volta para a entrada
       window.location.hash = '#/entrar';
       PEP.app.renderizar();
     },
@@ -154,8 +168,13 @@ window.PEP = PEP;
       PEP.ui.toast('Dados de demonstração restaurados.');
       PEP.app.renderizar();
     },
+    // Cópia do prontuário: só a técnica (com o motivo de acesso), o supervisor do caso ou a leitura pelo link
+    // temporário. Sem essa conferência, qualquer pessoa gravava "gerou cópia" na auditoria de qualquer caso.
     imprimir: function (b) {
-      PEP.estado.registrarAuditoria('Gerou cópia do prontuário (PDF)', b.getAttribute('data-caso') || '—');
+      var u = usuario(), c = caso(b.getAttribute('data-caso')), link = repo().porId('linksAcesso', PEP.telas._linkLiberado);
+      var equipe = !!u && !!c && (u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, c)) && R().podeVerConteudoClinico(u, c);
+      if (!c || !(equipe || (link && link.casoId === c.id))) return negar();
+      PEP.estado.registrarAuditoria('Gerou cópia do prontuário (PDF)', c.id);
       if (typeof window.print === 'function') window.print();
     },
 
@@ -164,6 +183,7 @@ window.PEP = PEP;
       var u = usuario();
       if (!marcado('tm-ok')) { PEP.form.aplicar(document, [['tm-ok', 'Marque a caixa para confirmar que leu o termo.']]); return; }
       var termo = b.getAttribute('data-termo');
+      if (!u || termo !== (u.perfil === 'paciente' ? 'uso' : 'sigilo') || !PEP.config().termos[termo]) return negar();
       repo().inserir('aceites', { usuarioId: u.id, termo: termo, versao: PEP.config().termos[termo], em: U().agora() });
       window.location.hash = '#/painel';
       concluir('Termo aceito. Bom trabalho!', 'Aceitou o termo de ' + (termo === 'sigilo' ? 'responsabilidade e sigilo' : 'uso e privacidade') + ' (v' + PEP.config().termos[termo] + ')', u.id);
@@ -171,8 +191,10 @@ window.PEP = PEP;
 
     // ----- Paciente -----
     'confirmar-sessao': function (b) {
-      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
-      if (u.perfil !== 'paciente' || c.pacienteId !== u.pacienteId) return negar();
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = s && caso(s.casoId);
+      if (!u || !c || u.perfil !== 'paciente' || c.pacienteId !== u.pacienteId) return negar();
+      // Só confirma sessão que ainda vai acontecer (não a que passou nem a que o paciente avisou que não vai)
+      if (s.presenca !== 'agendada' || (s.data + 'T' + s.hora) <= U().agora()) return PEP.ui.toast('Esta sessão não pode mais ser confirmada.');
       repo().atualizar('sessoes', s.id, { confirmada: true });
       concluir('Presença confirmada. Obrigado por avisar!', 'Confirmou presença na sessão', s.casoId);
     },
@@ -186,8 +208,13 @@ window.PEP = PEP;
     },
     'solicitar-copia': function () {
       var u = usuario();
+      if (!u || u.perfil !== 'paciente') return negar();
       var casos = PEP.db.casos.filter(function (c) { return c.pacienteId === u.pacienteId; });
       if (!casos.length) return PEP.ui.toast('Nenhum prontuário encontrado.');
+      // Um pedido por vez: enquanto a cópia não for entregue, não abre outro
+      if (PEP.db.solicitacoes.some(function (x) { return x.pacienteId === u.pacienteId && x.status !== 'entregue'; })) {
+        return PEP.ui.toast('Você já tem um pedido em andamento. A equipe vai entregar a cópia.');
+      }
       var c = casos[casos.length - 1];
       repo().inserir('solicitacoes', { pacienteId: u.pacienteId, casoId: c.id, em: U().agora(), status: 'recebida', forma: '', entregueEm: '', conferidoPor: null, entreguePor: null });
       concluir('Pedido enviado. A equipe vai conferir sua identidade e entregar a cópia.', 'Solicitou acesso ao prontuário', c.id);
@@ -204,6 +231,7 @@ window.PEP = PEP;
       var u = usuario(), p = R().pacienteDoUsuario(u);
       if (!p) return negar();
       var desc = val('pt-desc');
+      if (!naLista('tiposPedidoTitular', val('pt-tipo'))) return PEP.ui.toast('Escolha o tipo de pedido.');
       if (desc.length < 5) { PEP.form.aplicar(el('form-titular'), [['pt-desc', 'Descreva o pedido em poucas palavras.']]); return; }
       repo().inserir('pedidosTitular', { titularTipo: 'paciente', titularId: p.id, tipo: val('pt-tipo'), descricao: desc, em: U().agora(), status: 'aberto', resposta: '', respondidoPor: null, respondidoEm: null });
       concluir('Pedido enviado. A resposta vem em até ' + PEP.regra('prazoRespostaTitularDias') + ' dias.', 'Fez pedido de titular (LGPD): ' + val('pt-tipo'), p.id);
@@ -226,15 +254,21 @@ window.PEP = PEP;
       concluir('Versão ' + nova.versao + ' salva. As anteriores continuam guardadas.', 'Registrou versão ' + nova.versao + ' da anamnese', c.id);
     },
     'assinar-anamnese': function (b) {
-      var u = usuario(), a = repo().porId('anamneses', b.getAttribute('data-id')), c = caso(a.casoId);
-      if (!R().podeAssinarAnamnese(u, c)) return negar();
+      var u = usuario(), a = repo().porId('anamneses', b.getAttribute('data-id')), c = a && caso(a.casoId);
+      if (!c || !R().podeAssinarAnamnese(u, c)) return negar();
+      // Uma assinatura da supervisão por versão (clicar de novo não grava outra)
+      if (R().assinaturasDe('anamnese', a.id).some(function (x) { return x.papel === 'supervisor'; })) return PEP.ui.toast('Esta versão já está assinada pela supervisão.');
       assinar('anamnese', a.id, u, 'supervisor', null);
       concluir('Versão assinada pela supervisão.', 'Assinou anamnese (versão ' + a.versao + ')', c.id);
     },
     'registrar-consentimento': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (u.perfil !== 'tecnico') return negar();
+      if (!u || !c || u.perfil !== 'tecnico' || c.status === 'encerrado') return negar();
       var conceder = b.getAttribute('data-valor') === 'sim', fin = b.getAttribute('data-fin');
+      var f = PEP.lista('finalidadesConsentimento').filter(function (x) { return x.id === fin; })[0];
+      if (!f) return negar();
+      // O contrato terapêutico é a base do atendimento: não se revoga; quem não quer continuar encerra o caso
+      if (f.obrigatoria && !conceder) return PEP.ui.toast('O contrato terapêutico não é revogado: para parar o atendimento, registre o encerramento do caso.');
       repo().inserir('consentimentos', { casoId: c.id, finalidade: fin, concedido: conceder, termoVersao: PEP.config().termos.consentimento, registradoPor: u.id, em: U().agora() });
       concluir(conceder ? 'Concessão registrada.' : 'Revogação registrada.', 'Registrou consentimento ' + fin + ': ' + (conceder ? 'sim' : 'não'), c.id);
     },
@@ -280,7 +314,14 @@ window.PEP = PEP;
       if (resumo && enviar && !erros.length) erros = erroSecoesResumo(campo, texto);
       if (!PEP.form.aplicar(document, erros)) return;
       if (resumo && R().resumosDaPassagem(c).length) return PEP.ui.toast('O resumo de transferência desta passagem já foi escrito.');
-      var e = repo().inserir('evolucoes', { casoId: c.id, sessaoId: resumo ? null : (val('nova-sessao') || null), autorId: u.id, data: U().hoje(),
+      // A sessão escolhida precisa ser deste caso, com presença registrada e ainda sem evolução
+      var sessaoId = resumo ? null : (val('nova-sessao') || null), sessao = sessaoId && repo().porId('sessoes', sessaoId);
+      if (sessaoId && (!sessao || sessao.casoId !== c.id || sessao.presenca !== 'presente' ||
+          PEP.db.evolucoes.some(function (x) { return x.sessaoId === sessaoId; }))) {
+        PEP.form.aplicar(document, [['nova-sessao', 'Escolha uma sessão deste caso, com presença registrada e ainda sem evolução.']]);
+        return;
+      }
+      var e = repo().inserir('evolucoes', { casoId: c.id, sessaoId: sessaoId, autorId: u.id, data: U().hoje(),
         status: enviar ? 'enviada' : 'rascunho', texto: texto, comentarioSupervisor: '', tipo: resumo ? 'transferencia' : 'sessao' });
       if (enviar) assinar('evolucao', e.id, u, 'estagiario', texto);
       var nome = resumo ? 'resumo de transferência' : 'evolução';
@@ -321,9 +362,12 @@ window.PEP = PEP;
     'adicionar-adendo': function (b) {
       var u = usuario(), e = evolucao(b.getAttribute('data-id')), c = caso(e.casoId);
       if (!R().podeAdendo(u, c) || e.status !== 'validada') return negar();
-      var texto = val('adtxt-' + e.id);
-      if (texto.length < 5) { PEP.form.aplicar(document, [['adtxt-' + e.id, 'Escreva o texto do adendo.']]); return; }
-      repo().inserir('adendos', { evolucaoId: e.id, autorId: u.id, em: U().agora(), motivo: val('admot-' + e.id), texto: texto });
+      var texto = val('adtxt-' + e.id), motivo = val('admot-' + e.id), erros = [];
+      // Adendo tem autor, data e motivo (da lista): é a única forma de corrigir uma evolução validada
+      if (!naLista('motivosAdendo', motivo)) erros.push(['admot-' + e.id, 'Escolha o motivo do adendo.']);
+      if (texto.length < 5) erros.push(['adtxt-' + e.id, 'Escreva o texto do adendo.']);
+      if (!PEP.form.aplicar(document, erros)) return;
+      repo().inserir('adendos', { evolucaoId: e.id, autorId: u.id, em: U().agora(), motivo: motivo, texto: texto });
       concluir('Adendo registrado. O texto original continua intacto.', 'Registrou adendo em evolução validada', c.id);
     },
 
@@ -348,9 +392,9 @@ window.PEP = PEP;
       var d = val('ag-data'), h = val('ag-hora'), sala = val('ag-sala');
       var erros = [];
       if (PEP.lista('salas').indexOf(sala) === -1) erros.push(['ag-sala', 'Escolha a sala.']);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) erros.push(['ag-data', 'Informe a data.']);
+      if (!dataExiste(d)) erros.push(['ag-data', 'Informe uma data válida.']);
       else if (d < U().hoje()) erros.push(['ag-data', 'Escolha uma data a partir de hoje.']);
-      if (!/^\d{2}:\d{2}$/.test(h)) erros.push(['ag-hora', 'Informe a hora.']);
+      if (!horaExiste(h)) erros.push(['ag-hora', 'Informe uma hora válida.']);
       else if (h < '07:00' || h > '21:00') erros.push(['ag-hora', 'A clínica atende das 7h às 21h.']);
       // A mesma dupla (ou o mesmo paciente) não pode ter sessões que se sobreponham: cada uma ocupa a duração da regra
       var duracao = PEP.regra('duracaoSessaoMinutos') || 50;
@@ -372,11 +416,14 @@ window.PEP = PEP;
       concluir('Sessão agendada para ' + U().formatarData(d) + ' às ' + h + ' na ' + sala + '.', 'Agendou sessão', c.id);
     },
     lembrete: function (b) {
-      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = caso(s.casoId);
-      if (!R().podeRegistrarPresenca(u, c) || !R().consentiu(c, 'lembretes')) return negar();
+      var u = usuario(), s = repo().porId('sessoes', b.getAttribute('data-id')), c = s && caso(s.casoId);
+      if (!c || !R().podeRegistrarPresenca(u, c)) return negar();
       var p = PEP.ui.pacienteDoCaso(c), canal = b.getAttribute('data-canal');
+      // Só com autorização, pelo canal que o paciente escolheu no cadastro, e de sessão que ainda vai acontecer
+      if (!R().canaisDeLembrete(c).some(function (x) { return x === canal; })) return PEP.ui.toast('O paciente não autorizou lembretes por este canal.');
+      if (s.presenca !== 'agendada' || s.data < U().hoje()) return PEP.ui.toast('Lembrete só de sessão agendada, de hoje em diante.');
       // Sem nome do serviço, do profissional nem conteúdo clínico
-      var msg = 'Olá! Lembrete: você tem um horário agendado na Clínica-Escola em ' + U().formatarData(s.data) + ' às ' + s.hora +
+      var msg = 'Olá! Lembrete: você tem um horário agendado em ' + U().formatarData(s.data) + ' às ' + s.hora +
         '. Se não puder vir, avise com antecedência respondendo esta mensagem.';
       var url;
       if (canal === 'whatsapp') {
@@ -392,15 +439,21 @@ window.PEP = PEP;
     },
     'registrar-contato': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (!R().podeRegistrarPresenca(u, c)) return negar();
-      var resultado = val('ct-resultado');
-      repo().inserir('contatos', { casoId: c.id, em: U().hoje(), canal: val('ct-canal'), resultado: resultado, motivo: val('ct-motivo'), registradoPor: u.id });
+      // Tentativa de contato faz parte do fluxo de abandono: só existe com as faltas seguidas da regra
+      if (!c || !R().podeRegistrarPresenca(u, c) || !R().emRiscoDeAbandono(c)) return negar();
+      var resultado = val('ct-resultado'), canal = val('ct-canal'), motivo = val('ct-motivo');
+      if (!naLista('canaisContato', canal) || !naLista('resultadosContato', resultado) || (motivo && !naLista('motivosAbandono', motivo))) {
+        return PEP.ui.toast('Escolha o canal, o resultado e o motivo nas listas.');
+      }
+      repo().inserir('contatos', { casoId: c.id, em: U().hoje(), canal: canal, resultado: resultado, motivo: motivo, registradoPor: u.id });
       concluir(resultado === 'Retornará' ? 'Contato registrado. Agende a próxima sessão.' : 'Tentativa de contato registrada.', 'Registrou tentativa de contato', c.id);
     },
     'encerrar-abandono': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (!R().podeEncerrar(u, c)) return negar();
-      var contatos = PEP.db.contatos.filter(function (ct) { return ct.casoId === c.id; });
+      // Abandono só pelo fluxo de faltas (faltas seguidas da regra) e com tentativa de contato feita NESTE fluxo:
+      // contato antigo, de uma sequência de faltas anterior em que o paciente voltou, não vale
+      if (!c || !R().podeEncerrar(u, c) || !R().emRiscoDeAbandono(c)) return negar();
+      var contatos = R().contatosDoFluxoDeAbandono(c);
       if (!contatos.length) return PEP.ui.toast('Registre ao menos uma tentativa de contato antes de liberar a vaga.');
       var pend = R().pendenciasParaEncerrar(c);
       if (pend.bloqueiam.length) return PEP.ui.toast('Antes de encerrar: ' + pend.bloqueiam.join('; ') + '.');
@@ -449,7 +502,9 @@ window.PEP = PEP;
     },
     // Entrega (protocolo), devolutiva feita, devolutiva não feita (com motivo) e anulação (com motivo)
     'registrar-evento-documento': function (b) {
-      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), tipo = b.getAttribute('data-tipo'), c = caso(d.casoId);
+      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), tipo = b.getAttribute('data-tipo'), c = d && caso(d.casoId);
+      if (!u || !c || ['entrega', 'devolutiva', 'sem-devolutiva', 'anulacao'].indexOf(tipo) === -1) return negar();
+      if (tipo === 'entrega' && R().eventoDoDocumento(d, 'entrega')) return PEP.ui.toast('A entrega deste documento já foi registrada.');
       var pode = tipo === 'anulacao' ? R().podeAnularDocumento(u, d) : R().podeRegistrarEntrega(u, d) && (tipo === 'entrega' || R().devolutivaPendente(d));
       if (!pode) return negar();
       var ev = { documentoId: d.id, casoId: c.id, tipo: tipo, em: U().agora(), para: '', observacao: '', registradoPor: u.id }, erros = [];
@@ -463,14 +518,14 @@ window.PEP = PEP;
       concluir(textos[tipo][0], textos[tipo][1], c.id);
     },
     'imprimir-documento': function (b) {
-      var d = repo().porId('documentos', b.getAttribute('data-id'));
-      if (!d || !R().documentoValido(d)) return negar();
+      var u = usuario(), d = repo().porId('documentos', b.getAttribute('data-id')), c = d && caso(d.casoId);
+      if (!u || !c || !R().documentoValido(d) || !R().podeVerConteudoClinico(u, c)) return negar();
       PEP.estado.registrarAuditoria('Gerou cópia de documento psicológico (impressão ou PDF)', d.casoId);
       if (typeof window.print === 'function') window.print();
     },
     anexar: function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (!R().podeVerCaso(u, c) || c.status !== 'ativo') return negar();
+      if (!c || !R().podeVerConteudoClinico(u, c) || c.status !== 'ativo') return negar();
       var input = el('ax-arquivo');
       var file = input && input.files && input.files[0];
       if (!file) { PEP.form.aplicar(document, [['ax-arquivo', 'Escolha um arquivo.']]); return; }
@@ -484,8 +539,8 @@ window.PEP = PEP;
       }).catch(function () { b.disabled = false; PEP.ui.toast('Não foi possível guardar o arquivo neste navegador.'); });
     },
     'abrir-anexo': function (b) {
-      var u = usuario(), a = repo().porId('anexos', b.getAttribute('data-id')), c = caso(a.casoId);
-      if (!R().podeVerCaso(u, c)) return negar();
+      var u = usuario(), a = repo().porId('anexos', b.getAttribute('data-id')), c = a && caso(a.casoId);
+      if (!c || !R().podeVerConteudoClinico(u, c)) return negar();
       PEP.arquivos.obter(a.arquivoId).then(function (blob) {
         if (!blob) return PEP.ui.toast('Arquivo não encontrado neste navegador.');
         PEP.estado.registrarAuditoria('Abriu anexo', c.id);
@@ -494,7 +549,7 @@ window.PEP = PEP;
     },
     'registrar-avaliacao': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (!(R().ehEstagiarioDoCaso(u, c) || R().ehSupervisorDoCaso(u, c))) return negar();
+      if (!c || c.status !== 'ativo' || !(R().ehEstagiarioDoCaso(u, c) || R().ehSupervisorDoCaso(u, c))) return negar();
       var inst = val('av-inst');
       if (inst.length < 3) { PEP.form.aplicar(document, [['av-inst', 'Informe o instrumento.']]); return; }
       repo().inserir('avaliacoes', { casoId: c.id, instrumento: inst, aplicadoPor: u.id, em: U().hoje(), observacao: val('av-obs') || '—' });
@@ -502,7 +557,7 @@ window.PEP = PEP;
     },
     'registrar-orientacao': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
-      if (!R().podeEscreverOrientacao(u, c)) return negar();
+      if (!c || c.status !== 'ativo' || !R().podeEscreverOrientacao(u, c)) return negar();
       var texto = val('or-texto');
       if (texto.length < 5) { PEP.form.aplicar(document, [['or-texto', 'Escreva a orientação.']]); return; }
       repo().inserir('orientacoes', { casoId: c.id, supervisorId: u.id, em: U().agora(), texto: texto });
@@ -547,7 +602,8 @@ window.PEP = PEP;
       var desc = val('rk-desc'), max = PEP.regra('riscoDescricaoMaxCaracteres'), erros = [];
       if (desc.length < 10) erros.push(['rk-desc', 'Descreva o que motivou a avaliação (pelo menos 10 caracteres).']);
       if (desc.length > max) erros.push(['rk-desc', 'Use no máximo ' + max + ' caracteres.']);
-      if (!nivel) erros.push(['rk-nivel-moderado', 'Escolha o nível do risco.']);
+      if (!nivel || !naLista('niveisRisco', nivel.value)) erros.push(['rk-nivel-moderado', 'Escolha o nível do risco.']);
+      if (!naLista('tiposRisco', val('rk-tipo'))) erros.push(['rk-tipo', 'Escolha o tipo de risco.']);
       if (!PEP.form.aplicar(el('form-risco'), erros)) return;
       var condutas = PEP.lista('condutasRisco').filter(function (x) { return marcado('rk-c-' + x.id); }).map(function (x) { return x.id; });
       repo().inserir('riscos', { casoId: c.id, registradoPor: u.id, em: U().agora(), tipo: val('rk-tipo'), nivel: nivel.value, descricao: desc, condutas: condutas,
@@ -602,6 +658,7 @@ window.PEP = PEP;
       concluir('Plano assinado pela supervisão.', 'Assinou plano de segurança (versão ' + p.versao + ')', c.id);
     },
     'imprimir-plano': function () {
+      if (!usuario() || usuario().perfil !== 'paciente') return negar();
       PEP.estado.registrarAuditoria('Imprimiu o próprio plano de segurança', (usuario() && usuario().pacienteId) || '—');
       if (typeof window.print === 'function') window.print();
     },
@@ -611,7 +668,11 @@ window.PEP = PEP;
       var u = usuario();
       if (!R().podeGerirFila(u)) return negar();
       var i = repo().porId('inscricoes', b.getAttribute('data-id'));
+      // Só a inscrição que ainda aguarda é triada (a segunda chamada criava paciente e caso em dobro)
+      if (!i || i.status !== 'aguardando') return PEP.ui.toast('Esta inscrição já foi triada ou saiu da fila.');
       var risco = val('tr-risco') === 'risco';
+      if (risco && (!naLista('tiposRisco', val('tr-rk-tipo')) || !naLista('niveisRisco', val('tr-rk-nivel')))) return PEP.ui.toast('Escolha o tipo e o nível do risco.');
+      if (val('tr-grupo') && !repo().porId('grupos', val('tr-grupo'))) return PEP.ui.toast('Escolha um grupo da lista.');
       if (risco && val('tr-rk-desc').length < 10) { PEP.form.aplicar(el('form-triagem'), [['tr-rk-desc', 'Descreva o que foi observado ou dito (pelo menos 10 caracteres).']]); return; }
       if (val('tr-destino') === 'externo') {
         // Encaminhamento externo: registra para onde a pessoa foi e se havia risco (sem abrir caso)
@@ -652,6 +713,7 @@ window.PEP = PEP;
     'marcar-duplicada': function (b) {
       if (!R().podeGerirFila(usuario())) return negar();
       var i = repo().porId('inscricoes', b.getAttribute('data-id'));
+      if (!i || i.status !== 'aguardando') return PEP.ui.toast('Esta inscrição já foi triada ou saiu da fila.');
       repo().atualizar('inscricoes', i.id, { status: 'duplicada' });
       window.location.hash = '#/fila';
       concluir('Inscrição marcada como duplicada e retirada da fila.', 'Marcou inscrição duplicada', i.id);
@@ -671,15 +733,21 @@ window.PEP = PEP;
     'alocar-caso': function (b) {
       if (!R().podeGerirFila(usuario())) return negar();
       var c = caso(b.getAttribute('data-id'));
+      // Só aloca caso que aguarda alocação: caso em andamento muda pela passagem, e caso encerrado não reabre
+      if (!c || c.status !== 'aguardando-alocacao') return negar();
       if (!R().consentiu(c, 'contrato')) return PEP.ui.toast('Registre o contrato terapêutico nos consentimentos do caso antes de alocar.');
-      repo().atualizar('casos', c.id, { grupoId: val('ag-' + c.id), subgrupoId: null, status: 'ativo' });
+      var grupo = repo().porId('grupos', val('ag-' + c.id));
+      if (!grupo) return PEP.ui.toast('Escolha o grupo.');
+      repo().atualizar('casos', c.id, { grupoId: grupo.id, subgrupoId: null, status: 'ativo' });
       concluir('Caso alocado ao grupo. O supervisor define a dupla ou trio.', 'Alocou caso a grupo', c.id);
     },
     'alocar-estagiario': function (b) {
       if (!R().podeGerirEstudantes(usuario())) return negar();
-      var id = b.getAttribute('data-id');
+      var id = b.getAttribute('data-id'), est = repo().porId('usuarios', id);
+      if (!est || est.perfil !== 'estagiario' || !est.ativo) return negar();
       if (R().alocacaoDoEstagiario(id)) return PEP.ui.toast('Este estagiário já está alocado.');
       var g = repo().porId('grupos', val('gr-' + id));
+      if (!g) return PEP.ui.toast('Escolha o grupo.');
       repo().inserir('alocacoes', { estagiarioId: id, grupoId: g.id, subgrupoId: null, inicio: U().hoje(), fim: null });
       concluir('Estagiário alocado ao ' + g.nome + '.', 'Alocou estagiário a grupo', g.id);
     },
@@ -688,8 +756,9 @@ window.PEP = PEP;
       var id = b.getAttribute('data-id'), a = R().alocacaoDoEstagiario(id);
       if (!a) return;
       // Transição de semestre: avisa quais casos ficam sem ninguém da dupla (a supervisão faz a passagem)
-      var orfaos = R().casosQueFicamSemDupla(id).map(function (c) { return PEP.ui.nomePacienteDoCaso(c); });
-      var aviso = orfaos.length ? '\n\nFica sem dupla ativa: ' + orfaos.join(', ') + '. Combine com a supervisão a passagem (resumo de transferência e nova dupla).' : '';
+      // A direção não vê nome de paciente: o aviso diz só quantos casos ficam sem dupla
+      var orfaos = R().casosQueFicamSemDupla(id);
+      var aviso = orfaos.length ? '\n\n' + orfaos.length + ' caso(s) ficam sem dupla ativa. Combine com a supervisão a passagem (resumo de transferência e nova dupla).' : '';
       if (typeof window.confirm === 'function' && !window.confirm('Encerrar o vínculo de estágio de ' + PEP.ui.nomeUsuario(id) + '? O acesso aos casos termina agora.' + aviso)) return;
       repo().atualizar('alocacoes', a.id, { fim: U().hoje() });
       concluir('Vínculo encerrado. O acesso aos casos terminou; o histórico continua.' + (orfaos.length ? ' ' + orfaos.length + ' caso(s) aguardam a passagem para outra dupla.' : ''),
@@ -713,9 +782,12 @@ window.PEP = PEP;
     },
     'atribuir-caso': function (b) {
       var c = caso(b.getAttribute('data-id'));
-      if (!R().ehSupervisorDoCaso(usuario(), c)) return negar();
+      if (!c || !R().ehSupervisorDoCaso(usuario(), c)) return negar();
+      // Só atribui caso ativo que ainda não tem dupla: quem já tem dupla muda pela "Passagem do caso"
+      if (c.status !== 'ativo' || c.subgrupoId) return PEP.ui.toast('Este caso já tem dupla: use a "Passagem do caso", no Resumo.');
       var sub = repo().porId('subgrupos', val('cs-' + c.id));
       if (!sub || sub.grupoId !== c.grupoId) return negar();
+      if (!R().subgrupoTemEstagiarioAtivo(sub.id)) return PEP.ui.toast('Esta dupla ainda não tem estagiário: inclua alguém nela primeiro.');
       repo().atualizar('casos', c.id, { subgrupoId: sub.id });
       concluir('Caso atribuído à dupla.', 'Atribuiu caso a dupla/trio', c.id);
     },
@@ -733,7 +805,8 @@ window.PEP = PEP;
     'importar-estudantes': function (b) {
       var u = usuario();
       if (!R().podeGerirEstudantes(u) || !PEP.telas._importacao) return negar();
-      var validas = PEP.telas._importacao.linhas.filter(function (l) { return !l.erro; });
+      var validas = (PEP.telas._importacao.linhas || []).filter(function (l) { return !l.erro; });
+      PEP.telas._importacao.linhas = [];   // uma importação por conferência (um segundo clique não cria as contas de novo)
       b.disabled = true;
       b.textContent = 'Criando contas…';
       var resultado = [];
@@ -850,6 +923,7 @@ window.PEP = PEP;
       var u = usuario();
       if (u.perfil !== 'tecnico') return negar();
       var s = repo().porId('solicitacoes', b.getAttribute('data-id'));
+      if (!s || s.status !== 'recebida') return negar();
       repo().atualizar('solicitacoes', s.id, { status: 'identidade-conferida', conferidoPor: u.id });
       concluir('Identidade conferida.', 'Conferiu identidade para entrega de cópia', s.casoId);
     },
@@ -873,6 +947,7 @@ window.PEP = PEP;
     'revogar-link': function (b) {
       if (usuario().perfil !== 'tecnico') return negar();
       var l = repo().porId('linksAcesso', b.getAttribute('data-id'));
+      if (!l || l.revogadoEm) return negar();
       repo().atualizar('linksAcesso', l.id, { revogadoEm: U().agora() });
       concluir('Link revogado.', 'Revogou link de leitura', l.casoId);
     },
@@ -880,6 +955,9 @@ window.PEP = PEP;
       var u = usuario();
       if (u.perfil !== 'tecnico') return negar();
       var s = repo().porId('solicitacoes', b.getAttribute('data-id'));
+      // Entrega só depois de conferir a identidade, e com a forma de entrega da lista
+      if (!s || s.status !== 'identidade-conferida') return negar();
+      if (!naLista('formasEntrega', val('forma-' + s.id))) return PEP.ui.toast('Escolha a forma de entrega.');
       repo().atualizar('solicitacoes', s.id, { status: 'entregue', forma: val('forma-' + s.id), entregueEm: U().hoje(), entreguePor: u.id });
       PEP.telas._ultimoLink = null;
       concluir('Cópia entregue ao paciente.', 'Entregou cópia do prontuário', s.casoId);
@@ -888,6 +966,8 @@ window.PEP = PEP;
       var u = usuario();
       if (!R().podeAtenderTitular(u)) return negar();
       var p = repo().porId('pedidosTitular', b.getAttribute('data-id'));
+      // A resposta dada ao titular não é sobrescrita (nada é apagado): complemento vira pedido novo
+      if (!p || p.status !== 'aberto') return negar();
       var resp = val('resp-' + p.id);
       if (resp.length < 5) { PEP.form.aplicar(document, [['resp-' + p.id, 'Escreva a resposta ao titular.']]); return; }
       repo().atualizar('pedidosTitular', p.id, { status: 'respondido', resposta: resp, respondidoPor: u.id, respondidoEm: U().agora() });
@@ -917,11 +997,20 @@ window.PEP = PEP;
     if (nova && botaoNova && nova.value.trim().length >= 10) {
       pendentes.push({ casoId: botaoNova.getAttribute('data-caso'), texto: nova.value.trim(), sessaoId: val('nova-sessao') || null });
     }
+    // Resumo de transferência novo: também é guardado (se a pessoa mexeu no modelo e ainda não há resumo desta passagem)
+    var transf = el('nova-transf'), botaoTransf = document.querySelector('[data-acao="nova-evolucao"][data-tipo="transferencia"]');
+    if (transf && botaoTransf) {
+      var cTransf = caso(botaoTransf.getAttribute('data-caso'));
+      if (cTransf && transf.value.trim().length >= 10 && transf.value.trim() !== R().modeloResumoTransferencia(cTransf).trim() && !R().resumosDaPassagem(cTransf).length) {
+        pendentes.push({ casoId: cTransf.id, texto: transf.value.trim(), sessaoId: null, tipo: 'transferencia', campo: 'nova-transf' });
+      }
+    }
+    if (pendentes.length && pendentes[0].casoId && !pendentes[0].tipo) pendentes[0].campo = 'nova-texto';
     document.querySelectorAll('textarea[id^="ev-"]').forEach(function (t) {
       var e = evolucao(t.id.slice(3));
-      if (e && t.value.trim().length >= 10 && t.value.trim() !== e.texto) pendentes.push({ evolucao: e, texto: t.value.trim() });
+      if (e && t.value.trim().length >= 10 && t.value.trim() !== e.texto) pendentes.push({ evolucao: e, texto: t.value.trim(), campo: t.id });
     });
-    var casos = {};
+    var casos = {}, guardados = {};
     pendentes.forEach(function (p) {
       var c = caso(p.evolucao ? p.evolucao.casoId : p.casoId);
       if (!c || !R().podeEscreverEvolucao(u, c) || erroTextoEvolucao('x', p.texto).length) return;
@@ -929,12 +1018,27 @@ window.PEP = PEP;
         if (p.evolucao.autorId !== u.id || (p.evolucao.status !== 'rascunho' && p.evolucao.status !== 'devolvida')) return;
         repo().atualizar('evolucoes', p.evolucao.id, { texto: p.texto });
       } else {
-        repo().inserir('evolucoes', { casoId: c.id, sessaoId: p.sessaoId, autorId: u.id, data: U().hoje(), status: 'rascunho', texto: p.texto, comentarioSupervisor: '' });
+        repo().inserir('evolucoes', { casoId: c.id, sessaoId: p.sessaoId, autorId: u.id, data: U().hoje(), status: 'rascunho', texto: p.texto, comentarioSupervisor: '',
+          tipo: p.tipo || 'sessao' });
       }
+      guardados[p.campo] = true;
       casos[c.id] = true;
     });
     Object.keys(casos).forEach(function (id) { PEP.estado.registrarAuditoria('Rascunho guardado automaticamente (sessão encerrando por inatividade)', id); });
-    if (Object.keys(casos).length) { repo().salvar(); PEP.app.renderizar(); }
+    if (Object.keys(casos).length) {
+      // Gravar redesenha a tela: o que está digitado nos OUTROS campos (que não viraram rascunho) é reposto
+      var digitado = {};
+      document.querySelectorAll('#app textarea[id], #app input[type="text"][id]').forEach(function (t) { if (!guardados[t.id] && t.value) digitado[t.id] = t.value; });
+      repo().salvar();
+      PEP.app.renderizar();
+      Object.keys(digitado).forEach(function (id) {
+        var campo = el(id);
+        if (!campo) return;
+        var dobra = campo.closest('details');
+        if (dobra) dobra.open = true;
+        campo.value = digitado[id];
+      });
+    }
     return Object.keys(casos).length;
   };
 
@@ -1032,7 +1136,11 @@ window.PEP = PEP;
       var v = function (id) { return el('dp-' + id) ? el('dp-' + id).value.trim() : ''; };
       var d = { casoId: c.id, tipo: m.id, titulo: v('titulo'), finalidade: v('finalidade'), destinatario: v('destinatario'), solicitante: v('solicitante'),
         conteudo: {}, validade: m.validade ? v('validade') : '', local: v('local'), emitidoEm: U().hoje(), autorId: u.id };
-      var erros = [];
+      var erros = [], maxSecao = PEP.regra('documentoSecaoMaxCaracteres');
+      // Laudo só de caso com avaliação psicológica registrada (a tela avisa; a ação confere)
+      if (m.exigeAvaliacao && !PEP.db.avaliacoes.some(function (a) { return a.casoId === c.id; })) {
+        return PEP.ui.toast('Este caso não tem avaliação psicológica registrada: o laudo decorre de avaliação.');
+      }
       if (d.titulo.length < 3) erros.push(['dp-titulo', 'Informe o título.']);
       if (d.solicitante.length < 3) erros.push(['dp-solicitante', 'Informe quem solicitou o documento.']);
       if (d.finalidade.length < 3) erros.push(['dp-finalidade', 'Informe a finalidade (Res. CFP 05/2025, art. 12).']);
@@ -1042,6 +1150,7 @@ window.PEP = PEP;
         var t = v('s-' + sec.id);
         if (t) d.conteudo[sec.id] = t;
         if (sec.obrigatoria && t.length < 10) erros.push(['dp-s-' + sec.id, 'Escreva esta seção (pelo menos 10 caracteres).']);
+        else if (t.length > maxSecao) erros.push(['dp-s-' + sec.id, 'Use no máximo ' + maxSecao + ' caracteres nesta seção.']);
       });
       if (m.id === 'declaracao' && d.conteudo.informacao) {
         var termos = R().termosClinicosNoTexto(d.conteudo.informacao).map(function (t) { return t.trim(); });
@@ -1051,12 +1160,12 @@ window.PEP = PEP;
       var doc = repo().inserir('documentos', d), sup = R().ehSupervisorDoCaso(u, c);
       assinar('documento', doc.id, u, sup ? 'supervisor' : 'estagiario', R().conteudoAssinadoDocumento(doc));
       PEP.telas._modalidadeDoc = null;
-      concluir(m.nome + ' emitido' + (sup ? ' e assinado.' : '. Falta a assinatura do supervisor.'), 'Emitiu documento psicológico (' + m.nome + ')', c.id);
+      concluir('Documento emitido (' + m.nome + ')' + (sup ? ' e assinado.' : '. Falta a assinatura do supervisor.'), 'Emitiu documento psicológico (' + m.nome + ')', c.id);
     },
     // Comunicação a terceiros: o que foi informado, a quem, para quê e com qual fundamento
     'registrar-comunicacao': function (form) {
       var u = usuario(), c = caso(form.getAttribute('data-caso')), f = form.elements, t = R().tipoComunicacao(f.tipo.value);
-      if (!t || !R().podeRegistrarComunicacao(u, c, t.id)) return negar();
+      if (!t || !c || c.status !== 'ativo' || !R().podeRegistrarComunicacao(u, c, t.id)) return negar();
       var x = { casoId: c.id, tipo: t.id, data: f.data.value, destinatario: f.destinatario.value.trim(), finalidade: f.finalidade.value.trim(),
         fundamento: f.fundamento.value.trim(), conteudo: f.conteudo.value.trim(), visivelPaciente: f.visivel.checked,
         motivoOculto: f.visivel.checked ? '' : f.motivo.value.trim(), registradoPor: u.id, em: U().agora() };
@@ -1066,6 +1175,7 @@ window.PEP = PEP;
       if (x.finalidade.length < 3) erros.push(['cm-fin', 'Informe a finalidade.']);
       if (t.exigeFundamento && x.fundamento.length < 5) erros.push(['cm-fund', 'Este tipo exige o fundamento (' + t.fundamentoDica + ').']);
       if (x.conteudo.length < 10) erros.push(['cm-conteudo', 'Descreva o que foi informado (só o necessário).']);
+      else if (x.conteudo.length > PEP.regra('comunicacaoMaxCaracteres')) erros.push(['cm-conteudo', 'Use no máximo ' + PEP.regra('comunicacaoMaxCaracteres') + ' caracteres: só o necessário.']);
       if (!x.visivelPaciente && x.motivoOculto.length < 10) erros.push(['cm-motivo', 'Explique por que o paciente não vai ver este registro.']);
       if (!PEP.form.aplicar(form, erros)) return;
       repo().inserir('comunicacoes', x);
@@ -1176,6 +1286,29 @@ window.PEP = PEP;
   };
 
   // Um único "ouvinte" para todos os botões (delegação de eventos)
+  // ---------- Guarda comum a todas as ações ----------
+  // 1) Sem login, só funcionam as ações públicas (entrada, fila, acessibilidade, leitura pelo link).
+  // 2) No primeiro acesso (verificação em duas etapas obrigatória, senha provisória ou termo ainda não
+  //    aceito), só funcionam as ações dessa etapa: antes a regra valia só para a navegação.
+  var PUBLICAS = { 'menu-conta': 1, 'fonte-menor': 1, 'fonte-maior': 1, 'alto-contraste': 1, vlibras: 1, 'mostrar-senha': 1, 'preencher-login': 1,
+    restaurar: 1, imprimir: 1, sair: 1, 'cancelar-mfa': 1, 'descobrir-tela': 1, login: 1, inscricao: 1, 'recuperar-senha': 1, mfa: 1, 'abrir-link': 1 };
+  var DO_PRIMEIRO_ACESSO = { sair: 1, 'aceitar-termo': 1, 'trocar-senha': 1, 'mfa-iniciar': 1, 'mfa-cancelar': 1, 'mfa-ativar': 1, 'mfa-fechar-codigos': 1,
+    'modo-discreto': 1, 'cobrir-tela': 1, 'continuar-sessao': 1 };
+  function comGuarda(mapa) {
+    Object.keys(mapa).forEach(function (nome) {
+      var original = mapa[nome];
+      if (nome.charAt(0) === '_' || PUBLICAS[nome] || typeof original !== 'function') return;
+      mapa[nome] = function () {
+        var u = usuario();
+        if (!u) return negar();
+        if (!DO_PRIMEIRO_ACESSO[nome] && PEP.estado.pendenciaDeAcesso(u)) return negar();
+        return original.apply(this, arguments);
+      };
+    });
+  }
+  comGuarda(PEP.acoes);
+  comGuarda(PEP.formularios);
+
   document.addEventListener('click', function (ev) {
     var alvo = ev.target.closest ? ev.target.closest('[data-acao]') : null;
     if (!alvo) return;

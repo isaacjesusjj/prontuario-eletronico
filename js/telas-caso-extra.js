@@ -21,7 +21,8 @@ PEP.telas = PEP.telas || {};
     var sessoes = PEP.db.sessoes.filter(function (s) { return s.casoId === caso.id; })
       .sort(function (a, b) { return (b.data + b.hora).localeCompare(a.data + a.hora); });
     var pode = R().podeRegistrarPresenca(u, caso);
-    var lembretesOk = R().consentiu(caso, 'lembretes');
+    var canaisLembrete = R().canaisDeLembrete(caso);   // vazio = sem autorização ou "não quero lembretes"
+    var nomeCanal = { whatsapp: 'WhatsApp', email: 'e-mail' };
     var hoje = PEP.util.hoje();
     var html = '';
 
@@ -56,9 +57,10 @@ PEP.telas = PEP.telas || {};
           acoes = ['presente', 'falta', 'falta-justificada'].map(function (v) {
             return '<button class="botao secundario pequeno" data-acao="registrar-presenca" data-id="' + s.id + '" data-valor="' + v + '">' + nomePresenca(v) + '</button>';
           }).join(' ');
-          if (s.data >= hoje && lembretesOk) {
-            acoes += ' <button class="botao secundario pequeno" data-acao="lembrete" data-canal="whatsapp" data-id="' + s.id + '">Lembrete WhatsApp</button>' +
-              ' <button class="botao secundario pequeno" data-acao="lembrete" data-canal="email" data-id="' + s.id + '">Lembrete e-mail</button>';
+          if (s.data >= hoje) {
+            acoes += canaisLembrete.map(function (canal) {
+              return ' <button class="botao secundario pequeno" data-acao="lembrete" data-canal="' + canal + '" data-id="' + s.id + '">Lembrete ' + nomeCanal[canal] + '</button>';
+            }).join('');
           }
         }
         var enviados = PEP.db.lembretes.filter(function (l) { return l.sessaoId === s.id; }).length;
@@ -69,7 +71,7 @@ PEP.telas = PEP.telas || {};
           (enviados ? ' <span class="suave pequeno">· ' + enviados + ' lembrete(s)</span>' : '') + '</td><td><div class="linha">' + acoes + '</div></td></tr>';
       }).join('') + '</tbody></table></div>';
 
-    if (!lembretesOk && caso.status === 'ativo') html += '<p class="suave pequeno">Lembretes desligados: o paciente não autorizou lembretes ou escolheu não recebê-los.</p>';
+    if (!canaisLembrete.length && caso.status === 'ativo') html += '<p class="suave pequeno">Lembretes desligados: o paciente não autorizou lembretes ou escolheu não recebê-los.</p>';
     if (pode) {
       html += '<h3 style="margin-top:1rem">Agendar sessão</h3><div class="linha">' +
         '<label class="suave" for="ag-data">Data</label><input id="ag-data" type="date" min="' + hoje + '" style="width:auto">' +
@@ -335,7 +337,7 @@ PEP.telas = PEP.telas || {};
     var autor = PEP.util.porId(PEP.db.usuarios, d.autorId) || {}, sup = R().supervisorDoCaso(caso);
     var autoria = esc(autor.nome || d.autorId) + (autor.perfil === 'estagiario' ? ' (estagiário(a) de Psicologia), sob supervisão de ' + esc(PEP.ui.nomeUsuario(sup)) : '');
     var acoes = acoesDoDocumento(u, d, caso);
-    var html = '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a href="#/caso/' + caso.id + '/documentos">← Voltar aos documentos</a>' +
+    var html = '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a class="voltar" href="#/caso/' + caso.id + '/documentos">‹ Voltar aos documentos</a>' +
       (R().documentoValido(d) ? '<button class="botao" data-acao="imprimir-documento" data-id="' + d.id + '">Imprimir / salvar em PDF</button>' : '') + '</div>' +
       '<div class="cartao nao-imprimir"><h1 style="font-size:1.3rem;margin-top:0">' + esc(d.titulo) + '</h1><p>' + situacaoDocumento(d) + '</p>' +
       (eventos.length ? '<ul class="pequeno">' + eventos.map(function (e) {
@@ -372,7 +374,7 @@ PEP.telas = PEP.telas || {};
     if (!autorizado) return PEP.ui.semPermissao('A cópia é gerada pela psicóloga técnica ou pelo supervisor do caso.');
     if (R().precisaJustificar(u, caso)) return '<h1>Cópia do prontuário</h1>' + PEP.telas.formularioJustificativa(caso, '#/imprimir/' + caso.id);
     var omitidos = PEP.telas.riscoNaCopia(caso).omitidos;
-    return '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a href="#/caso/' + caso.id + '">← Voltar ao caso</a>' +
+    return '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a class="voltar" href="#/caso/' + caso.id + '">‹ Voltar ao caso</a>' +
       '<button class="botao" data-acao="imprimir" data-caso="' + caso.id + '">Imprimir / salvar em PDF</button></div>' +
       (omitidos ? '<div class="aviso restrito pequeno nao-imprimir" role="note"><strong>Só para a equipe (não sai na impressão):</strong> esta cópia de criança ou adolescente omite ' +
         omitidos + ' registro(s) de violência ou notificação. Ao responsável, o estritamente essencial (Código de Ética, art. 13); a supervisão orienta o que comunicar.</div>' : '') +

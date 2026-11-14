@@ -264,7 +264,7 @@ body.com-barra { padding-bottom: calc(var(--barra-altura) + env(safe-area-inset-
 
 /* Lista de pendências e listas clicáveis (uma linha por item, com sinal colorido e texto que explica) */
 .cabecalho-cartao { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; }
-.cabecalho-cartao a { font-size: .9rem; font-weight: 600; text-decoration: none; }
+.cabecalho-cartao a { font-size: .9rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; min-height: 28px; }
 .lista-itens { list-style: none; margin: 0 -1.1rem -1rem; padding: 0; }
 @media (min-width: 600px) { .lista-itens { margin: 0 -1.35rem -1.2rem; } }
 .lista-itens > li { display: flex; gap: .75rem; align-items: flex-start; padding: .75rem 1.1rem; border-top: 1px solid var(--borda); }
@@ -291,6 +291,7 @@ body.com-barra { padding-bottom: calc(var(--barra-altura) + env(safe-area-inset-
   white-space: nowrap;
   text-decoration: none;
 }
+a.etiqueta { display: inline-flex; align-items: center; min-height: 28px; padding: .15rem .7rem; }   /* selo que é link: alvo de toque */
 .etiqueta.rascunho { background: #edf0ef; color: #4a5450; }
 .etiqueta.enviada { background: var(--info-fundo); color: var(--info); }
 .etiqueta.devolvida, .etiqueta.alerta { background: var(--alerta-fundo); color: var(--alerta); }
@@ -353,10 +354,12 @@ input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--verde);
   box-shadow: 0 0 0 3px rgba(0, 121, 49, .2);
 }
+select { max-width: 100%; }   /* opção comprida não pode alargar a tela no celular estreito */
 textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .check { display: flex; gap: .6rem; align-items: flex-start; margin-bottom: .6rem; }
-.check input { margin-top: .25rem; width: 1.15rem; height: 1.15rem; flex: none; accent-color: var(--verde); }
-input[type=radio], input[type=checkbox] { accent-color: var(--verde); }
+.check input { margin-top: .05rem; flex: none; }
+/* Caixas de marcar com 24 px: alvo de toque mínimo da WCAG 2.2 (critério 2.5.8) */
+input[type=radio], input[type=checkbox] { accent-color: var(--verde); width: 1.5rem; height: 1.5rem; flex: none; }
 fieldset { min-width: 0; }
 details > summary { cursor: pointer; min-height: 32px; display: list-item; }
 details > summary:hover { color: var(--verde-escuro); }
@@ -434,7 +437,6 @@ tbody tr:hover td { background: #f8faf9; }
 .perfil-cartao:hover { border-color: var(--verde-borda); background: var(--verde-claro); }
 .perfil-cartao strong { font-weight: 600; font-size: .95rem; }
 .perfil-tipo { font-size: .82rem; color: var(--texto-suave); }
-.links-entrada { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .9rem; margin: .4rem 0 1rem; }
 
 /* ---------- Toast ---------- */
 .toast {
@@ -448,10 +450,8 @@ body.com-barra .toast { bottom: calc(var(--barra-altura) + env(safe-area-inset-b
 @media (min-width: 960px) { body.com-barra .toast { bottom: 1.2rem; } }
 
 /* ---------- Impressão (PDF do prontuário) ---------- */
-.so-impressao { display: none; }
 @media print {
   .faixa-aviso, .topo, .menu, .toast, .nao-imprimir, .rodape, .pular, .aviso-sessao { display: none !important; }
-  .so-impressao { display: block; }
   body, body.com-barra { background: #fff; padding: 0; }
   .layout { display: block; }
   .conteudo { padding: 0; max-width: none; }
@@ -526,13 +526,13 @@ caption { text-align: left; font-weight: 600; padding-bottom: .4rem; }
 .sessao-item { padding: .4rem 0; border-bottom: 1px dashed var(--borda); font-size: .9rem; }
 .sessao-item:last-child { border-bottom: 0; }
 .sessao-item .hora { font-weight: 700; margin-right: .2rem; }
-.dia-semana .etiqueta { white-space: normal; font-size: .72rem; }
+.dia-semana .etiqueta { white-space: normal; font-size: .75rem; }
 table.mes { table-layout: fixed; min-width: 640px; }
 table.mes td { height: 92px; padding: .35rem; border: 1px solid var(--borda); vertical-align: top; }
 table.mes td.fora { background: #f7f9f8; }
 table.mes td.hoje { outline: 2px solid var(--verde); outline-offset: -2px; }
 .num-dia { font-weight: 700; display: inline-block; min-width: 24px; min-height: 24px; }
-.mini { display: block; font-size: .74rem; padding: .1rem .35rem; margin-top: .2rem; border-radius: 4px; background: var(--info-fundo); color: var(--info); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini { display: block; font-size: .75rem; padding: .1rem .35rem; margin-top: .2rem; border-radius: 4px; background: var(--info-fundo); color: var(--info); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini.validada { background: var(--sucesso-fundo); color: var(--sucesso); }
 .mini.perigo { background: var(--perigo-fundo); color: var(--perigo); }
 .mini.alerta { background: var(--alerta-fundo); color: var(--alerta); }
@@ -673,6 +673,8 @@ html.contraste input, html.contraste select, html.contraste textarea { backgroun
 html.contraste .etiqueta, html.contraste .mini, html.contraste .contador { background: #000 !important; color: #fff !important; border: 1px solid #fff !important; }
 html.contraste .seletor a.ativo, html.contraste .abas a.ativa, html.contraste .item-conta[aria-pressed="true"] .estado { background: #ffeb3b; color: #000; }
 html.contraste .aviso { background: #000; color: #fff; border-color: #fff; }
+/* Quadros de destaque têm fundo claro fixo: no alto contraste ficavam com letra branca em fundo claro */
+html.contraste .destaque-alerta, html.contraste .destaque-sucesso { background: #000; border-color: #ffeb3b; }
 html.contraste .barra > span { background: #ffeb3b; }
 html.contraste .avatar { background: #000; color: #fff; border: 1px solid #fff; }
 html.contraste .logo-inst:not(.branco) { background: #fff; padding: 4px 6px; border-radius: 6px; box-sizing: content-box; }

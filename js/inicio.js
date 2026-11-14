@@ -90,9 +90,22 @@ PEP.app = (function () {
     }
   }
 
+  // O que as telas guardam na memória da página (termo da busca, filtros, senha provisória recém-gerada...)
+  // é apagado quando muda quem está usando: em computador compartilhado, nada sobra para a próxima pessoa.
+  // A leitura pelo link temporário (visitante) não passa por aqui: quem cuida dela é a troca de rota.
+  var ultimoUsuarioId;
+  function limparMemoriaDasTelas() {
+    Object.keys(PEP.telas).forEach(function (k) {
+      if (k.charAt(0) === '_' && k !== '_linkLiberado' && typeof PEP.telas[k] !== 'function') PEP.telas[k] = null;
+    });
+  }
+
   function renderizar() {
     if (!PEP.db) return; // o JSON ainda não terminou de carregar
     var u = PEP.estado.usuarioAtual();
+    var idAtual = u ? u.id : null;
+    if (ultimoUsuarioId !== undefined && idAtual !== ultimoUsuarioId) limparMemoriaDasTelas();
+    ultimoUsuarioId = idAtual;
     var rota = lerRota();
     if (!u && !PUBLICAS[rota.nome]) { window.location.hash = '#/entrar'; rota = lerRota(); }
     if (u && (rota.nome === 'entrar' || rota.nome === 'esqueci-senha')) { window.location.hash = '#/painel'; rota = lerRota(); }

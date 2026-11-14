@@ -220,6 +220,26 @@ PEP.regras = (function () {
   function emRiscoDeAbandono(caso) {
     return caso.status === 'ativo' && faltasSeguidas(caso) >= PEP.regra('faltasSeguidasLimite');
   }
+  // Tentativas de contato do fluxo de abandono ATUAL: as feitas a partir da primeira falta da sequência
+  // de agora. Contato antigo (de quando o paciente faltou, foi procurado e voltou) não libera a vaga.
+  function contatosDoFluxoDeAbandono(caso) {
+    var passadas = PEP.db.sessoes
+      .filter(function (s) { return s.casoId === caso.id && s.presenca !== 'agendada' && s.presenca !== 'cancelada'; })
+      .sort(function (a, b) { return (a.data + a.hora).localeCompare(b.data + b.hora); });
+    var primeiraFalta = '';
+    for (var i = passadas.length - 1; i >= 0; i--) {
+      if (passadas[i].presenca === 'falta') primeiraFalta = passadas[i].data;
+      else if (passadas[i].presenca !== 'falta-justificada') break;
+    }
+    return PEP.db.contatos.filter(function (ct) { return ct.casoId === caso.id && !!primeiraFalta && String(ct.em).slice(0, 10) >= primeiraFalta; });
+  }
+  // Canais em que o lembrete pode ser enviado: precisa da autorização (consentimento "lembretes") e
+  // respeita o canal escolhido no cadastro ("nenhum" = não quer lembretes)
+  function canaisDeLembrete(caso) {
+    var p = porId(PEP.db.pacientes, caso.pacienteId);
+    if (!p || !consentiu(caso, 'lembretes') || p.canalLembrete === 'nenhum') return [];
+    return p.canalLembrete === 'whatsapp' || p.canalLembrete === 'email' ? [p.canalLembrete] : ['whatsapp', 'email'];
+  }
 
   // ---------- Risco e segurança ----------
   // Avaliação de risco: a equipe do caso registra; o supervisor dá ciência (uma vez) e só ele
@@ -267,7 +287,8 @@ PEP.regras = (function () {
   // O paciente avisa, antes da sessão, que não vai (motivo de lista fechada): vira falta justificada
   function podeAvisarFalta(u, s) {
     var c = porId(PEP.db.casos, s.casoId);
-    return !!(u && u.perfil === 'paciente' && c && c.pacienteId === u.pacienteId && s.presenca === 'agendada' && s.data >= PEP.util.hoje());
+    // "Antes da sessão" é pela data E pela hora: quem faltou às 14h não transforma a falta em justificada às 18h
+    return !!(u && u.perfil === 'paciente' && c && c.pacienteId === u.pacienteId && s.presenca === 'agendada' && (s.data + 'T' + s.hora) > PEP.util.agora());
   }
   // Sessões com presença e sem evolução há mais tempo que o prazo da regra (padrão 48 h)
   function sessoesSemEvolucao(caso) {
@@ -292,8 +313,11 @@ PEP.regras = (function () {
   function resumosDaPassagem(caso) {
     var passagens = transferenciasDoCaso(caso), ult = passagens[passagens.length - 1], desde = ult ? ult.em.slice(0, 10) : '';
     var usados = passagens.map(function (t) { return t.resumoId; });
+    // Rascunho ou resumo devolvido de quem já saiu do caso não conta: a nova dupla não o vê e precisa poder escrever o dela
+    var daDupla = estagiariosDoCaso(caso);
     return PEP.db.evolucoes.filter(function (e) {
-      return e.casoId === caso.id && e.tipo === 'transferencia' && e.data >= desde && usados.indexOf(e.id) === -1;
+      return e.casoId === caso.id && e.tipo === 'transferencia' && e.data >= desde && usados.indexOf(e.id) === -1 &&
+        (e.status === 'enviada' || e.status === 'validada' || daDupla.indexOf(e.autorId) !== -1);
     });
   }
   function resumoValidado(caso) { return resumosDaPassagem(caso).filter(function (e) { return e.status === 'validada'; }).pop() || null; }
@@ -372,7 +396,7 @@ PEP.regras = (function () {
   function podeEmitirDocumento(u, caso) { return caso.status === 'ativo' && (ehEstagiarioDoCaso(u, caso) || ehSupervisorDoCaso(u, caso)); }
   function podeAnularDocumento(u, d) {
     var c = porId(PEP.db.casos, d.casoId);
-    return !!c && !eventoDoDocumento(d, 'anulacao') && !eventoDoDocumento(d, 'entrega') && (d.autorId === u.id || ehSupervisorDoCaso(u, c));
+    return !!c && !eventoDoDocumento(d, 'anulacao') && !eventoDoDocumento(d, 'entrega') && ((d.autorId === u.id && podeVerCaso(u, c)) || ehSupervisorDoCaso(u, c));   // o autor só enquanto ainda atende o caso
   }
   // Entrega e devolutiva: equipe do caso ou técnica (com motivo de acesso), só de documento válido
   function podeRegistrarEntrega(u, d) {
@@ -532,6 +556,7 @@ PEP.regras = (function () {
     justificativaValida: justificativaValida, podeVerConteudoClinico: podeVerConteudoClinico, precisaJustificar: precisaJustificar,
     categoriaAcesso: categoriaAcesso, acessosAoProntuario: acessosAoProntuario,
     podeAvisarFalta: podeAvisarFalta, sessoesSemEvolucao: sessoesSemEvolucao, temSinalDeUrgencia: temSinalDeUrgencia,
+    contatosDoFluxoDeAbandono: contatosDoFluxoDeAbandono, canaisDeLembrete: canaisDeLembrete, subgrupoTemEstagiarioAtivo: subgrupoTemEstagiarioAtivo,
     semDuplaAtiva: semDuplaAtiva, casosSemDuplaAtiva: casosSemDuplaAtiva, transferenciasDoCaso: transferenciasDoCaso,
     resumosDaPassagem: resumosDaPassagem, resumoValidado: resumoValidado, podePassarCaso: podePassarCaso, duplasDestino: duplasDestino,
     checklistPassagem: checklistPassagem, modeloResumoTransferencia: modeloResumoTransferencia, secoesFaltandoNoResumo: secoesFaltandoNoResumo,

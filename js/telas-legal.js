@@ -110,7 +110,7 @@ PEP.telas = PEP.telas || {};
       ['Evolução: rascunho → enviada → validada (assinatura do estagiário e do supervisor) → bloqueada; correção só por adendo', 'Res. CFP 01/2009, art. 3º; Res. CFP 05/2025, art. 19', 'Caso → Evoluções', 'Sim'],
       ['Assinatura hoje é eletrônica simples (login e senha); documentos para terceiros pedirão assinatura avançada (gov.br) ou qualificada (ICP-Brasil)', 'Lei 14.063/2020, art. 14', 'Documentos (evolução futura)', '—'],
       ['Prontuário com identificação, demanda, objetivos, evolução, encerramento e cópia dos documentos emitidos', 'Res. CFP 05/2025, art. 12', 'Caso → Resumo; cópia em PDF', 'Sim'],
-      ['Paciente tem acesso irrestrito ao prontuário; o técnico organiza a entrega, não decide', 'Res. CFP 05/2025, art. 13', 'Paciente → Meu prontuário; Técnico → Acesso do paciente', 'Sim'],
+      ['Paciente tem acesso irrestrito ao prontuário; o técnico organiza a entrega, não decide', 'Res. CFP 05/2025, art. 13', 'Paciente → Prontuário; Técnica → Pedidos → Cópia do prontuário', 'Sim'],
       ['Testes psicológicos fora do prontuário e da cópia; só instrumentos com parecer favorável do SATEPSI', 'Res. CFP 05/2025, art. 14; Res. CFP 31/2022', 'Caso → Área restrita → Avaliação psicológica', 'Sim'],
       ['Registro de supervisão separado, visível só para supervisores e estagiários', 'Res. CFP 05/2025, art. 17', 'Caso → Área restrita → Supervisão', 'Sim'],
       ['Termo de responsabilidade no primeiro acesso; usuário informado sobre o direito de acesso ao prontuário; Código de Ética disponível', 'Res. CFP 05/2025, art. 10, I, III e IV', 'Primeiro acesso da Bia; painel do paciente', 'Sim'],

@@ -94,7 +94,7 @@ PEP.telas = PEP.telas || {};
     var ident = { nome: i.nome, dataNascimento: i.dataNascimento, cpf: i.cpf, telefone: i.telefone, email: i.email, responsavelNome: i.responsavelNome };
     var p = dup && dup.tipo === 'paciente' ? PEP.util.porId(PEP.db.pacientes, dup.id) : null;
     if (p) ident = p;
-    return '<a href="#/fila" class="suave">← Fila de espera</a><h1 style="margin-top:.5rem">Triagem e cadastro</h1>' +
+    return '<a href="#/fila" class="voltar">‹ Fila de espera</a><h1>Triagem e cadastro</h1>' +
       (dup ? '<div class="aviso alerta" role="note"><strong>' + esc(descreverDuplicidade(dup)) + '.</strong> ' +
         (dup.tipo === 'paciente' ? 'Ao concluir, o novo caso fica ligado ao cadastro existente (não cria paciente duplicado). Os campos abaixo vêm do cadastro.' :
           'Confira se é a mesma pessoa. Se for, marque esta inscrição como duplicada.') + '</div>' : '') +
@@ -130,7 +130,7 @@ PEP.telas = PEP.telas || {};
     var p = PEP.util.porId(PEP.db.pacientes, pacienteId);
     if (!p) return '<h1>Paciente não encontrado</h1>';
     var caso = PEP.db.casos.filter(function (c) { return c.pacienteId === p.id; }).pop();
-    return (caso ? '<a href="#/caso/' + caso.id + '" class="suave">← Voltar ao caso</a>' : '') +
+    return (caso ? '<a href="#/caso/' + caso.id + '" class="voltar">‹ Voltar ao caso</a>' : '') +
       '<h1 style="margin-top:.5rem">Editar cadastro</h1>' +
       '<div class="cartao" id="form-paciente"><p class="suave pequeno">A alteração fica registrada na auditoria (quem e quando, sem os valores).</p>' +
       camposIdentificacao('pc', p) +

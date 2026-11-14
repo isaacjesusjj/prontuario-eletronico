@@ -143,7 +143,8 @@ def publico(nav, base):
     conferir("Acessibilidade", "primeiro Tab vai para 'Pular para o conteúdo'", s.js("document.activeElement.className") == "pular")
     s.p.keyboard.press("Enter")
     s.p.wait_for_timeout(100)
-    conferir("Acessibilidade", "o link de pular leva o foco ao conteúdo", s.js("document.activeElement.id") == "app")
+    conferir("Acessibilidade", "o link de pular leva o foco ao conteúdo sem mudar o endereço (as rotas usam o #)",
+             s.js("document.activeElement.id") == "app" and s.js("location.hash") in ("", "#/entrar") and "Vinculum" in s.h1(), s.js("location.hash"))
     for rota, nome in [("#/entrar", "Entrar"), ("#/inscricao", "Fila de espera"), ("#/sobre", "Sobre"), ("#/privacidade", "Aviso de privacidade"),
                        ("#/termos", "Termos de uso"), ("#/acessibilidade", "Acessibilidade"), ("#/regras", "Regras e leis"), ("#/acesso/token-falso", "Link inválido")]:
         s.ir(rota)
@@ -753,6 +754,14 @@ def navegacao_e_identidade(nav, base):
     # Computador: coluna à esquerda com todos os itens, sem "Mais"
     s = Sessao(nav, base, "Navegação no computador")
     s.entrar("helena.supervisora")
+    # "Pular para o conteúdo" com login: antes trocava o endereço para #app e caía em "Página não encontrada"
+    s.ir("#/caso/c01/evolucoes")
+    s.p.evaluate("document.querySelector('a.pular').focus()")
+    s.p.keyboard.press("Enter")
+    s.p.wait_for_timeout(150)
+    conferir("Acessibilidade", "com login, \"Pular para o conteúdo\" leva o foco ao conteúdo e a pessoa continua na mesma tela",
+             s.js("location.hash") == "#/caso/c01/evolucoes" and s.js("document.activeElement.id") == "app" and "não encontrada" not in s.h1(), s.js("location.hash") + " · " + s.h1())
+    s.ir("#/painel")
     conferir("Computador", "a navegação vira uma coluna à esquerda com os 7 itens, sem o \"Mais\"",
              s.p.locator("#menu a:visible").count() == 7 and not s.p.is_visible('#menu a[href="#/mais"]')
              and s.p.locator("#menu").evaluate("m => getComputedStyle(m).position") == "sticky")
@@ -1312,8 +1321,9 @@ def transicao_de_semestre(nav, base):
     s.ir("#/alocacao")
     s.clicar('[data-acao="encerrar-estagio"][data-id="u-est3"]')
     s.clicar('[data-acao="encerrar-estagio"][data-id="u-est4"]')
-    conferir("Transição", "ao encerrar o estágio, a direção é avisada de que o caso fica sem dupla ativa (só quando sai o último da dupla)",
-             len(mensagens) >= 2 and "Fica sem dupla ativa" not in mensagens[-2] and "Fica sem dupla ativa" in mensagens[-1] and "Paciente Exemplo 03" in mensagens[-1],
+    conferir("Transição", "ao encerrar o estágio, a direção é avisada de quantos casos ficam sem dupla ativa (só quando sai o último da dupla), sem nome de paciente",
+             len(mensagens) >= 2 and "sem dupla ativa" not in mensagens[-2] and "caso(s) ficam sem dupla ativa" in mensagens[-1]
+             and not any(pc["nome"] in mensagens[-1] for pc in s.js("PEP.db.pacientes.map(p => ({nome: p.nome}))")),
              (mensagens[-1] if mensagens else "").replace("\n", " ")[:160])
     s.sair()
     s.entrar("ana.tecnica")
@@ -1747,6 +1757,144 @@ def adaptador_supabase_mfa(nav, base):
     s.fechar()
 
 
+# Chama uma ação "por fora", como alguém faria pelo console do navegador: botão falso com os data-*
+# e campos montados no DOM. Serve para conferir que a AÇÃO repete as condições que a TELA usa para
+# mostrar o botão (achados RS-01 a RS-19 da revisão técnica, docs/revisao-tecnica.md).
+BURLA_JS = r"""([nome, dados, campos]) => {
+  var b = document.createElement('button');
+  Object.keys(dados || {}).forEach(function (k) { b.setAttribute('data-' + k, dados[k]); });
+  var caixa = document.createElement('div'); caixa.style.display = 'none';
+  Object.keys(campos || {}).forEach(function (id) {
+    var v = campos[id], e;
+    if (v && typeof v === 'object' && v.radio) { e = document.createElement('input'); e.type = 'radio'; e.name = v.radio; e.value = v.value; e.checked = true; }
+    else if (v && typeof v === 'object') { e = document.createElement('input'); e.type = 'checkbox'; e.checked = !!v.check; }
+    else { e = document.createElement('textarea'); e.value = v; }
+    e.id = id; caixa.appendChild(e);
+  });
+  document.body.insertBefore(caixa, document.body.firstChild);
+  document.getElementById('toast').textContent = '';
+  var erro = '';
+  try { PEP.acoes[nome](b); } catch (err) { erro = err.message; }
+  caixa.remove();
+  return erro ? 'ERRO: ' + erro : document.getElementById('toast').textContent;
+}"""
+
+
+def regras_nas_acoes(nav, base):
+    def burla(s, nome, dados=None, campos=None):
+        r = s.js(BURLA_JS, [nome, dados or {}, campos or {}])
+        s.p.wait_for_timeout(120)
+        return r
+
+    def conta(s, colecao):
+        return s.js(f"PEP.db.{colecao}.length")
+
+    def caso(s, cid, campo):
+        return s.js(f"(PEP.util.porId(PEP.db.casos, '{cid}') || {{}}).{campo}")
+
+    # Primeiro acesso: antes de aceitar o termo, nenhuma ação clínica grava
+    s = Sessao(nav, base, "Regras nas ações")
+    s.entrar("bia.estagiaria", aceitar=False)
+    if s.js("location.hash") == "#/termo":
+        ev0 = conta(s, "evolucoes")
+        r = burla(s, "nova-evolucao", {"caso": "c01", "modo": "enviar"}, {"nova-texto": "Evolução enviada antes de aceitar o termo de sigilo.", "nova-sessao": ""})
+        conferir("Regras nas ações", "antes de aceitar o termo de sigilo, as ações clínicas são negadas (RS-12)", conta(s, "evolucoes") == ev0, r)
+    else:
+        conferir("Regras nas ações", "antes de aceitar o termo de sigilo, as ações clínicas são negadas (RS-12)", False, "a conta não pediu o termo")
+    s.fechar()
+
+    s = Sessao(nav, base, "Regras nas ações")
+    # Estagiária do caso c01 (sem nenhuma falta)
+    s.entrar("bia.estagiaria")
+    enc0, cont0 = conta(s, "encerramentos"), conta(s, "contatos")
+    burla(s, "registrar-contato", {"caso": "c01"}, {"ct-canal": "canal inventado", "ct-resultado": "resultado inventado", "ct-motivo": "MOTIVO LIVRE"})
+    burla(s, "encerrar-abandono", {"caso": "c01"})
+    conferir("Regras nas ações", "abandono: sem as faltas seguidas, contato e encerramento por abandono são negados (RS-01)",
+             conta(s, "encerramentos") == enc0 and conta(s, "contatos") == cont0 and caso(s, "c01", "status") == "ativo")
+    ev0 = conta(s, "evolucoes")
+    for sid in ("s13", "s31", "s01", "nao-existe"):
+        burla(s, "nova-evolucao", {"caso": "c01", "modo": "enviar"}, {"nova-texto": "Evolução de teste ligada a uma sessão que não serve.", "nova-sessao": sid})
+    conferir("Regras nas ações", "evolução só se liga a sessão do próprio caso, com presença e ainda sem evolução (RS-17)",
+             conta(s, "evolucoes") == ev0)
+    ad0 = conta(s, "adendos")
+    burla(s, "adicionar-adendo", {"id": "e01"}, {"adtxt-e01": "adendo sem motivo"})
+    burla(s, "adicionar-adendo", {"id": "e01"}, {"adtxt-e01": "adendo com motivo inventado", "admot-e01": "<b>qualquer</b>"})
+    conferir("Regras nas ações", "adendo sem motivo da lista é negado (RS-18)", conta(s, "adendos") == ad0)
+    burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "entrega"}, {"ev-para": "a paciente"})
+    ed0 = conta(s, "eventosDocumento")
+    burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "entrega"}, {"ev-para": "outra pessoa"})
+    burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "xyz"})
+    conferir("Regras nas ações", "documento: a entrega não é registrada duas vezes e tipo fora da lista não é gravado (RS-21)",
+             conta(s, "eventosDocumento") == ed0 and s.js("PEP.db.eventosDocumento.filter(e => e.documentoId === 'doc01' && e.tipo === 'entrega').length") == 1)
+    s.sair()
+
+    # Supervisora: troca de dupla só pela passagem
+    s.entrar("helena.supervisora")
+    tr0 = conta(s, "transferencias")
+    r = burla(s, "atribuir-caso", {"id": "c01"}, {"cs-c01": "d-a2"})
+    conferir("Regras nas ações", "supervisora não troca a dupla de um caso que já tem dupla sem a passagem (RS-02)",
+             caso(s, "c01", "subgrupoId") == "d-a1" and conta(s, "transferencias") == tr0, r)
+    s.sair()
+
+    # Técnica: alocação só de caso aguardando; pedidos em ordem; triagem uma vez só
+    s.entrar("ana.tecnica")
+    burla(s, "alocar-caso", {"id": "c05"}, {"ag-c05": "g-a"})
+    burla(s, "alocar-caso", {"id": "c01"}, {"ag-c01": "g-b"})
+    conferir("Regras nas ações", "técnica não reabre caso encerrado nem realoca caso em andamento (RS-03)",
+             caso(s, "c05", "status") == "encerrado" and caso(s, "c01", "grupoId") == "g-a" and caso(s, "c01", "subgrupoId") == "d-a1")
+    r = burla(s, "abrir-anexo", {"id": s.js("(PEP.db.anexos.filter(a => a.casoId === 'c01')[0] || {}).id")})
+    conferir("Regras nas ações", "técnica sem o motivo do acesso não abre anexo (conteúdo clínico) (RS-06)", "Sem permissão" in r, r)
+    resp = s.js("PEP.util.porId(PEP.db.pedidosTitular, 'pt01').resposta")
+    burla(s, "responder-titular", {"id": "pt01"}, {"resp-pt01": "RESPOSTA SOBRESCRITA"})
+    conferir("Regras nas ações", "resposta a pedido do titular já respondido não é sobrescrita (RS-15)",
+             s.js("PEP.util.porId(PEP.db.pedidosTitular, 'pt01').resposta") == resp)
+    campos = {"tr-nome": "Pessoa Inscrita 03", "tr-social": "", "tr-nasc": "2014-03-02", "tr-cpf": "", "tr-tel": "11900001003", "tr-email": "",
+              "tr-resp": "Responsavel Exemplo", "tr-resptel": "", "tr-canal": "whatsapp", "tr-emnome": "", "tr-emvinc": "", "tr-emtel": "",
+              "tr-demanda": "Demanda da triagem", "tr-risco": "sem", "tr-destino": "clinica", "tr-grupo": "", "tr-c-contrato": {"check": False}}
+    p0 = conta(s, "pacientes")
+    burla(s, "concluir-triagem", {"id": "i03"}, campos)
+    p1, c1 = conta(s, "pacientes"), conta(s, "casos")
+    burla(s, "concluir-triagem", {"id": "i03"}, campos)
+    burla(s, "marcar-duplicada", {"id": "i03"})
+    conferir("Regras nas ações", "inscrição já triada não cria paciente e caso de novo nem vira duplicada (RS-16)",
+             p1 == p0 + 1 and conta(s, "pacientes") == p1 and conta(s, "casos") == c1 and s.js("PEP.util.porId(PEP.db.inscricoes, 'i03').status") != "duplicada")
+    s.sair()
+
+    # Paciente: pedido de cópia sem duplicar; aviso de falta só antes do horário
+    s.entrar("paciente01")
+    burla(s, "solicitar-copia")
+    n = conta(s, "solicitacoes")
+    burla(s, "solicitar-copia")
+    conferir("Regras nas ações", "paciente com pedido de cópia em aberto não abre outro (RS-14)", conta(s, "solicitacoes") == n)
+    # Sessão de hoje cujo horário já passou (00:00): o aviso de falta é negado
+    sid = s.js("""() => { var s = PEP.db.sessoes.filter(x => x.casoId === 'c01' && x.presenca === 'agendada')[0];
+                          s.data = PEP.util.hoje(); s.hora = '00:00'; return s.id; }""")
+    burla(s, "avisar-falta", {"id": sid}, {f"mf-{sid}": "saude"})
+    conferir("Regras nas ações", "paciente não avisa falta de sessão de hoje cujo horário já passou (RS-08)",
+             s.js(f"PEP.util.porId(PEP.db.sessoes, '{sid}').presenca") == "agendada")
+    s.sair()
+
+    # Estagiária de fora: imprimir não grava evento falso na auditoria do caso
+    s.entrar("enzo.estagiario")
+    au0 = conta(s, "auditoria")
+    burla(s, "imprimir", {"caso": "c01"})
+    conferir("Regras nas ações", "quem não vê o caso não grava \"Gerou cópia do prontuário\" na auditoria dele (RS-13)",
+             s.js(f"PEP.db.auditoria.slice({au0}).filter(a => a.alvo === 'c01').length") == 0)
+    s.sair()
+
+
+    # Direção encerra o estágio da Bia: a autora do documento perde o direito de anulá-lo
+    s = Sessao(nav, base, "Regras nas ações")
+    s.entrar("marta.direcao")
+    burla(s, "encerrar-estagio", {"id": "u-est1"})
+    s.sair()
+    s.entrar("bia.estagiaria")
+    r = burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "anulacao"}, {"ev-motivo-anul": "anulado por quem já saiu do caso"})
+    conferir("Regras nas ações", "autora sem vínculo com o caso não anula o documento (RS-04)",
+             not s.js("PEP.db.eventosDocumento.some(e => e.documentoId === 'doc01' && e.tipo === 'anulacao')"), r)
+    s.fechar()
+
+
 def main():
     srv, base = servidor()
     with sync_playwright() as p:
@@ -1754,7 +1902,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias, navegacao_e_identidade, entrada_libras_e_clareza,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, regras_nas_acoes, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

@@ -164,6 +164,15 @@ PEP.ui = (function () {
     if (contaAberta && ev.target.closest && !ev.target.closest('.topo-direita') && !ev.target.closest('.cortina')) fecharConta(false);
   });
 
+  // "Pular para o conteúdo": as rotas do site usam o # do endereço (#/rota). Se o link navegasse para #app,
+  // o site leria "app" como rota e mostraria "Página não encontrada". Por isso o clique só leva o foco
+  // ao conteúdo, sem mudar o endereço.
+  document.addEventListener('click', function (ev) {
+    if (!ev.target.closest || !ev.target.closest('a.pular')) return;
+    ev.preventDefault();
+    el('app').focus();
+  });
+
   // ---------- Navegação ----------
   function marcado(item, rotaAtual) {
     if (rotaAtual.indexOf(item[0]) === 0) return true;
