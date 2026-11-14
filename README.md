@@ -183,7 +183,7 @@ Pedido do grupo: visual mais limpo, identidade da Faculdade Santa Casa, foco em 
 
 O VLibras envia ao serviço do Governo Federal o texto que a pessoa toca para traduzir. O site avisa isso na hora e na declaração de acessibilidade, e recomenda não traduzir texto do prontuário (registrado também em `docs/lgpd.md`).
 
-Os 5 pedidos de confirmação (`window.confirm`) continuam: restaurar dados, falta sem justificativa, encerrar estágio, desativar conta e desligar a verificação em duas etapas. Todos protegem ações difíceis de desfazer.
+Os 5 pedidos de confirmação continuam: restaurar dados, falta sem justificativa, encerrar estágio, desativar conta e desligar a verificação em duas etapas. Todos protegem ações difíceis de desfazer. Desde 14/11 aparecem num diálogo do próprio Vinculum (`PEP.ui.confirmar`, em `js/ui.js`), não mais na janela do navegador: segue o visual e o alto contraste, o foco começa em "Cancelar" e Esc cancela.
 
 ## Revisão técnica independente (novembro de 2026)
 

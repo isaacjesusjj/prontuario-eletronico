@@ -451,6 +451,16 @@ tbody tr:hover td { background: #f8faf9; }
 }
 .toast.visivel { visibility: visible; }
 body.com-barra .toast { bottom: calc(var(--barra-altura) + env(safe-area-inset-bottom) + .8rem); }
+
+/* Diálogo de confirmação do Vinculum (PEP.ui.confirmar), no lugar da janela do navegador */
+.dialogo {
+  width: min(28rem, calc(100vw - 2rem)); padding: 1.25rem 1.25rem 1rem; border: 1px solid var(--borda);
+  border-radius: var(--raio); background: var(--superficie); color: var(--texto); box-shadow: var(--sombra-flutuante);
+}
+.dialogo::backdrop { background: rgba(16, 40, 28, .45); }
+.dialogo h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.dialogo p { margin: 0 0 .6rem; color: var(--texto); }
+.dialogo-botoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
 @media (min-width: 960px) { body.com-barra .toast { bottom: 1.2rem; } }
 
 /* ---------- Impressão (PDF do prontuário) ---------- */
@@ -694,6 +704,9 @@ html.contraste .cortina { background: #000; }
 html.contraste .cortina .botao { background: #000; color: #ffeb3b; }
 /* Aviso flutuante no alto contraste: preto com borda amarela (antes ficava branco no branco) */
 html.contraste .toast { background: #000; color: #fff; border: 2px solid #ffeb3b; }
+html.contraste .dialogo { background: #000; color: #fff; border: 2px solid #ffeb3b; }
+html.contraste .dialogo p { color: #fff; }
+html.contraste .dialogo::backdrop { background: rgba(0, 0, 0, .8); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

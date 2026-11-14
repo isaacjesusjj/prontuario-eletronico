@@ -303,7 +303,38 @@ PEP.ui = (function () {
     temporizador = setTimeout(function () { t.classList.remove('visivel'); }, 3500);
   }
 
+  // ---------- Diálogo de confirmação do próprio Vinculum (no lugar do window.confirm) ----------
+  // Usa o elemento <dialog> do HTML: prende o foco dentro, fecha com Esc e, ao fechar, o navegador
+  // devolve o foco ao botão que abriu. O foco começa em "Cancelar" (as ações confirmadas aqui são
+  // difíceis de desfazer). "seguir" só roda se a pessoa confirmar.
+  // Uso: PEP.ui.confirmar({ titulo, texto, botao, perigo }, function () { ...faz a ação... })
+  function confirmar(opcoes, seguir) {
+    var d = document.getElementById('dialogo');
+    if (!d) {
+      d = document.createElement('dialog');
+      d.id = 'dialogo';
+      d.className = 'dialogo';
+      d.setAttribute('aria-labelledby', 'dialogo-titulo');
+      d.setAttribute('aria-describedby', 'dialogo-texto');
+      document.body.appendChild(d);
+    }
+    if (d.open) d.close();
+    d.innerHTML = '<h2 id="dialogo-titulo">' + esc(opcoes.titulo) + '</h2>' +
+      '<div id="dialogo-texto">' + String(opcoes.texto).split('\n\n').map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>' +
+      '<div class="dialogo-botoes"><button type="button" class="botao secundario" data-resposta="nao">Cancelar</button>' +
+      '<button type="button" class="botao' + (opcoes.perigo === false ? '' : ' perigo') + '" data-resposta="sim">' + esc(opcoes.botao) + '</button></div>';
+    d.onclick = function (ev) {
+      var b = ev.target.closest && ev.target.closest('[data-resposta]');
+      if (!b) return;
+      d.close();
+      if (b.getAttribute('data-resposta') === 'sim') seguir();
+    };
+    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+    d.querySelector('[data-resposta="nao"]').focus();
+  }
+
   return {
+    confirmar: confirmar,
     nomeUsuario: nomeUsuario, pacienteDoCaso: pacienteDoCaso, nomePacienteDoCaso: nomePacienteDoCaso, nomePaciente: nomePaciente, nomeInscricao: nomeInscricao, idade: idade,
     desenharTopo: desenharTopo, desenharMenu: desenharMenu, desenharRodape: desenharRodape, definirTitulo: definirTitulo, mostrarAbaAtual: mostrarAbaAtual,
     alternarConta: alternarConta, fecharConta: fecharConta, telaMais: telaMais, icone: icone, aneis: aneis,

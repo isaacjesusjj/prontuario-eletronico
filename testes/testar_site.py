@@ -29,6 +29,7 @@ AXE = RAIZ / "testes" / "node_modules" / "axe-core" / "axe.min.js"
 SENHA = "demonstracao2026"
 DADOS = json.loads((RAIZ / "dados" / "dados-iniciais.json").read_text(encoding="utf-8"))
 resultados, erros_console, axe_resumo = [], [], []
+dialogos = []   # textos dos diálogos de confirmação do Vinculum, na ordem em que apareceram
 
 
 def conferir(grupo, nome, ok, detalhe=""):
@@ -91,13 +92,23 @@ class Sessao:
     def js(self, codigo, arg=None):
         return self.p.evaluate(codigo, arg)
 
-    def clicar(self, seletor):
+    def clicar(self, seletor, confirmar=True):
         alvo = self.p.locator(seletor).first
         # Preferências e "Sair" ficam no menu da conta (botão do topo): abre o menu antes, como a pessoa faria
         if alvo.count() and not alvo.is_visible() and alvo.evaluate("e => !!e.closest('#menu-conta')"):
             self.p.click("#botao-conta")
         alvo.click()
         self.p.wait_for_timeout(150)
+        if confirmar is not None:
+            self.responder_dialogo(confirmar)
+
+    def responder_dialogo(self, confirmar=True):
+        # Ações difíceis de desfazer abrem o diálogo do Vinculum (#dialogo): guarda o texto e confirma
+        # (ou cancela), como a pessoa faria
+        if self.p.locator("#dialogo[open]").count():
+            dialogos.append(self.p.locator("#dialogo").inner_text())
+            self.p.click('#dialogo [data-resposta="%s"]' % ("sim" if confirmar else "nao"))
+            self.p.wait_for_timeout(150)
 
     def entrar(self, login, senha=SENHA, aceitar=True):
         self.abrir("#/entrar")
@@ -1311,8 +1322,7 @@ def adaptador_supabase(nav, base):
 
 def transicao_de_semestre(nav, base):
     s = Sessao(nav, base, "Transição de semestre")
-    mensagens = []
-    s.p.on("dialog", lambda d: mensagens.append(d.message))   # a Sessao já aceita o diálogo; aqui só guarda o texto
+    mensagens = dialogos   # textos dos diálogos de confirmação, guardados pela Sessao
     # Estagiária: resumo de transferência, com o rascunho gerado do prontuário
     s.entrar("duda.estagiaria")
     s.ir("#/caso/c03/evolucoes")
@@ -1837,6 +1847,32 @@ def valores_vazios(nav, base):
     s.fechar()
 
 
+def dialogo_de_confirmacao(nav, base):
+    # As ações difíceis de desfazer pedem confirmação num diálogo do próprio Vinculum, não na janela
+    # do navegador: foco começa em "Cancelar", Esc cancela e nada muda sem confirmar
+    s = Sessao(nav, base, "Diálogo")
+    nativos = []
+    s.p.on("dialog", lambda d: nativos.append(d.message))
+    s.entrar("marta.direcao")
+    s.ir("#/estudantes")
+    s.clicar('[data-acao="alternar-conta"][data-id="u-est2"]', confirmar=None)
+    aberto = s.p.locator("#dialogo[open]").count() == 1
+    foco = s.js("document.activeElement.getAttribute('data-resposta')")
+    rotulo = s.js("(document.getElementById(document.getElementById('dialogo').getAttribute('aria-labelledby')) || {}).textContent || ''")
+    s.axe("Diálogo de confirmação aberto")
+    s.p.keyboard.press("Escape")
+    s.p.wait_for_timeout(150)
+    conferir("Diálogo", "desativar conta abre o diálogo do Vinculum, com título ligado e foco em \"Cancelar\"",
+             aberto and foco == "nao" and "Desativar a conta de" in rotulo, f"{aberto} {foco} {rotulo}")
+    conferir("Diálogo", "Esc fecha o diálogo, nada muda e o foco volta ao botão que abriu",
+             s.p.locator("#dialogo[open]").count() == 0 and s.js("PEP.util.porId(PEP.db.usuarios, 'u-est2').ativo") is True
+             and s.js("document.activeElement.getAttribute('data-acao')") == "alternar-conta")
+    s.clicar('[data-acao="alternar-conta"][data-id="u-est2"]')
+    conferir("Diálogo", "confirmando no diálogo, a conta é desativada; nenhuma janela do navegador foi usada",
+             s.js("PEP.util.porId(PEP.db.usuarios, 'u-est2').ativo") is False and not nativos)
+    s.fechar()
+
+
 def regras_nas_acoes(nav, base):
     def burla(s, nome, dados=None, campos=None):
         r = s.js(BURLA_JS, [nome, dados or {}, campos or {}])
@@ -1978,6 +2014,7 @@ def regras_nas_acoes(nav, base):
     s = Sessao(nav, base, "Regras nas ações")
     s.entrar("marta.direcao")
     burla(s, "encerrar-estagio", {"id": "u-est1"})
+    s.responder_dialogo()
     s.sair()
     s.entrar("bia.estagiaria")
     r = burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "anulacao"}, {"ev-motivo-anul": "anulado por quem já saiu do caso"})
@@ -1993,7 +2030,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias, navegacao_e_identidade, entrada_libras_e_clareza,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, regras_nas_acoes, valores_vazios, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, regras_nas_acoes, valores_vazios, dialogo_de_confirmacao, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras

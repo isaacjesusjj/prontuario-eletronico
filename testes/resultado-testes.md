@@ -1,13 +1,13 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 14/11/2026 20:26, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 14/11/2026 20:30, no Chrome (Playwright), com axe-core 4.14.0.
 
-**421 de 421 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**425 de 425 verificações passaram.** Acessibilidade: 74 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
 | Público | 6 | 0 |
-| Acessibilidade | 83 | 0 |
+| Acessibilidade | 84 | 0 |
 | LGPD | 14 | 0 |
 | Validadores | 11 | 0 |
 | CPF | 6 | 0 |
@@ -59,6 +59,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:26, no Chrome (Playwright), 
 | Gráfico | 7 | 0 |
 | Regras nas ações | 21 | 0 |
 | Textos | 1 | 0 |
+| Diálogo | 3 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
 
@@ -142,7 +143,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:26, no Chrome (Playwright), 
 | ✓ | Anexos | arquivo renomeado para .pdf é recusado (confere o conteúdo, não só a extensão) |  |
 | ✓ | Anexos | arquivo acima de 2 MB é recusado |  |
 | ✓ | Anexos | PDF válido guardado com hash e nome seguro |  |
-| ✓ | Anexos | anexo abre do armazenamento do navegador | blob:http://localhost:36325/881e903e-891f-44f5-96c0-0a66cb58 |
+| ✓ | Anexos | anexo abre do armazenamento do navegador | blob:http://localhost:38367/95e33186-139c-4a87-8f04-891bc9a3 |
 | ✓ | Agenda | visão de semana |  |
 | ✓ | Acessibilidade | Estagiária Bia · Agenda · semana: sem violações WCAG A/AA |  |
 | ✓ | Agenda | visão de mês |  |
@@ -391,7 +392,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:26, no Chrome (Playwright), 
 | ✓ | Transição | a supervisora valida o resumo de transferência como valida uma evolução |  |
 | ✓ | Transição | sem resumo validado, a passagem pede justificativa e a confirmação de que o paciente foi avisado |  |
 | ✓ | Transição | com a justificativa, o caso passa para a outra dupla e a passagem fica registrada |  |
-| ✓ | Transição | ao encerrar o estágio, a direção é avisada de quantos casos ficam sem dupla ativa (só quando sai o último da dupla), sem nome de paciente | Encerrar o vínculo de estágio de Lia? O acesso aos casos termina agora.  2 caso(s) ficam sem dupla ativa. Combine com a supervisão a passagem (resumo de transfe |
+| ✓ | Transição | ao encerrar o estágio, a direção é avisada de quantos casos ficam sem dupla ativa (só quando sai o último da dupla), sem nome de paciente | Encerrar o vínculo de estágio de Lia?  O acesso aos casos termina agora; o histórico continua.  2 caso(s) ficam sem dupla ativa. Combine com a supervisão a pass |
 | ✓ | Transição | a técnica vê os casos sem dupla ativa na alocação |  |
 | ✓ | Transição | o painel da supervisão avisa o caso sem dupla ativa (nas pendências) |  |
 | ✓ | Acessibilidade | Transição de semestre · Caso · passagem do caso: sem violações WCAG A/AA |  |
@@ -405,7 +406,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:26, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 17:26. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 17:30. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -473,13 +474,17 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:26, no Chrome (Playwright), 
 | ✓ | Regras nas ações | paciente01: nenhuma ação estoura erro com id que não existe (RS-31) |  |
 | ✓ | Regras nas ações | autora sem vínculo com o caso não anula o documento (RS-04) | Sem permissão. |
 | ✓ | Textos | valor vazio vira palavra: auditoria e caso recém-triado sem "—" sozinho | 0 / ‹ Casos Paciente Exemplo 07  33 anos · sem grupo · supervisão: a definir  Aguardando alocação Cópia em PDF  Caso c07 · início 11/11/2026 · estagiários: aind |
+| ✓ | Acessibilidade | Diálogo · Diálogo de confirmação aberto: sem violações WCAG A/AA |  |
+| ✓ | Diálogo | desativar conta abre o diálogo do Vinculum, com título ligado e foco em "Cancelar" | True nao Desativar a conta de Caio? |
+| ✓ | Diálogo | Esc fecha o diálogo, nada muda e o foco volta ao botão que abriu |  |
+| ✓ | Diálogo | confirmando no diálogo, a conta é desativada; nenhuma janela do navegador foi usada |  |
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T20:26:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T20:30:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwguw8g50w2u |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgv1rz6nvni |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

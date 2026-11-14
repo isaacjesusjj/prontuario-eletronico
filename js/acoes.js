@@ -165,10 +165,11 @@ window.PEP = PEP;
       PEP.app.renderizar();
     },
     restaurar: function () {
-      if (typeof window.confirm === 'function' && !window.confirm('Restaurar os dados de demonstração? As alterações feitas serão perdidas.')) return;
-      PEP.estado.restaurar();
-      PEP.ui.toast('Dados de demonstração restaurados.');
-      PEP.app.renderizar();
+      PEP.ui.confirmar({ titulo: 'Restaurar os dados de demonstração?', texto: 'As alterações feitas neste navegador serão perdidas.', botao: 'Restaurar' }, function () {
+        PEP.estado.restaurar();
+        PEP.ui.toast('Dados de demonstração restaurados.');
+        PEP.app.renderizar();
+      });
     },
     // Cópia do prontuário: só a técnica (com o motivo de acesso), o supervisor do caso ou a leitura pelo link
     // temporário. Sem essa conferência, qualquer pessoa gravava "gerou cópia" na auditoria de qualquer caso.
@@ -382,11 +383,14 @@ window.PEP = PEP;
       // Presença ou falta só a partir do dia da sessão; a falta avisada (justificada) pode vir antes
       if (s.data > U().hoje() && valor !== 'falta-justificada') return PEP.ui.toast('Presença e falta só podem ser registradas a partir do dia da sessão.');
       // Presença registrada não muda depois: confirma antes a falta, que conta para o fluxo de abandono
-      if (valor === 'falta' && typeof window.confirm === 'function' &&
-          !window.confirm('Registrar falta sem justificativa em ' + U().formatarData(s.data) + '? Ela conta para o fluxo de abandono e não pode ser desfeita.')) return;
-      repo().atualizar('sessoes', s.id, { presenca: valor, presencaRegistradaPor: u.id });
-      var msg = R().emRiscoDeAbandono(c) ? 'Faltas seguidas: o fluxo de abandono foi aberto.' : 'Presença registrada.';
-      concluir(msg, 'Registrou presença: ' + valor, c.id);
+      var registrar = function () {
+        repo().atualizar('sessoes', s.id, { presenca: valor, presencaRegistradaPor: u.id });
+        var msg = R().emRiscoDeAbandono(c) ? 'Faltas seguidas: o fluxo de abandono foi aberto.' : 'Presença registrada.';
+        concluir(msg, 'Registrou presença: ' + valor, c.id);
+      };
+      if (valor !== 'falta') return registrar();
+      PEP.ui.confirmar({ titulo: 'Registrar falta sem justificativa?', botao: 'Registrar falta',
+        texto: 'Sessão de ' + U().formatarData(s.data) + '. A falta conta para o fluxo de abandono e não pode ser desfeita.' }, registrar);
     },
     'agendar-sessao': function (b) {
       var u = usuario(), c = caso(b.getAttribute('data-caso'));
@@ -762,10 +766,12 @@ window.PEP = PEP;
       // A direção não vê nome de paciente: o aviso diz só quantos casos ficam sem dupla
       var orfaos = R().casosQueFicamSemDupla(id);
       var aviso = orfaos.length ? '\n\n' + orfaos.length + ' caso(s) ficam sem dupla ativa. Combine com a supervisão a passagem (resumo de transferência e nova dupla).' : '';
-      if (typeof window.confirm === 'function' && !window.confirm('Encerrar o vínculo de estágio de ' + PEP.ui.nomeUsuario(id) + '? O acesso aos casos termina agora.' + aviso)) return;
-      repo().atualizar('alocacoes', a.id, { fim: U().hoje() });
-      concluir('Vínculo encerrado. O acesso aos casos terminou; o histórico continua.' + (orfaos.length ? ' ' + orfaos.length + ' caso(s) aguardam a passagem para outra dupla.' : ''),
-        'Encerrou vínculo de estágio', id);
+      PEP.ui.confirmar({ titulo: 'Encerrar o vínculo de estágio de ' + PEP.ui.nomeUsuario(id) + '?', botao: 'Encerrar vínculo',
+        texto: 'O acesso aos casos termina agora; o histórico continua.' + aviso }, function () {
+        repo().atualizar('alocacoes', a.id, { fim: U().hoje() });
+        concluir('Vínculo encerrado. O acesso aos casos terminou; o histórico continua.' + (orfaos.length ? ' ' + orfaos.length + ' caso(s) aguardam a passagem para outra dupla.' : ''),
+          'Encerrou vínculo de estágio', id);
+      });
     },
     'definir-dupla': function (b) {
       var u = usuario(), g = repo().porId('grupos', b.getAttribute('data-grupo')), id = b.getAttribute('data-id');
@@ -852,10 +858,13 @@ window.PEP = PEP;
       var u = usuario(), alvo = repo().porId('usuarios', b.getAttribute('data-id'));
       if (!R().podeGerirConta(u, alvo)) return negar();
       var ativar = !alvo.ativo;
-      if (!ativar && typeof window.confirm === 'function' &&
-          !window.confirm('Desativar a conta de ' + PEP.ui.nomeUsuario(alvo.id) + '? A pessoa não entra mais no sistema; o histórico continua.')) return;
-      repo().atualizar('usuarios', alvo.id, { ativo: ativar });
-      concluir(ativar ? 'Conta reativada.' : 'Conta desativada: a pessoa não entra mais; o histórico continua.', (ativar ? 'Reativou' : 'Desativou') + ' a conta', alvo.pacienteId || alvo.id);
+      var aplicar = function () {
+        repo().atualizar('usuarios', alvo.id, { ativo: ativar });
+        concluir(ativar ? 'Conta reativada.' : 'Conta desativada: a pessoa não entra mais; o histórico continua.', (ativar ? 'Reativou' : 'Desativou') + ' a conta', alvo.pacienteId || alvo.id);
+      };
+      if (ativar) return aplicar();
+      PEP.ui.confirmar({ titulo: 'Desativar a conta de ' + PEP.ui.nomeUsuario(alvo.id) + '?', botao: 'Desativar conta',
+        texto: 'A pessoa não entra mais no sistema; o histórico continua.' }, aplicar);
     },
     'criar-acesso-portal': function (b) {
       var u = usuario(), p = repo().porId('pacientes', b.getAttribute('data-id'));
@@ -918,9 +927,11 @@ window.PEP = PEP;
       var u = usuario(), alvo = repo().porId('usuarios', b.getAttribute('data-id'));
       if (!R().podeGerirConta(u, alvo) || !alvo.mfaAtivo) return negar();
       if (repo().adaptador().remoto) return PEP.ui.toast('Com o banco ligado, o segundo fator é removido por uma função do servidor (Supabase Auth, administração).');
-      if (typeof window.confirm === 'function' && !window.confirm('Desligar a verificação em duas etapas de ' + PEP.ui.nomeUsuario(alvo.id) + '? Use só se a pessoa perdeu o celular e os códigos de recuperação.')) return;
-      repo().atualizar('usuarios', alvo.id, { mfaAtivo: false, mfaSegredo: null, mfaRecuperacao: [], mfaDesde: null, mfaUltimoPasso: 0 });
-      concluir('Verificação em duas etapas desligada: a pessoa configura de novo.', 'Desligou a verificação em duas etapas da conta (celular perdido)', alvo.pacienteId || alvo.id);
+      PEP.ui.confirmar({ titulo: 'Desligar a verificação em duas etapas de ' + PEP.ui.nomeUsuario(alvo.id) + '?', botao: 'Desligar',
+        texto: 'Use só se a pessoa perdeu o celular e os códigos de recuperação.' }, function () {
+        repo().atualizar('usuarios', alvo.id, { mfaAtivo: false, mfaSegredo: null, mfaRecuperacao: [], mfaDesde: null, mfaUltimoPasso: 0 });
+        concluir('Verificação em duas etapas desligada: a pessoa configura de novo.', 'Desligou a verificação em duas etapas da conta (celular perdido)', alvo.pacienteId || alvo.id);
+      });
     },
 
     // ----- Acesso do paciente ao prontuário -----
