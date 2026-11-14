@@ -119,7 +119,7 @@ PEP.ui = (function () {
     if ((u && u.id) !== ultimoUsuario) { contaAberta = false; ultimoUsuario = u && u.id; }
     // Se o foco estava num botão do topo, volta para o mesmo botão depois de redesenhar
     var ativo = document.activeElement, focoAcao = ativo && topo.contains(ativo) ? (ativo.getAttribute('data-acao') || ativo.id) : null;
-    var html = '<a class="marca-topo" href="' + (u ? '#/painel' : '#/entrar') + '">' + aneis() + '<span>Vinculum</span><span class="sr-only">: início</span></a>' +
+    var html = '<a class="marca-topo" href="' + (u ? '#/painel' : '#/entrar') + '">' + aneis() + '<span class="nome-marca">Vinculum</span><span class="sr-only">: início</span></a>' +
       '<div class="topo-direita">';
     if (u) {
       var nome = nomeUsuario(u.id);

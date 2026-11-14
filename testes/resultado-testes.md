@@ -1,8 +1,8 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 14/11/2026 17:39, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 14/11/2026 17:49, no Chrome (Playwright), com axe-core 4.14.0.
 
-**408 de 408 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**410 de 410 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
@@ -33,7 +33,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 17:39, no Chrome (Playwright), 
 | Rodízio | 4 | 0 |
 | Sessão | 4 | 0 |
 | Demonstração | 2 | 0 |
-| Celular | 18 | 0 |
+| Celular | 20 | 0 |
 | Identidade | 4 | 0 |
 | Painel | 1 | 0 |
 | Caso | 4 | 0 |
@@ -231,6 +231,8 @@ Gerado por `testes/testar_site.py` em 14/11/2026 17:39, no Chrome (Playwright), 
 | ✓ | Acessibilidade | Alto contraste · contraste #/caso/c01: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | Alto contraste · contraste #/agenda: sem violações WCAG A/AA |  |
 | ✓ | Acessibilidade | texto em 150% sem rolagem lateral |  |
+| ✓ | Celular | texto em 150% no celular sem rolagem lateral em #/sobre (visitante) | 390 |
+| ✓ | Celular | texto em 150% no celular sem rolagem lateral em #/conta (bia.estagiaria) | 390 |
 | ✓ | Identidade | entrada mostra o logotipo da faculdade (servido pelo site, com texto alternativo) e o nome Vinculum |  |
 | ✓ | Identidade | uma fonte só (Public Sans) em títulos e textos |  |
 | ✓ | Celular | entrada sem rolagem lateral e sem barra de navegação (ainda sem login) |  |
@@ -395,7 +397,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 17:39, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 14:38. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 14:48. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -462,10 +464,10 @@ Gerado por `testes/testar_site.py` em 14/11/2026 17:39, no Chrome (Playwright), 
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T17:39:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T17:49:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgox7mlzr8w |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgpa3z1he8c |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

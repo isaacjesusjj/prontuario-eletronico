@@ -36,8 +36,8 @@ def medir(s, quem, rota, larg, contraste):
     if m["fonteMin"] < 12: prob.append(f"fonte mínima {m['fonteMin']}")
     if not s.p.evaluate("typeof window.axe !== 'undefined'"): s.p.add_script_tag(path=str(t.AXE))
     v = s.p.evaluate(AXE)
-    if v: prob.append(f"contraste({'AC' if contraste else 'normal'}): {v[:3]}")
-    if prob: out.append(f"{quem} {larg} {'AC ' if contraste else ''}{rota}: " + " | ".join(prob))
+    if v: prob.append(f"contraste({'AC' if contraste is True else 'normal'}): {v[:3]}")
+    if prob: out.append(f"{quem} {larg} {('AC ' if contraste is True else 'FONTE+ ' if contraste else '')}{rota}: " + " | ".join(prob))
 with sync_playwright() as p:
     nav = p.chromium.launch()
     for larg in (320, 390):
@@ -47,8 +47,9 @@ with sync_playwright() as p:
                 s.entrar(login)
                 if login == "ana.tecnica": s.js("PEP.db.casos.forEach(c => PEP.db.acessosJustificados.push({id:'aj-'+c.id, usuarioId:'u-tec', casoId:c.id, motivo:'responsabilidade-tecnica', detalhe:'', em: PEP.util.agora()}))")
             else: s.abrir("#/entrar")
-            for contraste in ((False, True) if larg == 390 else (False,)):
-                if contraste: s.js("PEP.acessibilidade.alternarContraste()")
+            for contraste in ((False, True, "fonte") if larg == 390 else (False,)):
+                if contraste is True: s.js("PEP.acessibilidade.alternarContraste()")
+                if contraste == "fonte": s.js("PEP.acessibilidade.alternarContraste(); for (var i = 0; i < 6; i++) PEP.acessibilidade.mudarFonte(1)")
                 for r in (rotas(login) if login else PUB):
                     s.ir(r); medir(s, login or "visitante", r, larg, contraste)
             s.fechar()

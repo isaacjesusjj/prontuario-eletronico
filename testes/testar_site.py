@@ -661,6 +661,21 @@ def celular_e_preferencias(nav, base):
         s.clicar('[data-acao="fonte-maior"]')
     conferir("Acessibilidade", "texto em 150% sem rolagem lateral", s.js("document.documentElement.style.fontSize") == "150%" and s.js("document.documentElement.scrollWidth <= window.innerWidth + 1"))
     s.fechar()
+    # Celular com o texto em 150%: o topo (botão "Acessibilidade" do visitante) e o e-mail longo em
+    # "Minha conta" não empurram a tela para o lado
+    for login, rota in ((None, "#/sobre"), ("bia.estagiaria", "#/conta")):
+        s = Sessao(nav, base, "Celular", viewport={"width": 390, "height": 844})
+        if login:
+            s.entrar(login)
+        else:
+            s.abrir(rota)
+        s.js("for (var i = 0; i < 3; i++) PEP.acessibilidade.mudarFonte(1)")
+        s.ir(rota)
+        s.p.evaluate("document.querySelectorAll('#app details').forEach(d => d.open = true)")
+        conferir("Celular", f"texto em 150% no celular sem rolagem lateral em {rota} ({login or 'visitante'})",
+                 s.js("document.documentElement.scrollWidth <= window.innerWidth + 1") and s.p.locator(".botao-conta").evaluate("b => b.getBoundingClientRect().right <= innerWidth"),
+                 str(s.js("document.documentElement.scrollWidth")))
+        s.fechar()
 
 
 def navegacao_e_identidade(nav, base):

@@ -70,6 +70,7 @@ body {
   font-size: 1rem;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-wrap: break-word;   /* e-mail ou palavra longa quebra em vez de empurrar a tela para o lado */
   min-height: 100dvh;
 }
 a { color: var(--verde); text-underline-offset: 3px; }
@@ -108,7 +109,10 @@ img { max-width: 100%; height: auto; }
 body[data-tela="entrar"] .marca-topo, body[data-tela="esqueci-senha"] .marca-topo { visibility: hidden; }
 .marca-topo svg, .marca-grande svg { flex: none; }
 .marca-topo .aneis { width: 30px; height: 20px; }
-.topo-direita { position: relative; display: flex; align-items: center; gap: .5rem; }
+.topo-direita { position: relative; display: flex; align-items: center; gap: .5rem; flex: none; }
+/* Com o texto em 150% no celular, o topo mostra só o símbolo: o nome sai da vista (o leitor de tela
+   continua lendo) para o botão da direita caber inteiro, sem rolagem lateral */
+@media (max-width: 599px) { html.fonte-maxima .marca-topo .nome-marca { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 .botao-conta {
   display: inline-flex; align-items: center; gap: .55rem;
   font: inherit; font-size: .92rem; color: #fff;

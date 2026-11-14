@@ -18,6 +18,7 @@ PEP.acessibilidade = (function () {
 
   function aplicar() {
     document.documentElement.style.fontSize = NIVEIS[pref.fonte] + '%';
+    document.documentElement.classList.toggle('fonte-maxima', pref.fonte === NIVEIS.length - 1);   // o CSS enxuga o topo no celular
     document.documentElement.classList.toggle('contraste', !!pref.contraste);
     var b = document.querySelector('[data-acao="alto-contraste"]');
     if (b) {
