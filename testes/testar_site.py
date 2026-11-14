@@ -122,7 +122,8 @@ class Sessao:
             self.p.wait_for_timeout(150)
 
     def axe(self, nome, regras=None):
-        if not AXE.exists():
+        if not AXE.exists():   # sem o axe-core instalado (cd testes && npm install), a checagem falha em vez de sumir
+            conferir("Acessibilidade", f"{self.grupo} · {nome}: axe-core instalado em testes/node_modules", False, str(AXE))
             return
         if not self.p.evaluate("typeof window.axe !== 'undefined'"):
             self.p.add_script_tag(path=str(AXE))
@@ -341,7 +342,11 @@ def estagiaria(nav, base):
     conferir("Anexos", "PDF válido guardado com hash e nome seguro", ultimo["nome"] == "encaminhamento-CAPS.pdf" and len(ultimo.get("hash") or "") == 64)
     with s.p.expect_popup() as aba:
         s.clicar(f'[data-acao="abrir-anexo"][data-id="{ultimo["id"]}"]')
-    conferir("Anexos", "anexo abre do armazenamento do navegador", aba.value.url.startswith("blob:"))
+    try:   # a aba nasce em about:blank e só depois recebe o endereço blob: do arquivo
+        aba.value.wait_for_url("blob:**", timeout=5000)
+    except Exception:
+        pass
+    conferir("Anexos", "anexo abre do armazenamento do navegador", aba.value.url.startswith("blob:"), aba.value.url[:60])
     aba.value.close()
 
     # Agenda
@@ -571,6 +576,10 @@ def direcao(nav, base):
     s.axe("Indicadores")
     s.ir("#/casos")
     conferir("Permissões", "direção não navega em prontuários", s.h1() == "Acesso não permitido")
+    for rota in ("#/caso/c01", "#/caso/c01/evolucoes", "#/imprimir/c01"):   # nem pelo endereço direto
+        s.ir(rota)
+        conferir("Permissões", f"direção não abre prontuário pelo endereço ({rota})",
+                 "Paciente Exemplo 01" not in s.p.locator("#app").inner_text(), s.h1())
     s.ir("#/estudantes")
     s.axe("Estudantes")
     csv = ("nome;matricula;email\nJoana Exemplo;20240101;joana.exemplo@aluno.example.org\n"
@@ -1835,6 +1844,12 @@ def regras_nas_acoes(nav, base):
     burla(s, "adicionar-adendo", {"id": "e01"}, {"adtxt-e01": "adendo sem motivo"})
     burla(s, "adicionar-adendo", {"id": "e01"}, {"adtxt-e01": "adendo com motivo inventado", "admot-e01": "<b>qualquer</b>"})
     conferir("Regras nas ações", "adendo sem motivo da lista é negado (RS-18)", conta(s, "adendos") == ad0)
+    # Validar é do supervisor do caso: a estagiária da dupla não vê o botão e a ação é negada
+    s.ir("#/caso/c01/evolucoes")
+    sem_botao = s.p.locator('[data-acao="validar-evolucao"]').count() == 0
+    burla(s, "validar-evolucao", {"id": "e18"})
+    conferir("Regras nas ações", "estagiária não valida evolução da colega de dupla (nem pela tela, nem pela ação)",
+             sem_botao and s.js("PEP.util.porId(PEP.db.evolucoes, 'e18').status") == "enviada")
     burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "entrega"}, {"ev-para": "a paciente"})
     ed0 = conta(s, "eventosDocumento")
     burla(s, "registrar-evento-documento", {"id": "doc01", "tipo": "entrega"}, {"ev-para": "outra pessoa"})
@@ -1845,6 +1860,16 @@ def regras_nas_acoes(nav, base):
 
     # Supervisora: troca de dupla só pela passagem
     s.entrar("helena.supervisora")
+    # Fronteira do abandono (regras.faltasSeguidasLimite = 2): c02 tem 2 faltas seguidas; em c03, a última
+    # sessão realizada vira falta, para o caso ficar com exatamente 1
+    s.js("""() => { var ss = PEP.db.sessoes.filter(x => x.casoId === 'c03' && x.presenca === 'presente')
+                       .sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora)); ss[ss.length - 1].presenca = 'falta'; }""")
+    s.ir("#/caso/c02/sessoes")
+    com_duas = s.p.locator('[data-acao="registrar-contato"]').count() == 1
+    s.ir("#/caso/c03/sessoes")
+    com_uma = s.p.locator('[data-acao="registrar-contato"]').count()
+    conferir("Regras nas ações", "o fluxo de abandono abre com 2 faltas seguidas e não com 1 (faltasSeguidasLimite)",
+             com_duas and com_uma == 0 and s.js("PEP.regras.faltasSeguidas(PEP.util.porId(PEP.db.casos, 'c03'))") == 1)
     tr0 = conta(s, "transferencias")
     r = burla(s, "atribuir-caso", {"id": "c01"}, {"cs-c01": "d-a2"})
     conferir("Regras nas ações", "supervisora não troca a dupla de um caso que já tem dupla sem a passagem (RS-02)",
