@@ -82,7 +82,7 @@ PEP.telas = PEP.telas || {};
     var nomesTermo = { sigilo: 'Termo de responsabilidade e sigilo', uso: 'Termos de uso e aviso de privacidade' };
     return '<h1>Minha conta</h1><p class="subtitulo">Seus dados de acesso, a troca de senha e a verificação em duas etapas.</p>' +
       '<div class="cartao"><h2>Dados da conta</h2><p><strong>Nome:</strong> ' + esc(PEP.ui.nomeUsuario(u.id)) + '<br><strong>Usuário:</strong> ' + esc(u.login) +
-      '<br><strong>E-mail:</strong> ' + esc(u.email) + '<br><strong>Perfil:</strong> ' + esc(PEP.regras.nomePerfil(u.perfil)) +
+      '<br><strong>E-mail:</strong> ' + esc(u.email) + '<br><strong>Perfil:</strong> ' + esc(u.cargo || PEP.regras.nomePerfil(u.perfil)) +
       (u.matricula ? '<br><strong>Matrícula:</strong> ' + esc(u.matricula) : '') + (u.crp ? '<br><strong>CRP:</strong> ' + esc(u.crp) : '') + '</p>' +
       '<p class="suave pequeno">A sessão encerra sozinha depois de ' + PEP.regra('inatividadeMinutos') + ' minutos sem uso e quando a aba é fechada.</p></div>' +
       formularioSenha(false) + cartaoMfa(u) +
@@ -202,7 +202,7 @@ PEP.telas = PEP.telas || {};
     var caso = PEP.util.porId(PEP.db.casos, link.casoId);
     if (PEP.telas._linkLiberado === link.id) {
       return '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><span class="suave pequeno">Link válido até ' + data(link.expiraEm) + '</span>' +
-        '<button class="botao" data-acao="imprimir" data-caso="' + caso.id + '">Imprimir / salvar em PDF</button></div>' + PEP.telas.copiaProntuario(caso, 'para leitura do(a) paciente');
+        '<button class="botao" data-acao="imprimir" data-caso="' + caso.id + '">Imprimir / salvar em PDF</button></div>' + PEP.telas.copiaProntuario(caso, 'para leitura da pessoa atendida');
     }
     return '<h1>Seu prontuário</h1><form class="cartao" data-form="abrir-link" id="form-link" style="max-width:480px" novalidate>' +
       '<input type="hidden" name="token" value="' + esc(token) + '">' +

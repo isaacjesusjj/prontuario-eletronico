@@ -130,7 +130,7 @@ PEP.ui = (function () {
         '<span class="avatar" aria-hidden="true">' + esc(String(nome).charAt(0).toUpperCase()) + '</span><span class="nome-conta">' + esc(nome) + '</span>' +
         '<span class="sr-only">Conta e preferências</span></button>' +
         '<div class="menu-conta" id="menu-conta"' + (contaAberta ? '' : ' hidden') + '>' +
-        '<div class="menu-conta-quem"><strong>' + esc(nome) + '</strong><span>' + esc(PEP.regras.nomePerfil(u.perfil)) + '</span></div><ul>' +
+        '<div class="menu-conta-quem"><strong>' + esc(nome) + '</strong><span>' + esc(u.cargo || PEP.regras.nomePerfil(u.perfil)) + '</span></div><ul>' +
         itemAlternar('modo-discreto', 'Modo discreto', discreto()) +
         '<li><button type="button" class="item-conta" data-acao="cobrir-tela">Cobrir a tela</button></li>' +
         preferenciasDeTela() +

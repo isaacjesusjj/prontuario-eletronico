@@ -362,7 +362,7 @@ PEP.telas = PEP.telas || {};
     var caso = PEP.util.porId(PEP.db.casos, casoId);
     if (!caso) return '<h1>Caso não encontrado</h1>';
     if (!R().podeVerCaso(u, caso)) {
-      return PEP.ui.semPermissao('Você não está alocado(a) neste caso. Estagiários só acessam os casos da própria dupla ou trio, enquanto o vínculo de estágio estiver ativo; supervisores, os casos dos seus grupos.');
+      return PEP.ui.semPermissao('Este caso não é da sua dupla ou trio. Estagiários só acessam os casos da própria dupla ou trio, enquanto o vínculo de estágio estiver ativo; supervisores, os casos dos seus grupos.');
     }
     if (rotasPermitidas(u, caso).indexOf(aba) === -1) aba = 'resumo';
     // Técnica fora da equipe do caso: o conteúdo clínico só abre com o motivo do acesso registrado

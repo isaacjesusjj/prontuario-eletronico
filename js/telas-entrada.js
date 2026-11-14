@@ -67,7 +67,7 @@ PEP.telas = PEP.telas || {};
       '<h2>Contas de demonstração</h2>' +
       '<p class="suave pequeno" style="margin:0">Contas fictícias: toque numa conta e depois em <strong>Entrar</strong>. Senha de todas: <strong>' + esc(meta.senhaDemonstracao || '') + '</strong>.</p>' +
       '<div class="contas-demo">' + contas + '</div>' +
-      '<div class="cartao"><h2>Quer ser atendido(a)?</h2><p class="suave">Entre na fila de espera da clínica-escola. Leva 2 minutos.</p>' +
+      '<div class="cartao"><h2>Quer atendimento?</h2><p class="suave">Entre na fila de espera da clínica-escola. Leva 2 minutos.</p>' +
       '<a class="botao secundario largo" href="#/inscricao">Entrar na fila de espera</a></div>' +
       '<section class="cartao equipe-projeto" aria-labelledby="titulo-equipe"><h2 id="titulo-equipe">Quem fez o Vinculum</h2>' +
       '<ul>' + PEP.telas.GRUPO.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>' +
@@ -91,7 +91,7 @@ PEP.telas = PEP.telas || {};
         '<p>Você recebe uma <strong>senha provisória</strong> e, ao entrar com ela, cria a sua.</p>') +
       '</div>' +
       '<section class="cartao" aria-labelledby="titulo-quem-gera"><h2 id="titulo-quem-gera">Quem gera a senha provisória</h2><ul class="lista-itens">' +
-      '<li><span class="sinal info" aria-hidden="true"></span><div class="resto"><strong>Estudante, supervisor(a) ou equipe</strong>' +
+      '<li><span class="sinal info" aria-hidden="true"></span><div class="resto"><strong>Estudantes, supervisão e equipe</strong>' +
       '<small>Peça a senha provisória à coordenação do curso.</small></div></li>' +
       '<li><span class="sinal info" aria-hidden="true"></span><div class="resto"><strong>Paciente</strong>' +
       '<small>Fale com a psicóloga técnica da clínica-escola. Ela confere quem é você antes de gerar a senha provisória.</small></div></li></ul></section>' +
@@ -120,7 +120,7 @@ PEP.telas = PEP.telas || {};
       '<p class="suave pequeno">Campos com * são obrigatórios.</p>' +
       '<div class="grade-2">' +
       '<div class="campo"><label for="f-nome">Nome completo *</label><input id="f-nome" name="nome" type="text" required maxlength="80" autocomplete="name"></div>' +
-      '<div class="campo"><label for="f-social">Como prefere ser chamado(a)</label><input id="f-social" name="social" type="text" maxlength="80"><span class="dica">Opcional. Respeitamos o nome social.</span></div>' +
+      '<div class="campo"><label for="f-social">Nome que prefere usar</label><input id="f-social" name="social" type="text" maxlength="80"><span class="dica">Opcional. Respeitamos o nome social.</span></div>' +
       '<div class="campo"><label for="f-nasc">Data de nascimento *</label><input id="f-nasc" name="nascimento" type="date" required autocomplete="bday"></div>' +
       '<div class="campo"><label for="f-cpf">CPF *</label><input id="f-cpf" name="cpf" type="text" inputmode="numeric" data-mascara="cpf" maxlength="14" placeholder="000.000.000-00" autocomplete="off">' +
       '<label class="check pequeno" style="margin:.3rem 0 0"><input type="checkbox" id="f-semcpf" name="semcpf"> <span>Não tenho CPF (a equipe confirma a identidade no acolhimento)</span></label></div>' +
@@ -139,7 +139,7 @@ PEP.telas = PEP.telas || {};
       'Quem vê é só a equipe técnica da clínica-escola. Você pode pedir para sair da fila, corrigir ou consultar seus dados a qualquer momento. ' +
       '<a href="#/privacidade" target="_blank" rel="noopener">Ler o aviso completo</a> (abre em nova aba).</div>' +
       '<label class="check"><input type="checkbox" name="ciente" id="f-ciente"> <span>Li o aviso de privacidade e quero entrar na fila. *</span></label>' +
-      '<label class="check" id="linha-resp-ok" hidden><input type="checkbox" name="responsavelOk" id="f-respok"> <span>Sou o(a) responsável legal e autorizo esta inscrição (obrigatório para menores de 18 anos). *</span></label>' +
+      '<label class="check" id="linha-resp-ok" hidden><input type="checkbox" name="responsavelOk" id="f-respok"> <span>Sou responsável legal e autorizo esta inscrição (obrigatório para menores de 18 anos). *</span></label>' +
       '<button class="botao" type="submit">Enviar inscrição</button></form>';
   };
 

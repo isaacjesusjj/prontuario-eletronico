@@ -825,7 +825,7 @@ window.PEP = PEP;
         return promessa.then(function () {
           var senha = PEP.seguranca.senhaProvisoria();
           return PEP.seguranca.hashSenha(senha).then(function (hash) {
-            repo().inserir('usuarios', { nome: l.nome, login: l.login, email: l.email, perfil: 'estagiario', cargo: 'Estagiário(a)', crp: null, matricula: l.matricula,
+            repo().inserir('usuarios', { nome: l.nome, login: l.login, email: l.email, perfil: 'estagiario', cargo: 'Estágio em Psicologia', crp: null, matricula: l.matricula,
               pacienteId: null, senhaHash: hash, senhaProvisoria: true, ativo: true, criadoEm: U().hoje() });
             resultado.push({ nome: l.nome, login: l.login, senha: senha });
           });

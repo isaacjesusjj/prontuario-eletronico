@@ -305,7 +305,7 @@ PEP.telas = PEP.telas || {};
   function dataPorExtenso(iso) { var p = String(iso).slice(0, 10).split('-'); return Number(p[2]) + ' de ' + MESES[Number(p[1]) - 1] + ' de ' + p[0]; }
   function quemAssina(id) {
     var x = PEP.util.porId(PEP.db.usuarios, id) || {};
-    return esc(x.nome || id) + '<br>' + (x.crp ? 'Psicólogo(a) · ' + esc(x.crp) : 'Estagiário(a) de Psicologia' + (x.matricula ? ' · matrícula ' + esc(x.matricula) : ''));
+    return esc(x.nome || id) + '<br>' + (x.crp ? esc(x.cargo || 'Psicologia') + ' · ' + esc(x.crp) : 'Estágio em Psicologia' + (x.matricula ? ' · matrícula ' + esc(x.matricula) : ''));
   }
   function acoesDoDocumento(u, d, caso) {
     var html = '', entrega = R().eventoDoDocumento(d, 'entrega');
@@ -335,7 +335,7 @@ PEP.telas = PEP.telas || {};
     var m = R().modalidadeDocumento(d.tipo) || { nome: d.tipo, secoes: [] }, p = PEP.ui.pacienteDoCaso(caso);
     var eventos = R().eventosDoDocumento(d), nomes = { entrega: 'Entregue', devolutiva: 'Devolutiva feita', 'sem-devolutiva': 'Devolutiva não feita', anulacao: 'Anulado' };
     var autor = PEP.util.porId(PEP.db.usuarios, d.autorId) || {}, sup = R().supervisorDoCaso(caso);
-    var autoria = esc(autor.nome || d.autorId) + (autor.perfil === 'estagiario' ? ' (estagiário(a) de Psicologia), sob supervisão de ' + esc(PEP.ui.nomeUsuario(sup)) : '');
+    var autoria = esc(autor.nome || d.autorId) + (autor.perfil === 'estagiario' ? ' (estágio em Psicologia, sob supervisão de ' + esc(PEP.ui.nomeUsuario(sup)) + ')' : '');
     var acoes = acoesDoDocumento(u, d, caso);
     var html = '<div class="linha entre nao-imprimir" style="margin-bottom:1rem"><a class="voltar" href="#/caso/' + caso.id + '/documentos">‹ Voltar aos documentos</a>' +
       (R().documentoValido(d) ? '<button class="botao" data-acao="imprimir-documento" data-id="' + d.id + '">Imprimir / salvar em PDF</button>' : '') + '</div>' +
@@ -349,7 +349,7 @@ PEP.telas = PEP.telas || {};
     html += '<article class="documento-psicologico" aria-label="' + esc(m.nome) + '">' +
       '<header class="doc-cabecalho">' + PEP.telas.logoFaculdade(38) + '<strong>' + esc(PEP.config().instituicao.nome) + '</strong><br>Serviço-Escola de Psicologia</header>' +
       '<h2 class="doc-titulo">' + esc(m.nome) + '</h2>' +
-      '<dl class="doc-identificacao"><dt>Interessado(a)</dt><dd>' + esc(p.nome) + '</dd><dt>Solicitante</dt><dd>' + esc(d.solicitante || 'não informado') + '</dd>' +
+      '<dl class="doc-identificacao"><dt>Pessoa atendida</dt><dd>' + esc(p.nome) + '</dd><dt>Solicitante</dt><dd>' + esc(d.solicitante || 'não informado') + '</dd>' +
       '<dt>Finalidade</dt><dd>' + esc(d.finalidade) + '</dd><dt>Destinatário</dt><dd>' + esc(d.destinatario) + '</dd><dt>Autoria</dt><dd>' + autoria + '</dd></dl>' +
       m.secoes.filter(function (sec) { return d.conteudo && d.conteudo[sec.id]; }).map(function (sec) {
         return (m.secoes.length > 1 ? '<h3 class="doc-secao">' + esc(sec.nome) + '</h3>' : '') + '<p class="doc-texto">' + esc(d.conteudo[sec.id]) + '</p>';

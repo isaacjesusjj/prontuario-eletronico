@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "versao": "2026-11-14.1",
+    "versao": "2026-11-14.2",
     "descricao": "Dados 100% fictícios para a demonstração do protótipo Vinculum (PIC de ADS, Santa Casa de SP). Cada coleção corresponde a uma tabela do banco (banco/schema.sql).",
     "dataBase": "2026-11-06",
     "sobreDatas": "As datas foram escritas como se hoje fosse dataBase. Com _config.demo.datasRelativas, o protótipo desloca todas as datas para que dataBase vire o dia de hoje.",
@@ -13,7 +13,7 @@
       "nome": "Clínica-Escola de Psicologia (fictícia, para o protótipo)",
       "controlador": "Instituição de ensino mantenedora da clínica-escola (fictícia)",
       "encarregado": {
-        "nome": "Encarregado(a) de Dados (fictício)",
+        "nome": "Encarregado de dados (fictício)",
         "email": "encarregado@clinica.example.org"
       },
       "contato": "(11) 3000-0000 (fictício)",
@@ -314,7 +314,7 @@
         },
         {
           "id": "estrategiasProprias",
-          "nome": "2. O que eu mesmo(a) posso fazer",
+          "nome": "2. O que eu posso fazer por conta própria",
           "pergunta": "O que ajuda a atravessar o momento sem precisar de outra pessoa?"
         },
         {
@@ -487,9 +487,9 @@
         "entregue": "Entregue"
       },
       "perfis": {
-        "tecnico": "Psicólogo(a) técnico(a)",
-        "supervisor": "Supervisor(a)",
-        "estagiario": "Estagiário(a)",
+        "tecnico": "Psicologia técnica",
+        "supervisor": "Supervisão",
+        "estagiario": "Estágio",
         "paciente": "Paciente",
         "direcao": "Direção do curso"
       },

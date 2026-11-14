@@ -58,9 +58,9 @@ Senha de todas: **`demonstracao2026`** (no JSON só existe o hash). Na tela de l
 
 | Perfil | Quem | Usuário | O que mostrar |
 |---|---|---|---|
-| Estagiário(a) | Bia · Duda · Enzo | `bia.estagiaria` · `duda.estagiaria` · `enzo.estagiario` | Bia ainda não aceitou o termo de sigilo: mostra o primeiro acesso |
-| Supervisor(a) | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; orientações fora do prontuário; risco e notificação (casos c03 e c04) |
-| Psicólogo(a) técnico(a) | Ana Lúcia | `ana.tecnica` | Fila (inscrição i05 com CPF já cadastrado), triagem, acesso do paciente, pedidos LGPD, auditoria |
+| Estágio | Bia · Duda · Enzo | `bia.estagiaria` · `duda.estagiaria` · `enzo.estagiario` | Bia ainda não aceitou o termo de sigilo: mostra o primeiro acesso |
+| Supervisão | Helena (Grupo A) · Rafael (Grupo B) | `helena.supervisora` · `rafael.supervisor` | Valida ou devolve evoluções; orientações fora do prontuário; risco e notificação (casos c03 e c04) |
+| Psicologia técnica | Ana Lúcia | `ana.tecnica` | Fila (inscrição i05 com CPF já cadastrado), triagem, acesso do paciente, pedidos LGPD, auditoria |
 | Paciente | Paciente Exemplo 01 | `paciente01` | Confirma sessão, pede cópia, "Meus dados" |
 | Direção do curso | Marta | `marta.direcao` | Indicadores, grupos, importar estudantes, encerrar vínculo |
 
