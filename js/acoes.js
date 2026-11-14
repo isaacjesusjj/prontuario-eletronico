@@ -1352,7 +1352,7 @@ window.PEP = PEP;
       var barra = el('ts-barra');
       barra.style.width = (t.value ? (av.forca + 1) * 20 : 0) + '%';
       barra.className = 'forca-' + av.forca;
-      el('ts-forca').textContent = t.value ? 'Força: ' + av.rotulo + (av.ok ? ' · atende às regras' : ' · ' + av.erros[0]) : 'Força: —';
+      el('ts-forca').textContent = t.value ? 'Força: ' + av.rotulo + (av.ok ? ' · atende às regras' : ' · ' + av.erros[0]) : 'Força: aparece enquanto você digita';
     }
   });
   document.addEventListener('change', function (ev) {

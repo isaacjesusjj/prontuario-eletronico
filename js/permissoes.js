@@ -360,7 +360,7 @@ PEP.regras = (function () {
     var faltas = conta('falta') + conta('falta-justificada');
     return 'Período: de ' + PEP.util.formatarData(caso.inicio) + ' a ' + PEP.util.formatarData(PEP.util.hoje()) + ' · ' + conta('presente') + ' sessões com presença · ' +
       faltas + ' falta(s), ' + conta('falta-justificada') + ' justificada(s).\n' +
-      'Demanda: ' + (a.demanda || '—') + '\nObjetivos: ' + (a.objetivos || '—') + '\n' +
+      'Demanda: ' + (a.demanda || 'não registrada') + '\nObjetivos: ' + (a.objetivos || 'não registrados') + '\n' +
       PEP.lista('secoesResumoTransferencia').map(function (nome) { return nome + ': '; }).join('\n');
   }
   // Seções do resumo ainda sem conteúdo (cada uma precisa de pelo menos regras.resumoSecaoMinCaracteres)

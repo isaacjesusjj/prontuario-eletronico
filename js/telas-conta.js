@@ -20,7 +20,7 @@ PEP.telas = PEP.telas || {};
       '<div class="senha-linha"><input id="ts-nova" type="password" autocomplete="new-password" aria-describedby="ts-regras ts-forca" maxlength="' + PEP.regra('senhaMaximo') + '">' +
       '<button type="button" class="botao secundario pequeno" data-acao="mostrar-senha" data-alvo="ts-nova" aria-pressed="false">Mostrar</button></div>' +
       '<div class="medidor" aria-hidden="true"><span id="ts-barra"></span></div>' +
-      '<span class="dica" id="ts-forca" aria-live="polite">Força: —</span>' +
+      '<span class="dica" id="ts-forca" aria-live="polite">Força: aparece enquanto você digita</span>' +
       '<ul class="regras-senha dica" id="ts-regras">' +
       '<li>Pelo menos ' + min + ' caracteres. Uma frase curta é mais fácil de lembrar e mais difícil de adivinhar.</li>' +
       '<li>Não precisa de símbolo nem de maiúscula obrigatória (recomendação do NIST, 2025).</li>' +
@@ -162,7 +162,7 @@ PEP.telas = PEP.telas || {};
       '<p class="suave">Seus direitos como titular dos dados estão no art. 18 da LGPD. A resposta vem em até ' + PEP.regra('prazoRespostaTitularDias') + ' dias.</p>' +
       '<div class="cartao"><h2>Dados cadastrais que a clínica guarda</h2><p><strong>Nome:</strong> ' + esc(p.nome) + (p.nomeSocial ? ' (' + esc(p.nomeSocial) + ')' : '') +
       '<br><strong>Nascimento:</strong> ' + data(p.dataNascimento) + '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) +
-      '<br><strong>Telefone:</strong> ' + esc(PEP.validar.formatarTelefone(p.telefone)) + '<br><strong>E-mail:</strong> ' + esc(p.email || '—') +
+      '<br><strong>Telefone:</strong> ' + esc(PEP.validar.formatarTelefone(p.telefone)) + '<br><strong>E-mail:</strong> ' + esc(p.email || 'não informado') +
       (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + esc(p.responsavelNome) : '') +
       (p.emergenciaNome ? '<br><strong>Contato de emergência:</strong> ' + esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
         ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone)) : '') + '</p>' +

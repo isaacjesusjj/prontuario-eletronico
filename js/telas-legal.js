@@ -108,13 +108,13 @@ PEP.telas = PEP.telas || {};
       ['Estagiário só abre os casos da própria dupla ou trio, e só enquanto o vínculo de estágio está ativo', 'LGPD, art. 6º, III (necessidade); Código de Ética, art. 9º (sigilo)', 'Entrar como Bia e abrir um caso do Enzo; entrar como Iara (vínculo encerrado)', 'Sim'],
       ['Supervisor vê só os casos dos seus grupos; direção vê só indicadores', 'LGPD, art. 6º, III; Código de Ética, art. 9º', 'Entrar como Rafael ou Marta', 'Sim'],
       ['Evolução: rascunho → enviada → validada (assinatura do estagiário e do supervisor) → bloqueada; correção só por adendo', 'Res. CFP 01/2009, art. 3º; Res. CFP 05/2025, art. 19', 'Caso → Evoluções', 'Sim'],
-      ['Assinatura hoje é eletrônica simples (login e senha); documentos para terceiros pedirão assinatura avançada (gov.br) ou qualificada (ICP-Brasil)', 'Lei 14.063/2020, art. 14', 'Documentos (evolução futura)', '—'],
+      ['Assinatura hoje é eletrônica simples (login e senha); documentos para terceiros pedirão assinatura avançada (gov.br) ou qualificada (ICP-Brasil)', 'Lei 14.063/2020, art. 14', 'Documentos (evolução futura)', 'Não se aplica'],
       ['Prontuário com identificação, demanda, objetivos, evolução, encerramento e cópia dos documentos emitidos', 'Res. CFP 05/2025, art. 12', 'Caso → Resumo; cópia em PDF', 'Sim'],
       ['Paciente tem acesso irrestrito ao prontuário; o técnico organiza a entrega, não decide', 'Res. CFP 05/2025, art. 13', 'Paciente → Prontuário; Técnica → Pedidos → Cópia do prontuário', 'Sim'],
       ['Testes psicológicos fora do prontuário e da cópia; só instrumentos com parecer favorável do SATEPSI', 'Res. CFP 05/2025, art. 14; Res. CFP 31/2022', 'Caso → Área restrita → Avaliação psicológica', 'Sim'],
       ['Registro de supervisão separado, visível só para supervisores e estagiários', 'Res. CFP 05/2025, art. 17', 'Caso → Área restrita → Supervisão', 'Sim'],
       ['Termo de responsabilidade no primeiro acesso; usuário informado sobre o direito de acesso ao prontuário; Código de Ética disponível', 'Res. CFP 05/2025, art. 10, I, III e IV', 'Primeiro acesso da Bia; painel do paciente', 'Sim'],
-      ['Guarda do prontuário: mínimo de 5 anos; instituição adota 20 (parametrizável)', 'Res. CFP 05/2025, art. 18; Lei 13.787/2018, art. 6º', '_config.regras no JSON', '—'],
+      ['Guarda do prontuário: mínimo de 5 anos; instituição adota 20 (parametrizável)', 'Res. CFP 05/2025, art. 18; Lei 13.787/2018, art. 6º', '_config.regras no JSON', 'Não se aplica'],
       ['Gravação e observação informadas desde o início, com consentimento por finalidade, revogável e com histórico', 'Código de Ética, art. 14; LGPD, arts. 8º, § 5º, e 11, I', 'Triagem; Caso → Resumo; Paciente → Meus dados', 'Sim'],
       ['Menor de idade só com responsável legal; ao responsável, o essencial', 'Código de Ética, arts. 8º e 13; LGPD, art. 14; Enunciado CD/ANPD 1/2023', 'Fila de espera; caso c04', 'Sim'],
       ['Duas faltas seguidas sem justificativa abrem o fluxo de contato e motivo antes de liberar a vaga', 'Requisito do cliente (Etapa 1)', 'Caso c02 → Sessões', 'Sim'],
@@ -133,7 +133,7 @@ PEP.telas = PEP.telas || {};
       ['Revisor de escrita aponta juízo de valor, linguagem estigmatizante, dado que identifica alguém e falta de intervenção ou plano; não corrige nem bloqueia; regras no JSON, sem IA e sem o texto sair do navegador', 'Res. CFP 05/2025, art. 13 (o paciente pode ler); LGPD, art. 6º, III; Código de Ética, art. 17', 'Caso c03 → Evoluções (evolução devolvida da Duda)', 'Sim'],
       ['CPF validado (dígitos verificadores) e conferido contra cadastros, sem revelar no formulário público', 'LGPD, arts. 6º, V (qualidade dos dados) e 46', 'Fila de espera; Triagem da inscrição i05', 'Sim'],
       ['Direitos do titular: confirmação, acesso, correção, compartilhamento, eliminação, revogação; resposta em até 15 dias', 'LGPD, arts. 18 e 19, II', 'Paciente → Meus dados; Técnica → Pedidos → Direitos LGPD', 'Sim'],
-      ['Aviso de privacidade com finalidade e base legal de cada tratamento', 'LGPD, arts. 7º, 9º e 11', 'Rodapé → Aviso de privacidade', '—'],
+      ['Aviso de privacidade com finalidade e base legal de cada tratamento', 'LGPD, arts. 7º, 9º e 11', 'Rodapé → Aviso de privacidade', 'Não se aplica'],
       ['Senha: mínimo de 15 caracteres, sem regras de composição, bloqueio de senhas comuns; hash PBKDF2 com sal', 'NIST SP 800-63B-4 (2025); OWASP; LGPD, art. 46', 'Minha conta → Trocar senha', 'Sim'],
       ['Bloqueio depois de 5 tentativas, cada vez mais longo (30 s, 60 s, 2 min... até 15 min); mensagem genérica; sessão encerra por inatividade', 'LGPD, art. 46; NIST SP 800-63B-4; OWASP ASVS', 'Tela de login', 'Sim'],
       ['Verificação em duas etapas: código de 6 dígitos do aplicativo autenticador (o mesmo código não vale duas vezes) e códigos de recuperação de uso único; com ela ligada, só a senha não abre nada, nem no banco. Obrigatória para a equipe em produção (regras.mfaObrigatoria)', 'LGPD, art. 46; NIST SP 800-63B-4 (autenticação com dois fatores); RFC 6238', 'Minha conta → Verificação em duas etapas; Direção → Estudantes; Técnica → caso → Resumo (portal)', 'Sim (site e banco)'],
@@ -151,9 +151,9 @@ PEP.telas = PEP.telas || {};
       ['Auditoria de acessos com cadeia de hash, sem conteúdo clínico', 'LGPD, arts. 37 e 46; Marco Civil, art. 15', 'Técnica → Auditoria → Verificar integridade', 'Sim'],
       ['Anexos: só PDF, JPG ou PNG até 2 MB, conferindo o conteúdo do arquivo, com hash', 'LGPD, art. 46', 'Caso → Documentos', 'Sim'],
       ['Lembretes sem nome do serviço, do profissional ou conteúdo clínico, só com autorização', 'Código de Ética, art. 9º; LGPD, art. 7º, I', 'Caso → Sessões', 'Sim'],
-      ['Incidente com risco relevante comunicado à ANPD e aos titulares em até 3 dias úteis', 'LGPD, art. 48; Res. CD/ANPD 15/2024', 'Plano de resposta (docs)', '—'],
+      ['Incidente com risco relevante comunicado à ANPD e aos titulares em até 3 dias úteis', 'LGPD, art. 48; Res. CD/ANPD 15/2024', 'Plano de resposta (docs)', 'Não se aplica'],
       ['Acessibilidade nível AA', 'Lei 13.146/2015, art. 63; ABNT NBR 17225:2025 (WCAG 2.2)', 'Menu do topo (tamanho do texto, contraste, Libras); Declaração de acessibilidade', 'Sim (axe-core)'],
-      ['Limite de estagiários por grupo de orientação vira só alerta configurável', 'Res. CFP 05/2025, art. 5º (suspenso por liminar do STF, ADI 7911)', 'Painel do supervisor', '—']
+      ['Limite de estagiários por grupo de orientação vira só alerta configurável', 'Res. CFP 05/2025, art. 5º (suspenso por liminar do STF, ADI 7911)', 'Painel do supervisor', 'Não se aplica']
     ];
     return '<h1>Regras e leis</h1><p class="suave">Cada regra do sistema, a norma de onde ela vem, onde ver na tela e se há teste automático. Normas conferidas em novembro de 2026; o que depende da instituição está marcado "a validar" no aviso de privacidade.</p>' +
       '<div class="cartao">' + tabela(['Regra no sistema', 'Norma', 'Onde ver', 'Teste automático'], L.map(function (l) { return l.map(esc); }), 'Matriz de regras, normas e telas') + '</div>' +

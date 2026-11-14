@@ -196,15 +196,15 @@ PEP.telas = PEP.telas || {};
     return '<h1>Trilha de auditoria</h1><p class="suave">Quem fez o quê, quando e em qual caso. Guarda só a ação e o identificador, nunca o conteúdo clínico nem senhas. ' +
       'Cada evento leva o hash SHA-256 do anterior: se alguém mexer num evento, a verificação acusa.</p>' +
       '<div class="linha" style="margin-bottom:1rem"><button class="botao" data-acao="verificar-auditoria">Verificar integridade</button>' +
-      '<span class="suave pequeno">' + PEP.db.auditoria.length + ' eventos · último hash: <span class="codigo">' + esc((PEP.db.auditoria[PEP.db.auditoria.length - 1] || {}).hash ? PEP.db.auditoria[PEP.db.auditoria.length - 1].hash.slice(0, 16) + '…' : '—') + '</span></span></div>' +
+      '<span class="suave pequeno">' + PEP.db.auditoria.length + ' eventos · último hash: <span class="codigo">' + esc((PEP.db.auditoria[PEP.db.auditoria.length - 1] || {}).hash ? PEP.db.auditoria[PEP.db.auditoria.length - 1].hash.slice(0, 16) + '…' : 'sem eventos') + '</span></span></div>' +
       resultado + formularioFiltroAuditoria() +
       '<p class="suave pequeno" role="status">' + filtrada.length + ' evento(s)' + (PEP.telas._filtroAuditoria ? ' com este filtro' : '') +
       (filtrada.length > 200 ? '; a tabela mostra os 200 mais recentes (a planilha leva todos)' : '') + '.</p>' +
       '<div class="cartao tabela-rolagem"><table><caption class="sr-only">Eventos de auditoria, do mais recente para o mais antigo</caption><thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">Perfil</th><th scope="col">Ação</th><th scope="col">Alvo</th><th scope="col">Hash</th></tr></thead><tbody>' +
       lista.map(function (a) {
         var usuario = PEP.util.porId(PEP.db.usuarios, a.usuarioId);
-        return '<tr><td>' + data(a.em) + '</td><td>' + esc(PEP.ui.nomeUsuario(a.usuarioId)) + '</td><td>' + esc(usuario ? PEP.regras.nomePerfil(usuario.perfil) : '—') +
-          '</td><td>' + esc(a.acao) + '</td><td>' + esc(a.alvo) + '</td><td class="codigo pequeno">' + esc(String(a.hash || '').slice(0, 10)) + '</td></tr>';
+        return '<tr><td>' + data(a.em) + '</td><td>' + esc(PEP.ui.nomeUsuario(a.usuarioId)) + '</td><td>' + esc(usuario ? PEP.regras.nomePerfil(usuario.perfil) : 'sem conta') +
+          '</td><td>' + esc(a.acao) + '</td><td>' + esc(a.alvo === '—' ? 'geral' : a.alvo) + '</td><td class="codigo pequeno">' + esc(String(a.hash || '').slice(0, 10)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   };
 })();

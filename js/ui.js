@@ -81,7 +81,7 @@ PEP.ui = (function () {
   // Nome do paciente nas telas: no modo discreto (js/privacidade.js), só as iniciais e um código
   function discreto() { return PEP.privacidade && PEP.privacidade.discreto(); }
   function nomePaciente(p, codigo) {
-    if (!p) return '—';
+    if (!p) return 'sem cadastro';
     var n = p.nomeSocial || p.nome;
     return discreto() ? PEP.privacidade.iniciais(n) + (codigo ? ' · ' + codigo : '') : n;
   }
@@ -90,7 +90,7 @@ PEP.ui = (function () {
   function nomeUsuario(id) {
     if (id === 'visitante') return 'Visitante';
     var u = PEP.util.porId(PEP.db.usuarios, id);
-    if (!u) return id || '—';
+    if (!u) return id || 'ninguém';
     if (u.nome) return u.nome;
     var p = PEP.regras.pacienteDoUsuario(u);
     return p ? nomePaciente(p, p.id) : u.login;

@@ -57,7 +57,7 @@ PEP.util = (function () {
 
   // "2026-08-19" -> "19/08/2026"; "2026-08-19T16:10" -> "19/08/2026 16:10"
   function formatarData(texto) {
-    if (!texto) return '—';
+    if (!texto) return 'sem data';
     var partes = String(texto).split('T');
     var d = partes[0].split('-');
     if (d.length !== 3) return esc(texto); // fora do formato: devolve escapado (o resultado vai direto para o HTML)

@@ -48,12 +48,12 @@ PEP.telas = PEP.telas || {};
     var p = PEP.ui.pacienteDoCaso(caso);
     var g = R().grupoDoCaso(caso);
     var sg = R().subgrupoDoCaso(caso);
-    var equipe = R().estagiariosDoCaso(caso).map(PEP.ui.nomeUsuario).join(', ') || '—';
+    var equipe = R().estagiariosDoCaso(caso).map(PEP.ui.nomeUsuario).join(', ') || 'ainda sem dupla';
     var podePdf = u.perfil === 'tecnico' || R().ehSupervisorDoCaso(u, caso);
     return '<header class="cabecalho-caso"><a href="#/casos" class="voltar">‹ Casos</a>' +
       '<h1>' + esc(PEP.ui.nomePacienteDoCaso(caso)) + '</h1>' +
       '<p class="resumo-caso">' + esc(PEP.ui.idade(p)) + ' anos · ' + (g ? esc(g.nome) + (sg ? ', ' + esc(sg.nome) : '') : 'sem grupo') +
-      ' · supervisão: ' + esc(PEP.ui.nomeUsuario(R().supervisorDoCaso(caso)) || '—') + '</p>' +
+      ' · supervisão: ' + (R().supervisorDoCaso(caso) ? esc(PEP.ui.nomeUsuario(R().supervisorDoCaso(caso))) : 'a definir') + '</p>' +
       '<div class="linha">' + PEP.ui.etiquetaCaso(caso) + seloRisco(caso) +
       (podePdf ? '<a class="botao secundario pequeno" href="#/imprimir/' + caso.id + '">Cópia em PDF</a>' : '') + '</div>' +
       '<p class="equipe">Caso ' + esc(caso.id) + ' · início ' + data(caso.inicio) + ' · estagiários: ' + esc(equipe) + '</p></header>';
@@ -102,7 +102,7 @@ PEP.telas = PEP.telas || {};
     var html = '<div class="cartao"><div class="linha entre"><h2>Avaliação de demanda, objetivos e anamnese</h2>' +
       (a.versao ? '<span class="suave pequeno">Versão ' + a.versao + ' · ' + esc(PEP.ui.nomeUsuario(a.autorId)) + ' em ' + data(a.em) + '</span>' : '') + '</div>' +
       '<div class="grade-2">' + CAMPOS_ANAMNESE.map(function (c) {
-        return '<p><strong>' + c[1] + '</strong><br>' + esc(a[c[0]] || '—') + '</p>';
+        return '<p><strong>' + c[1] + '</strong><br>' + esc(a[c[0]] || 'não registrado') + '</p>';
       }).join('') + '</div>' + (a.id ? linhaAssinaturas('anamnese', a.id) : '');
 
     if (a.id && R().podeAssinarAnamnese(u, caso) && !R().assinadoPeloSupervisor('anamnese', a.id)) {
@@ -141,7 +141,7 @@ PEP.telas = PEP.telas || {};
           (c && c.concedido ? 'Registrar revogação' : 'Registrar concessão') + '</button>';
       }
       html += '<tr><td>' + esc(f.nome) + (f.obrigatoria ? ' <span class="suave pequeno">(necessário para atender)</span>' : '') + '</td><td>' + situacao + revogado + '</td>' +
-        '<td class="pequeno">' + (c ? data(c.em) + ' · ' + esc(PEP.ui.nomeUsuario(c.registradoPor)) + ' · termo ' + esc(c.termoVersao) : '—') + '</td><td>' + acao + '</td></tr>';
+        '<td class="pequeno">' + (c ? data(c.em) + ' · ' + esc(PEP.ui.nomeUsuario(c.registradoPor)) + ' · termo ' + esc(c.termoVersao) : 'não registrado') + '</td><td>' + acao + '</td></tr>';
     });
     return html + '</tbody></table></div><p class="suave pequeno">Todo meio de registro ou observação precisa ser informado ao paciente desde o início (Código de Ética, art. 14). ' +
       'Revogar é um direito do paciente (LGPD, art. 8º, § 5º) e vira um novo registro: o histórico não se apaga.</p></div>';
@@ -162,7 +162,7 @@ PEP.telas = PEP.telas || {};
   // ---------- Passagem do caso (transição de semestre) ----------
   function nomeDupla(subId) {
     var s = PEP.util.porId(PEP.db.subgrupos, subId), g = s && PEP.util.porId(PEP.db.grupos, s.grupoId);
-    return s ? (g ? g.nome + ' · ' : '') + s.nome : '—';
+    return s ? (g ? g.nome + ' · ' : '') + s.nome : 'sem dupla';
   }
   function formularioPassagem(u, caso, itens) {
     var destinos = R().duplasDestino(u, caso), resumo = R().resumoValidado(caso);
@@ -220,11 +220,11 @@ PEP.telas = PEP.telas || {};
       '<div class="grade-2"><p><strong>Nome:</strong> ' + (disc ? esc(PEP.ui.nomePaciente(p, caso.id)) : esc(p.nome) + (p.nomeSocial ? '<br><strong>Nome social:</strong> ' + esc(p.nomeSocial) : '')) +
       '<br><strong>Nascimento:</strong> ' + data(p.dataNascimento) + ' (' + esc(PEP.ui.idade(p)) + ' anos)' +
       '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) + '</p>' +
-      '<p><strong>Telefone:</strong> ' + (disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) + '<br><strong>E-mail:</strong> ' + (disc ? oculto : esc(p.email || '—')) +
+      '<p><strong>Telefone:</strong> ' + (disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) + '<br><strong>E-mail:</strong> ' + (disc ? oculto : esc(p.email || 'não informado')) +
       (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + (disc ? esc(PEP.privacidade.iniciais(p.responsavelNome)) : esc(p.responsavelNome)) : '') +
-      '<br><strong>Contato de emergência:</strong> ' + (!p.emergenciaNome ? '—' : disc ? oculto : esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
+      '<br><strong>Contato de emergência:</strong> ' + (!p.emergenciaNome ? 'não informado' : disc ? oculto : esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
         ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone))) +
-      '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : '—') +
+      '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : 'não escolhido') +
       '<br><strong>Guarda mínima do prontuário até:</strong> ' + data(R().guardaAte(caso)) + '</p></div>' +
       (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') +
       (u.perfil === 'tecnico' ? blocoPortal(p) : '') + '</div>' +

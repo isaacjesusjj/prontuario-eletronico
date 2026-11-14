@@ -113,7 +113,7 @@ PEP.validar = (function () {
   // CPF mascarado para telas que não precisam do número inteiro
   function ocultarCpf(v) {
     var d = soDigitos(v);
-    return d.length === 11 ? '***.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-**' : '—';
+    return d.length === 11 ? '***.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-**' : 'não informado';
   }
 
   document.addEventListener('input', function (ev) {

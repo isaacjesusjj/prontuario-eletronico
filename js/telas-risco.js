@@ -112,7 +112,7 @@ PEP.telas = PEP.telas || {};
   // ---------- Plano de segurança ----------
   function camposDoPlano(p) {
     return '<dl class="plano">' + PEP.lista('camposPlanoSeguranca').map(function (c) {
-      return '<dt>' + esc(c.nome) + '</dt><dd>' + esc((p && p[c.id]) || '—') + '</dd>';
+      return '<dt>' + esc(c.nome) + '</dt><dd>' + esc((p && p[c.id]) || 'não preenchido') + '</dd>';
     }).join('') + '</dl>';
   }
 

@@ -31,7 +31,7 @@ PEP.privacidade = (function () {
   // "Maria da Silva" → "M. S." (sem "da", "de", "do"...; números ficam de fora)
   function iniciais(nome) {
     return String(nome || '').split(/\s+/).filter(function (p) { return /^[A-Za-zÀ-ÿ]/.test(p) && !/^(da|de|do|das|dos|e)$/i.test(p); })
-      .map(function (p) { return p.charAt(0).toUpperCase() + '.'; }).join(' ') || '—';
+      .map(function (p) { return p.charAt(0).toUpperCase() + '.'; }).join(' ') || 'sem nome';
   }
 
   // ---------- Cobrir tela ----------

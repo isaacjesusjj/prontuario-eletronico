@@ -46,7 +46,7 @@ PEP.telas = PEP.telas || {};
     if (contatos.length) {
       html += '<div class="cartao"><h2>Tentativas de contato</h2><div class="tabela-rolagem"><table><thead><tr><th scope="col">Data</th><th scope="col">Canal</th><th scope="col">Resultado</th><th scope="col">Motivo</th><th scope="col">Por</th></tr></thead><tbody>' +
         contatos.map(function (c) {
-          return '<tr><td>' + data(c.em) + '</td><td>' + esc(c.canal) + '</td><td>' + esc(c.resultado) + '</td><td>' + esc(c.motivo || '—') + '</td><td>' + esc(PEP.ui.nomeUsuario(c.registradoPor)) + '</td></tr>';
+          return '<tr><td>' + data(c.em) + '</td><td>' + esc(c.canal) + '</td><td>' + esc(c.resultado) + '</td><td>' + esc(c.motivo || 'não informado') + '</td><td>' + esc(PEP.ui.nomeUsuario(c.registradoPor)) + '</td></tr>';
         }).join('') + '</tbody></table></div></div>';
     }
 
@@ -64,7 +64,7 @@ PEP.telas = PEP.telas || {};
           }
         }
         var enviados = PEP.db.lembretes.filter(function (l) { return l.sessaoId === s.id; }).length;
-        return '<tr><td>' + data(s.data) + '</td><td>' + esc(s.hora) + '</td><td>' + esc(s.sala || '—') + '</td><td><span class="etiqueta ' + CLASSE_PRESENCA[s.presenca] + '">' + nomePresenca(s.presenca) + '</span>' +
+        return '<tr><td>' + data(s.data) + '</td><td>' + esc(s.hora) + '</td><td>' + esc(s.sala || 'sem sala') + '</td><td><span class="etiqueta ' + CLASSE_PRESENCA[s.presenca] + '">' + nomePresenca(s.presenca) + '</span>' +
           (s.presenca === 'agendada' && s.confirmada ? ' <span class="suave pequeno">confirmada pelo paciente</span>' : '') +
           (s.avisoPaciente ? ' <span class="suave pequeno">avisada pelo paciente em ' + data(s.avisadoEm) + ': ' + esc(nomeMotivoFalta(s.motivoFalta)) + '</span>' : '') +
           (s.presenca === 'agendada' && s.data < hoje ? ' <span class="etiqueta alerta">presença pendente</span>' : '') +
@@ -170,7 +170,7 @@ PEP.telas = PEP.telas || {};
     html += '<div class="cartao"><h2>Anexos externos</h2><p class="suave pequeno">Ex.: encaminhamento da UBS, exames trazidos pelo paciente. Testes psicológicos não entram aqui: ficam na área restrita.</p>';
     html += anexos.length ? '<ul class="lista-anexos">' + anexos.map(function (a) {
       var tam = a.tamanho ? ' · ' + (a.tamanho / 1024).toFixed(0) + ' KB' : '';
-      return '<li><strong>' + esc(a.nome) + '</strong>: ' + esc(a.descricao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.enviadoPor)) + ', ' + data(a.em) + tam + ')</span> ' +
+      return '<li><strong>' + esc(a.nome) + '</strong>' + (a.descricao && a.descricao !== '—' ? ': ' + esc(a.descricao) : '') + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.enviadoPor)) + ', ' + data(a.em) + tam + ')</span> ' +
         (a.arquivoId ? '<button class="botao secundario pequeno" data-acao="abrir-anexo" data-id="' + a.id + '">Abrir</button>' : '<span class="suave pequeno">(anexo de demonstração, sem conteúdo)</span>') +
         (a.hash ? '<br><span class="suave pequeno codigo">SHA-256: ' + esc(a.hash.slice(0, 16)) + '…</span>' : '') + '</li>';
     }).join('') + '</ul>' : '<p class="vazio">Nenhum anexo.</p>';
@@ -188,7 +188,7 @@ PEP.telas = PEP.telas || {};
     var html = '<div class="aviso restrito"><strong>Área restrita.</strong> Material de avaliação psicológica fica fora do prontuário e da cópia entregue ao paciente (Res. CFP 05/2025, art. 14). ' +
       'Use só testes com parecer favorável no SATEPSI (Res. CFP 31/2022).</div><div class="cartao"><h2>Instrumentos aplicados</h2>';
     html += lista.length ? '<ul>' + lista.map(function (a) {
-      return '<li><strong>' + esc(a.instrumento) + '</strong>: ' + esc(a.observacao) + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.aplicadoPor)) + ', ' + data(a.em) + ')</span></li>';
+      return '<li><strong>' + esc(a.instrumento) + '</strong>' + (a.observacao && a.observacao !== '—' ? ': ' + esc(a.observacao) : '') + ' <span class="suave pequeno">(' + esc(PEP.ui.nomeUsuario(a.aplicadoPor)) + ', ' + data(a.em) + ')</span></li>';
     }).join('') + '</ul>' : '<p class="vazio">Nenhum instrumento registrado.</p>';
     if ((R().ehEstagiarioDoCaso(u, caso) || R().ehSupervisorDoCaso(u, caso)) && caso.status === 'ativo') {
       html += '<div class="campo"><label for="av-inst">Instrumento</label><input id="av-inst" type="text" maxlength="120"></div>' +
@@ -275,8 +275,8 @@ PEP.telas = PEP.telas || {};
       '<p class="suave pequeno">' + esc(PEP.config().instituicao.nome) + ' · gerada em ' + data(PEP.util.agora()) + ' ' + esc(geradoPara) + ' · documento sigiloso</p>' +
       '<h2>Identificação</h2><p>' + esc(p.nome) + (p.nomeSocial ? ' (' + esc(p.nomeSocial) + ')' : '') + ' · nascimento ' + data(p.dataNascimento) + (p.responsavelNome ? ' · responsável: ' + esc(p.responsavelNome) : '') + '</p>' +
       '<h2>Avaliação de demanda</h2><p>' + esc(a.demanda) + '</p><h2>Objetivos</h2><p>' + esc(a.objetivos) + '</p>' +
-      '<h2>Anamnese</h2><p>Queixa: ' + esc(a.queixa || '—') + '<br>Sintomas: ' + esc(a.sintomas || '—') + '<br>Histórico familiar: ' + esc(a.historicoFamiliar || '—') +
-      '<br>Medicações: ' + esc(a.medicacoes || '—') + '<br>Histórico clínico: ' + esc(a.historicoClinico || '—') + '</p>' +
+      '<h2>Anamnese</h2><p>Queixa: ' + esc(a.queixa || 'não registrada') + '<br>Sintomas: ' + esc(a.sintomas || 'não registrados') + '<br>Histórico familiar: ' + esc(a.historicoFamiliar || 'não registrado') +
+      '<br>Medicações: ' + esc(a.medicacoes || 'não registradas') + '<br>Histórico clínico: ' + esc(a.historicoClinico || 'não registrado') + '</p>' +
       '<h2>Evolução</h2>' + (evols.length ? evols.map(function (e) {
         return '<div style="margin-bottom:.8rem"><strong>' + data(e.data) + (e.tipo === 'transferencia' ? ' · Resumo de transferência' : '') + '</strong><br>' + esc(e.texto) +
           '<div class="assinaturas">Assinado por: ' + assin('evolucao', e.id) + '</div>' +
@@ -295,7 +295,7 @@ PEP.telas = PEP.telas || {};
           return '<li>' + data(x.data) + ' · ' + esc(t ? t.nome : x.tipo) + ' · para ' + esc(x.destinatario) + ' · ' + esc(x.finalidade) + '</li>';
         }).join('') + '</ul>' : '<p class="vazio">Nenhuma.</p>';
       })() +
-      '<h2>Anexos externos</h2>' + (anexos.length ? '<ul>' + anexos.map(function (x) { return '<li>' + esc(x.nome) + ': ' + esc(x.descricao) + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
+      '<h2>Anexos externos</h2>' + (anexos.length ? '<ul>' + anexos.map(function (x) { return '<li>' + esc(x.nome) + (x.descricao && x.descricao !== '—' ? ': ' + esc(x.descricao) : '') + '</li>'; }).join('') + '</ul>' : '<p class="vazio">Nenhum.</p>') +
       (enc ? '<h2>Encerramento</h2><p>' + data(enc.data) + ' · ' + esc(enc.tipo) + ' · ' + esc(enc.registro) + '</p>' : '') +
       '<p class="suave pequeno" style="margin-top:1rem">Não fazem parte desta cópia: rascunhos, registros de supervisão e material de avaliação psicológica (Res. CFP 05/2025, arts. 14 e 17).</p></div>';
   };
@@ -349,7 +349,7 @@ PEP.telas = PEP.telas || {};
     html += '<article class="documento-psicologico" aria-label="' + esc(m.nome) + '">' +
       '<header class="doc-cabecalho">' + PEP.telas.logoFaculdade(38) + '<strong>' + esc(PEP.config().instituicao.nome) + '</strong><br>Serviço-Escola de Psicologia</header>' +
       '<h2 class="doc-titulo">' + esc(m.nome) + '</h2>' +
-      '<dl class="doc-identificacao"><dt>Interessado(a)</dt><dd>' + esc(p.nome) + '</dd><dt>Solicitante</dt><dd>' + esc(d.solicitante || '—') + '</dd>' +
+      '<dl class="doc-identificacao"><dt>Interessado(a)</dt><dd>' + esc(p.nome) + '</dd><dt>Solicitante</dt><dd>' + esc(d.solicitante || 'não informado') + '</dd>' +
       '<dt>Finalidade</dt><dd>' + esc(d.finalidade) + '</dd><dt>Destinatário</dt><dd>' + esc(d.destinatario) + '</dd><dt>Autoria</dt><dd>' + autoria + '</dd></dl>' +
       m.secoes.filter(function (sec) { return d.conteudo && d.conteudo[sec.id]; }).map(function (sec) {
         return (m.secoes.length > 1 ? '<h3 class="doc-secao">' + esc(sec.nome) + '</h3>' : '') + '<p class="doc-texto">' + esc(d.conteudo[sec.id]) + '</p>';

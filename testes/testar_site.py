@@ -159,6 +159,9 @@ def publico(nav, base):
         if s.js("[...document.querySelectorAll('#app *')].some(e => [...e.childNodes].some(n => n.nodeType === 3 && /\\S\\s*—|—\\s*\\S/.test(n.textContent)))"):
             com_travessao.append(rota)
     conferir("Público", "telas públicas sem travessão no meio das frases", not com_travessao, ", ".join(com_travessao))
+    s.ir("#/regras")
+    conferir("Público", "na matriz de regras, a coluna sem teste diz \"Não se aplica\" em vez de \"—\"",
+             s.p.locator('#app td:text-is("—")').count() == 0 and s.p.locator('#app td:text-is("Não se aplica")').count() >= 1)
     # A matriz "Regras e leis" diz onde ver cada regra: o menu citado precisa existir com esse nome
     s.ir("#/regras")
     regras_txt = s.p.locator("#app").inner_text()
@@ -1821,6 +1824,19 @@ BURLA_JS = r"""([nome, dados, campos]) => {
 }"""
 
 
+def valores_vazios(nav, base):
+    # Valor vazio aparece em palavras ("geral", "ainda sem dupla"), não como "—" sozinho
+    s = Sessao(nav, base, "Textos")
+    s.entrar("ana.tecnica")
+    s.ir("#/auditoria")
+    so_travessao = s.p.locator('#app td:text-is("—")').count()
+    s.ir("#/caso/c07")
+    cab = s.p.locator("#app").inner_text()
+    conferir("Textos", "valor vazio vira palavra: auditoria e caso recém-triado sem \"—\" sozinho",
+             so_travessao == 0 and "ainda sem dupla" in cab and "supervisão: a definir" in cab, f"{so_travessao} | " + cab[:300].replace("\n", " "))
+    s.fechar()
+
+
 def regras_nas_acoes(nav, base):
     def burla(s, nome, dados=None, campos=None):
         r = s.js(BURLA_JS, [nome, dados or {}, campos or {}])
@@ -1977,7 +1993,7 @@ def main():
         nav = p.chromium.launch(executable_path=chrome, args=["--no-sandbox"]) if chrome else p.chromium.launch()
         for etapa in (publico, estagiaria, supervisora, tecnica, paciente, direcao, vinculo_encerrado, inatividade, datas_relativas, celular_e_preferencias, navegacao_e_identidade, entrada_libras_e_clareza,
                       risco_e_seguranca, revisor_de_escrita, privacidade_na_tela, faltas_e_urgencia, contas, bloqueio_progressivo, rascunho_automatico,
-                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, regras_nas_acoes, adaptador_supabase, adaptador_supabase_mfa):
+                      verificacao_duas_etapas, transicao_de_semestre, cadastro_busca_e_auditoria, documentos_e_comunicacoes, grafico_e_salas, regras_nas_acoes, valores_vazios, adaptador_supabase, adaptador_supabase_mfa):
             try:
                 etapa(nav, base)
             except Exception as e:  # uma etapa quebrada não esconde as outras
