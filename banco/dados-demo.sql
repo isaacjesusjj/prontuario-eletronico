@@ -1,4 +1,4 @@
--- Gerado por banco/migrar_json.py a partir de dados-iniciais.json (versão 2026-11-09.1)
+-- Gerado por banco/migrar_json.py a partir de dados-iniciais.json (versão 2026-11-14.2)
 -- Dados 100% fictícios. Rodar depois de banco/schema.sql.
 set timezone to 'America/Sao_Paulo';
 set app.migracao = 'on';
