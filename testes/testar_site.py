@@ -151,6 +151,11 @@ def publico(nav, base):
         s.ir(rota)
         s.axe(nome)
     conferir("Público", "link de leitura inexistente mostra 'Link indisponível'", s.h1() == "Link indisponível")
+    # A matriz "Regras e leis" diz onde ver cada regra: o menu citado precisa existir com esse nome
+    s.ir("#/regras")
+    regras_txt = s.p.locator("#app").inner_text()
+    antigos = [t for t in ("Pedidos LGPD", "Técnico →", "Acesso do paciente", "Estudantes e contas", "Grupos de estágio") if t in regras_txt]
+    conferir("Público", "a tela \"Regras e leis\" só cita caminhos de menu que existem", not antigos, ", ".join(antigos))
     conferir("Público", "nenhum recurso de terceiros carregado na abertura", s.js("performance.getEntriesByType('resource').every(r => r.name.startsWith(location.origin))"),
              "fontes servidas pelo próprio site")
 

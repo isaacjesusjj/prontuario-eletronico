@@ -64,11 +64,11 @@ Duração sugerida: 12 minutos de site + o diagnóstico de viabilidade nos slide
 ## 7. Paciente e LGPD — Dilson (1,5 min)
 
 - `paciente01` → **Meus dados (LGPD)**: dados guardados, autorizações (revogar lembretes) e pedido ao encarregado.
-- **Meu prontuário** → **Pedir cópia**. Depois, `ana.tecnica` → **Pedidos** → **Cópia do prontuário** → identidade conferida → **gerar link de leitura** (72 h, pede a data de nascimento).
+- **Prontuário** → **Pedir cópia**. Depois, `ana.tecnica` → **Pedidos** → **Cópia do prontuário** → identidade conferida → **gerar link de leitura** (72 h, pede a data de nascimento).
 
 ## 8. Direção, rodízio e fechamento — Dilson (1 min)
 
-- `marta.direcao` → **Indicadores** (sem nomes) → **Grupos de estágio** → **Encerrar estágio**: o acesso termina na hora.
+- `marta.direcao` → **Indicadores** (sem nomes) → **Grupos** → **Encerrar estágio**: o acesso termina na hora (o aviso diz quantos casos ficam sem dupla, sem nome de paciente).
 - `iara.estagiaria`: entra, mas não vê nenhum caso (vínculo do semestre passado).
 - Botão da conta (no topo, à direita): tamanho do texto, alto contraste e **Libras** (o avatar do VLibras abre e sinaliza; toque num texto, como o título, para ver a tradução). Rodapé: **Regras e leis** (cada regra com a norma) e **Acessibilidade**.
 - Passe para os slides: "Agora, por que isso é viável."
@@ -87,7 +87,7 @@ Escolha dois ou três, conforme o tempo.
 - **Comunicações:** na mesma aba, **Registrar comunicação** (encaminhamento, requisição, quebra de sigilo). `paciente01` → **Meus dados** → "Com quem seus dados foram compartilhados".
 - **Busca e contato de emergência:** item **Buscar** da barra de navegação (procura só nos casos da pessoa). No cadastro, o contato de emergência aparece na aba Risco.
 - **Gráfico e salas:** no painel de `helena.supervisora`, o gráfico de atendimentos por mês: passe o mouse ou use Tab numa coluna; "Ver os números" abre a tabela. Em **Sessões**, agende escolhendo a sala: a sala ocupada é recusada. Em **Agenda**, o filtro **Sala** mostra a ocupação.
-- **Contas:** `marta.direcao` → **Estudantes e contas** → **Gerar senha provisória** (aparece uma vez; no banco fica só o hash).
+- **Contas:** `marta.direcao` → **Estudantes** → **Gerar senha provisória** (aparece uma vez; no banco fica só o hash).
 - **Verificação em duas etapas:** **Minha conta** → **Ativar a verificação em duas etapas** → a chave para o aplicativo autenticador. Se alguém do grupo tiver o app no celular, mostre ao vivo: depois de **Sair**, a senha certa não basta. Ao terminar, use **"Restaurar dados de demonstração"**.
 
 ## Provas ao vivo (F12)
