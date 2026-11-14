@@ -109,8 +109,8 @@ PostgreSQL no Supabase (região São Paulo). Projeção (conta em `banco/projeca
 
 | O quê | Como rodar | Resultado |
 |---|---|---|
-| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 389 de 389 |
-| Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 174 de 174 |
+| Site: regras, validadores, segurança, LGPD, acessibilidade | `python testes/testar_site.py` | [`testes/resultado-testes.md`](testes/resultado-testes.md) — 417 de 417 |
+| Banco: schema, migração, imutabilidade, RLS por perfil, regras contra o uso direto da API, MFA, auditoria | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | [`banco/resultado-teste.md`](banco/resultado-teste.md) — 201 de 201 |
 | JSON antes de migrar | `python ferramentas/validar_json.py` | 0 problemas |
 
 Preparação: `pip install playwright`, `cd testes && npm install` e `cd banco && npm install`. No GitHub, os três testes rodam sozinhos a cada envio (aba **Actions**, arquivo `.github/workflows/testes.yml`).
@@ -184,6 +184,22 @@ Pedido do grupo: visual mais limpo, identidade da Faculdade Santa Casa, foco em 
 O VLibras envia ao serviço do Governo Federal o texto que a pessoa toca para traduzir. O site avisa isso na hora e na declaração de acessibilidade, e recomenda não traduzir texto do prontuário (registrado também em `docs/lgpd.md`).
 
 Os 5 pedidos de confirmação (`window.confirm`) continuam: restaurar dados, falta sem justificativa, encerrar estágio, desativar conta e desligar a verificação em duas etapas. Todos protegem ações difíceis de desfazer.
+
+## Revisão técnica independente (novembro de 2026)
+
+Revisão de todo o projeto, com autonomia para corrigir. Relatório completo, com a tabela de achados, em [`docs/revisao-tecnica.md`](docs/revisao-tecnica.md).
+
+| O que estava | O que ficou | Por quê |
+|---|---|---|
+| Várias ações conferiam só "quem é", não "em que estado está": pelo console dava para encerrar por abandono sem faltas, trocar a dupla sem a passagem, reabrir caso encerrado, triar a mesma inscrição duas vezes | Cada ação repete as condições que a tela usa para mostrar o botão (estado do caso, listas do `_config`, permissão); o banco ganhou os gatilhos equivalentes | Regra que mora só na tela não é regra |
+| A direção lia nomes de pacientes ao encerrar um estágio | O aviso diz só quantos casos ficam sem dupla | A direção vê só números, nunca prontuário |
+| O paciente "avisava" falta depois do horário da sessão | Aviso só antes da data **e** da hora | A falta virava justificada e saía do fluxo de abandono |
+| O termo buscado ficava para a próxima pessoa na mesma aba | Memória das telas zerada na troca de usuário | Computador compartilhado na clínica |
+| Ações funcionavam antes de aceitar o termo de sigilo | Antes do termo (e da troca da senha provisória), só as ações do primeiro acesso | Res. CFP 05/2025, art. 10, III |
+| Qualquer um gravava "Gerou cópia" na auditoria de caso alheio, e o paciente via em "Quem acessou" | Evento só sobre caso que a pessoa vê (site e banco) | A trilha é prova; evento falso a polui |
+| "Pular para o conteúdo" levava a "Página não encontrada" | Leva o foco ao conteúdo sem mudar o endereço | Quem usa teclado perdia a tela |
+| Texto em 150% no celular empurrava a tela para o lado | Sem rolagem lateral em nenhuma tela (320 e 390 px) | WCAG 1.4.4 e 1.4.10 |
+| Três regras centrais sem teste que as protegesse (achado por teste de mutação) | Testes novos; site 389 → 417, banco 174 → 201 | Teste que não falha quando a regra quebra não prova nada |
 
 ## Registro de decisões
 

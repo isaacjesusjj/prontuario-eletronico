@@ -17,8 +17,8 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Preparar os testes (uma vez): `pip install playwright && python -m playwright install chromium`, `cd testes && npm install` e `cd banco && npm install`.
 - Antes de todo commit, rode os três e só siga com tudo verde:
   - `python ferramentas/validar_json.py` → 0 problemas. O aviso da sessão do caso c03 sem evolução é um cenário de propósito (mostra o alerta de 48 h).
-  - `python testes/testar_site.py` → hoje 389 de 389 (73 telas no axe-core).
-  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 174 de 174.
+  - `python testes/testar_site.py` → hoje 417 de 417 (73 telas no axe-core).
+  - `cd banco && python3 migrar_json.py && node testar_banco.mjs` → hoje 201 de 201.
   - No GitHub, os três rodam sozinhos a cada envio (`.github/workflows/testes.yml`, aba Actions).
 - Os testes reescrevem `testes/resultado-testes.md` e `banco/resultado-teste.md` mesmo quando só a data muda. Commite esses arquivos apenas quando o resultado mudar de verdade.
 
@@ -29,6 +29,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 - Cada tela (`js/telas-*.js`) é uma função que devolve o HTML montado a partir dos dados. Risco e segurança ficam em `js/telas-risco.js`; o revisor de escrita em `js/revisor.js` (regras em `_config.revisorEscrita`); o modo discreto em `js/privacidade.js`. Botões têm `data-acao` e formulários têm `data-form`. O `js/acoes.js` trata todos por delegação: confere a permissão, grava pelo repositório, registra a auditoria e redesenha.
 - Toda gravação passa por `js/repositorio.js`. O adaptador é escolhido em `js/config-banco.js`: `'local'` hoje (JSON + cópia no navegador) e `'supabase'` quando o banco for ligado.
 - `js/permissoes.js` espelha as políticas RLS de `banco/schema.sql`. Mudou um, mude o outro e rode os dois testes.
+- Toda ação repete as condições que a tela usa para mostrar o botão (estado do caso, listas do `_config`, permissão): pelo console, qualquer ação pode ser chamada direto. As funções `pode...`/`eh...` respondem `false` para registro que não existe, e a guarda `comGuarda` (fim do `js/acoes.js`) nega tudo a visitante e, com termo ou senha provisória pendente, o que não for do primeiro acesso. A etapa `regras_nas_acoes` do teste do site confere isso.
 - Texto digitado por usuário sempre passa por `PEP.util.esc()` antes de entrar no HTML.
 - A CSP do `index.html` não permite scripts, fontes ou chamadas a servidores de terceiros. As fontes ficam em `fontes/`. Única exceção: o VLibras (Libras), carregado só quando a pessoa pede (`js/acessibilidade.js`): a CSP libera `https://vlibras.gov.br`, as APIs `*.vlibras.gov.br` e só o caminho `https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/` (para onde o gov.br redireciona). O estatístico de uso do VLibras (PostHog) fica bloqueado de propósito.
 
@@ -75,7 +76,7 @@ Contexto para o Claude Code trabalhar neste repositório. A visão geral do prod
 
 ## Pendências
 
-- O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. Revisão técnica independente em andamento no branch `revisao-tecnica`, pausada na fase 1 de 5: para continuar, leia `docs/revisao/CONTINUAR.md` (prompts em `docs/prompts/`; o relatório final será `docs/revisao-tecnica.md`). Não publicar antes de terminar. As melhorias de novembro (branch `andamento-06-11`) foram publicadas na `main` em 08/11/2026.
+- O andamento detalhado (o que foi feito, o que falta e o próximo passo) está em `docs/progresso.md`. Revisão técnica independente concluída no branch `revisao-tecnica` (relatório em `docs/revisao-tecnica.md`, com as decisões pendentes D-01 a D-07); publicar na `main` só quando o Isaac disser "pode publicar". As melhorias de novembro (branch `andamento-06-11`) foram publicadas na `main` em 08/11/2026.
 - Validar com o cliente: perda de vaga também com 3 faltas intercaladas (`regras.faltasIntercaladasSugestao`), as mudanças nos requisitos da Etapa 1 (tabela no README) e "800 usuários simultâneos" × "800 estudantes".
 - Ligar o banco: seguir `banco/README.md` e trocar o adaptador em `js/config-banco.js`. A explicação do banco e das projeções de uso (para o professor) está em `docs/banco-de-dados.md`; os números saem de `python banco/projecao.py`. Mudou o schema ou as premissas: atualize o documento junto.
 - O grupo decidiu deixar as escalas PHQ-9 e GAD-7 para depois (se entrarem, só com as pontuações). O Figma (Etapa 3) ainda não tem as telas novas.

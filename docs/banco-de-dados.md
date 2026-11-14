@@ -7,7 +7,7 @@ Tudo sobre os dados do Vinculum num lugar só: como estão organizados hoje (JSO
 > - O banco escolhido é o **PostgreSQL no Supabase**, na região de São Paulo. As regras de acesso ficam dentro do próprio banco.
 > - No cenário atual (800 estudantes, 400 pacientes por semestre), o banco cresce cerca de **109 MB por ano**. Em 20 anos de guarda são cerca de **2,1 GB**, mais **2,9 GB** de anexos.
 > - Isso cabe com folga no plano **Pro** (US$ 25/mês), que inclui 8 GB de banco e 100 GB de arquivos. O plano gratuito serve só para o protótipo.
-> - A evidência é o banco testado num PostgreSQL de verdade, com **174 verificações**. Quase metade delas confere que o banco **recusa** o que é proibido.
+> - A evidência é o banco testado num PostgreSQL de verdade, com **201 verificações**. Quase metade delas confere que o banco **recusa** o que é proibido.
 
 ---
 
@@ -92,7 +92,7 @@ Nos dados de demonstração há 268 registros em 26 tabelas. As outras 6 começa
 
 ## 5. O que o banco garante (evidência)
 
-O banco foi testado num PostgreSQL 18 de verdade (PGlite), com `banco/testar_banco.mjs`: **174 verificações**. Quase metade é negativa: confere que o banco **recusa**. A lista completa está em [`banco/README.md`](../banco/README.md). Os pontos principais:
+O banco foi testado num PostgreSQL 18 de verdade (PGlite), com `banco/testar_banco.mjs`: **201 verificações**. Quase metade é negativa: confere que o banco **recusa**. A lista completa está em [`banco/README.md`](../banco/README.md). Os pontos principais:
 
 - **Nada é apagado nem retroagido:**
   - evolução validada não muda; correção só por adendo;

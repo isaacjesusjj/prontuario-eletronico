@@ -7,7 +7,7 @@ O site já está pronto para trocar o JSON pelo banco. Esta pasta tem tudo o que
 | `schema.sql` | Cria as 32 tabelas (mais as partições da auditoria), validações, regras de transição, imutabilidade, auditoria encadeada, verificação em duas etapas e as políticas de acesso (RLS). |
 | `migrar_json.py` | Lê `dados/dados-iniciais.json` e gera `dados-demo.sql`: cada coleção vira uma tabela, cada campo vira uma coluna. |
 | `dados-demo.sql` | Os dados fictícios prontos para inserir (gerado pelo script acima). |
-| `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 174 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
+| `testar_banco.mjs` | Roda schema + migração num PostgreSQL 18 (PGlite) e faz 201 verificações, quase metade negativas (o banco tem de recusar). Resultado em `resultado-teste.md`. |
 | `teste_stub_supabase.sql` | Simula o que o Supabase já traz (login, papéis, segundo fator e Storage), só para o teste. **Não rodar no Supabase.** |
 | `projecao.py` | Projeção de volume por ano e em 20 anos, em três cenários, contando as 32 tabelas (tamanho de linha medido no banco de teste). Resultado explicado em `docs/banco-de-dados.md`. |
 
@@ -63,7 +63,7 @@ Para os indicadores da direção e a verificação da auditoria pelo banco, expo
 cd banco
 npm install            # baixa o PGlite (PostgreSQL que roda no Node)
 python3 migrar_json.py
-node testar_banco.mjs  # 174 verificações; resultado em resultado-teste.md
+node testar_banco.mjs  # 201 verificações; resultado em resultado-teste.md
 ```
 
 ## Limites conhecidos (próximos passos)

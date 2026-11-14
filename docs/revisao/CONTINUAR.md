@@ -1,5 +1,7 @@
 # Revisão técnica do Vinculum — como continuar
 
+> **Revisão concluída em 14/11/2026.** O relatório é [`docs/revisao-tecnica.md`](../revisao-tecnica.md). Este arquivo fica como histórico do caminho.
+>
 > **Para quem assume (outra sessão ou outro modelo):** leia este arquivo inteiro, depois o `CLAUDE.md` e os dois prompts em `docs/prompts/`. Ele diz o que foi pedido, onde o trabalho parou e o próximo passo. Atualizado em 14/11/2026.
 
 ## O pedido do Isaac
@@ -22,7 +24,8 @@ Atualizado em 14/11/2026. **Revisão feita em sequência, na própria sessão** 
 | `regras-site` | revisada: 36 achados em [`achados/regras-site.md`](achados/regras-site.md); RS-01 a RS-19 e a maior parte dos baixos corrigidos (commit `d31dd54`), com a etapa de teste `regras_nas_acoes` |
 | `banco` (regras de estado) | gatilhos novos e seção 6k do teste (commit `3072579`) |
 | ORQ-01, ORQ-02, ORQ-03 | corrigidos (commit `d31dd54`) |
-| `seguranca`, `paridade`, `exploratorio`, `acessibilidade`, `testes`, `codigo`, `documentacao`, `normas` | a fazer, uma por vez |
+| `seguranca`, `paridade`, `acessibilidade`, `testes`, `codigo`, `documentacao`, `normas` | feitas em sequência; resultados no relatório final |
+| `exploratorio` | coberto pelas burlas, pela varredura de telas e pelos testes de ponta a ponta |
 
 Testes no commit `d31dd54`: validador sem problemas · site 404 de 404 · banco 197 de 197.
 

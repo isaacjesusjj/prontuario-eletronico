@@ -1,6 +1,6 @@
 # Progresso do trabalho
 
-Última atualização: 09/11/2026 (etapas A, B, D e os blocos 1 a 4 da etapa E concluídos e publicados). Pausa anterior: 06/11/2026, 22h30.
+Última atualização: 14/11/2026 (revisão técnica concluída no branch `revisao-tecnica`, esperando o "pode publicar"). Antes: 09/11/2026 (etapas A, B, D e os blocos 1 a 4 da etapa E concluídos e publicados). Pausa anterior: 06/11/2026, 22h30.
 
 **Publicado em 08/11/2026:** o branch `andamento-06-11` foi juntado à `main`, e o site no ar tem todas as melhorias.
 
@@ -27,8 +27,8 @@ Depois, rode os três testes (comandos no `CLAUDE.md`) antes de mexer em qualque
 | Teste | Comando | Resultado |
 |---|---|---|
 | Validador do JSON | `python ferramentas/validar_json.py` | **0 problemas**. 1 aviso de propósito: a sessão s40 do caso c03 está sem evolução, para mostrar o alerta de 48 h |
-| Site | `python testes/testar_site.py` | **389 de 389** (73 telas conferidas com axe-core, WCAG 2.2 AA) |
-| Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **174 de 174** |
+| Site | `python testes/testar_site.py` | **417 de 417** (73 telas conferidas com axe-core, WCAG 2.2 AA) |
+| Banco | `cd banco && python3 migrar_json.py && node testar_banco.mjs` | **201 de 201** |
 
 Antes deste trabalho eram 154 verificações no site e 56 no banco.
 
@@ -74,7 +74,7 @@ Nada ficou pela metade no código: a pausa foi feita logo depois de um commit co
 - Bloco 1: contato de emergência; "Inserir modelo" na evolução; busca de paciente; último acesso depois do login; auditoria com filtros e planilha; guarda de menor a partir dos 18 anos; contrato com a Res. CFP 13/2022; testes no GitHub Actions.
 - Bloco 2: documentos psicológicos da Res. CFP 06/2019 (cinco modalidades, impressão e protocolo) e comunicações e compartilhamentos.
 - Bloco 3 (feito no branch `melhorias-bloco-3` e publicado na `main` no mesmo dia): sala na agenda, com recusa de sala ocupada (site e banco) e filtro por sala; gráfico de atendimentos por mês no painel e nos indicadores (sem biblioteca de terceiros, cores validadas para daltonismo); e a correção do aviso flutuante invisível no alto contraste.
-- **Revisão técnica independente (13/11, em andamento, pausada na fase 1 de 5):** começou no branch `revisao-tecnica`, com dez revisores em paralelo, e parou pelo limite de uso da conta. Tudo o que é preciso para continuar está em [`revisao/CONTINUAR.md`](revisao/CONTINUAR.md): o estado, o que já foi conferido, as instruções e as missões dos revisores. Nada vai para a `main` antes de o Isaac dizer "pode publicar".
+- **Revisão técnica independente (13 e 14/11, branch `revisao-tecnica`, concluída, ainda não publicada):** 54 achados (6 altos, 19 médios, 22 baixos e 7 para decisão), todos os defeitos corrigidos com teste. Principal: as ações do site passaram a repetir as condições da tela (estado do caso, listas, permissão), e o banco ganhou os gatilhos que faltavam. Testes: site 389 → 417, banco 174 → 201. Relatório completo em [`revisao-tecnica.md`](revisao-tecnica.md); as decisões pendentes (D-01 a D-07) estão lá. Nada vai para a `main` antes de o Isaac dizer "pode publicar".
 - Opções gratuitas (09/11, publicado na `main` em 13/11): [`opcoes-gratuitas.md`](opcoes-gratuitas.md) compara o próprio JSON (aguenta a demonstração, não o uso real), o JSON guardado em serviços como GitHub e JSONBin, oito bancos com plano gratuito, programas de código aberto instalados e créditos de estudante. Recomendação: JSON na apresentação, Supabase Free para mostrar o banco e servidor da Faculdade para um piloto real sem custo.
 - Banco de dados e projeções (09/11, branch `banco-e-projecoes`, publicado na `main` em 13/11): documento novo [`banco-de-dados.md`](banco-de-dados.md), que organiza num lugar só o JSON → banco, as 32 tabelas por assunto, o que o banco garante, quem vê o quê, as projeções por cenário, planos, custos e guarda. A projeção (`banco/projecao.py`) passou a contar as 32 tabelas, com o tamanho das linhas medido no banco de teste: cenário atual ~109 MB/ano (antes 84) e ~2,1 GB em 20 anos (antes 1,6).
 - Bloco 4, segunda rodada (09/11, branch `ajustes-vinculum-2`, publicado na `main` no mesmo dia): Libras consertado (o VLibras 7 passou a redirecionar para o jsDelivr, que a política de segurança bloqueava; avatar testado de verdade no navegador); menos branco (topo verde, fundo esverdeado, rodapé verde-escuro); Vinculum em destaque na entrada com o logotipo da Faculdade menor embaixo; "Esqueci minha senha" numa tela curta; nomes do grupo na entrada e no rodapé; uma frase explicando cada aba, cada item do "Mais" e as telas principais. Também corrigida a coluna de navegação, que passava por cima do topo no fim das páginas longas.
