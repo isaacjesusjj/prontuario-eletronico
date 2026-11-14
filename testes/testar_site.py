@@ -1327,6 +1327,10 @@ def transicao_de_semestre(nav, base):
     s.ir("#/caso/c03")
     conferir("Transição", "o quadro da passagem mostra o que falta; evolução esperando a validação impede (botão desligado)",
              "esperando a supervisão" in s.p.locator("#passagem .checklist").inner_text() and s.p.locator("#form-passagem button[type=submit]").is_disabled())
+    lista = s.p.locator("#passagem .checklist")
+    conferir("Transição", "a lista de verificação usa ícones desenhados (não ✓ ✗ !, que mudam de aparelho para aparelho) e diz o estado ao leitor de tela",
+             lista.locator(".marca svg").count() == lista.locator("li").count() > 0 and not any(c in lista.inner_text() for c in "✓✗")
+             and "Impede a passagem" in lista.inner_text())
     s.ir("#/caso/c03/evolucoes")
     s.clicar(f'[data-acao="validar-evolucao"][data-id="{resumo.get("id")}"]')
     conferir("Transição", "a supervisora valida o resumo de transferência como valida uma evolução",

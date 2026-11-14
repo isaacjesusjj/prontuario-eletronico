@@ -182,7 +182,7 @@ PEP.telas = PEP.telas || {};
         '<span class="dica" id="pc-justificativa-dica">Ex.: a dupla saiu antes do fim do semestre. Sem dados clínicos.</span></div>') +
       '<label class="check"><input type="checkbox" id="pc-avisado" name="avisado"> <span>O paciente foi avisado da troca de dupla (e do novo horário, se mudar).</span></label>' +
       '<div class="linha" style="margin-top:.6rem"><button class="botao" type="submit"' + (bloqueado ? ' disabled aria-describedby="pc-bloqueio"' : '') + '>Passar o caso</button></div>' +
-      (bloqueado ? '<p class="pequeno" id="pc-bloqueio">Resolva antes o item marcado com ✗.</p>' : '') + '</form></details>';
+      (bloqueado ? '<p class="pequeno" id="pc-bloqueio">Resolva antes o item que impede a passagem.</p>' : '') + '</form></details>';
   }
   function blocoPassagem(u, caso) {
     var passa = R().podePassarCaso(u, caso), daEquipe = R().ehEstagiarioDoCaso(u, caso), historico = R().transferenciasDoCaso(caso);
@@ -197,7 +197,7 @@ PEP.telas = PEP.telas || {};
       html += '<p class="suave pequeno">Antes de o estágio terminar ou de o caso mudar de dupla, confira:</p><ul class="checklist">' + itens.map(function (i) {
         var classe = i.ok ? 'ok' : i.bloqueia ? 'bloqueia' : 'atencao';
         var rotulo = i.ok ? 'Feito' : i.bloqueia ? 'Impede a passagem' : 'Atenção';
-        return '<li class="' + classe + '"><span class="marca" aria-hidden="true">' + (i.ok ? '✓' : i.bloqueia ? '✗' : '!') + '</span><span class="sr-only">' + rotulo + ': </span>' + esc(i.texto) + '</li>';
+        return '<li class="' + classe + '"><span class="marca">' + PEP.ui.icone(i.ok ? 'validar' : i.bloqueia ? 'impede' : 'atencao') + '</span><span class="sr-only">' + rotulo + ': </span>' + esc(i.texto) + '</li>';
       }).join('') + '</ul>';
       if (passa) html += formularioPassagem(u, caso, itens);
     }

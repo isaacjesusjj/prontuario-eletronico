@@ -1,8 +1,8 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 14/11/2026 18:11, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 14/11/2026 20:11, no Chrome (Playwright), com axe-core 4.14.0.
 
-**417 de 417 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**418 de 418 verificações passaram.** Acessibilidade: 73 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
@@ -51,7 +51,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 18:11, no Chrome (Playwright), 
 | Prazo | 1 | 0 |
 | Contas | 7 | 0 |
 | Duas etapas | 20 | 0 |
-| Transição | 15 | 0 |
+| Transição | 16 | 0 |
 | Acesso | 3 | 0 |
 | Busca | 2 | 0 |
 | Documentos | 12 | 0 |
@@ -139,7 +139,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 18:11, no Chrome (Playwright), 
 | ✓ | Anexos | arquivo renomeado para .pdf é recusado (confere o conteúdo, não só a extensão) |  |
 | ✓ | Anexos | arquivo acima de 2 MB é recusado |  |
 | ✓ | Anexos | PDF válido guardado com hash e nome seguro |  |
-| ✓ | Anexos | anexo abre do armazenamento do navegador | blob:http://localhost:33537/e0d9152a-3a67-4efc-94bf-002b2ae8 |
+| ✓ | Anexos | anexo abre do armazenamento do navegador | blob:http://localhost:41301/400e8df3-522b-40ec-967a-42a2cee1 |
 | ✓ | Agenda | visão de semana |  |
 | ✓ | Acessibilidade | Estagiária Bia · Agenda · semana: sem violações WCAG A/AA |  |
 | ✓ | Agenda | visão de mês |  |
@@ -384,6 +384,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 18:11, no Chrome (Playwright), 
 | ✓ | Transição | sem completar as seções, o resumo não é enviado (o campo diz o que falta) |  |
 | ✓ | Transição | completo, o resumo é assinado e enviado à supervisão (sem sessão vinculada) |  |
 | ✓ | Transição | o quadro da passagem mostra o que falta; evolução esperando a validação impede (botão desligado) |  |
+| ✓ | Transição | a lista de verificação usa ícones desenhados (não ✓ ✗ !, que mudam de aparelho para aparelho) e diz o estado ao leitor de tela |  |
 | ✓ | Transição | a supervisora valida o resumo de transferência como valida uma evolução |  |
 | ✓ | Transição | sem resumo validado, a passagem pede justificativa e a confirmação de que o paciente foi avisado |  |
 | ✓ | Transição | com a justificativa, o caso passa para a outra dupla e a passagem fica registrada |  |
@@ -401,7 +402,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 18:11, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 15:10. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 17:11. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -471,10 +472,10 @@ Gerado por `testes/testar_site.py` em 14/11/2026 18:11, no Chrome (Playwright), 
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T18:10:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T20:11:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgq1suienz0 |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgud0xaitom |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |
