@@ -616,6 +616,11 @@ dl.plano dd { margin: .15rem 0 0; white-space: pre-wrap; }
 .doc-cabecalho .logo-inst { height: 38px; margin: 0 auto .4rem; }
 .doc-titulo { text-align: center; letter-spacing: .02em; font-size: 1.15rem; margin: .4rem 0 1rem; }
 .doc-secao { font-size: 1rem; margin: 1rem 0 .3rem; }
+/* Ficha de identificação do caso (aba Resumo): rótulo pequeno em cima, valor embaixo */
+.ficha { display: grid; grid-template-columns: 1fr; gap: .75rem 1.5rem; margin: .4rem 0 .2rem; }
+.ficha dt { font-size: .85rem; color: var(--texto-suave); }
+.ficha dd { margin: 0; overflow-wrap: anywhere; }
+@media (min-width: 600px) { .ficha { grid-template-columns: 1fr 1fr; } }
 .doc-identificacao { display: grid; grid-template-columns: max-content 1fr; gap: .2rem .8rem; font-size: .92rem; margin: 0 0 1rem; }
 .doc-identificacao dt { font-weight: 600; }
 .doc-identificacao dd { margin: 0; overflow-wrap: anywhere; }

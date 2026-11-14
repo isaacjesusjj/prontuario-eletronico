@@ -1,8 +1,8 @@
 # Resultado dos testes do site
 
-Gerado por `testes/testar_site.py` em 14/11/2026 20:35, no Chrome (Playwright), com axe-core 4.14.0.
+Gerado por `testes/testar_site.py` em 14/11/2026 20:38, no Chrome (Playwright), com axe-core 4.14.0.
 
-**427 de 427 verificações passaram.** Acessibilidade: 74 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
+**428 de 428 verificações passaram.** Acessibilidade: 74 telas conferidas (WCAG 2.0/2.1/2.2, níveis A e AA).
 
 | Área | Passaram | Falharam |
 |---|---|---|
@@ -59,6 +59,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:35, no Chrome (Playwright), 
 | Gráfico | 7 | 0 |
 | Regras nas ações | 21 | 0 |
 | Textos | 2 | 0 |
+| Visual | 1 | 0 |
 | Diálogo | 3 | 0 |
 | Banco (simulado) | 13 | 0 |
 | Console | 1 | 0 |
@@ -144,7 +145,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:35, no Chrome (Playwright), 
 | ✓ | Anexos | arquivo renomeado para .pdf é recusado (confere o conteúdo, não só a extensão) |  |
 | ✓ | Anexos | arquivo acima de 2 MB é recusado |  |
 | ✓ | Anexos | PDF válido guardado com hash e nome seguro |  |
-| ✓ | Anexos | anexo abre do armazenamento do navegador | blob:http://localhost:45821/3190eab4-41b0-4614-a364-5b68d950 |
+| ✓ | Anexos | anexo abre do armazenamento do navegador | blob:http://localhost:43249/4ffeba90-afb8-444b-84b3-5ec51dc8 |
 | ✓ | Agenda | visão de semana |  |
 | ✓ | Acessibilidade | Estagiária Bia · Agenda · semana: sem violações WCAG A/AA |  |
 | ✓ | Agenda | visão de mês |  |
@@ -407,7 +408,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:35, no Chrome (Playwright), 
 | ✓ | Busca | a busca acha o paciente da própria dupla (sem acento e sem diferenciar maiúscula) e o nome não vai para o endereço |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Busca de paciente: sem violações WCAG A/AA |  |
 | ✓ | Busca | paciente de outra dupla não aparece na busca |  |
-| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 17:34. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
+| ✓ | Acesso | depois do login aparecem o último acesso e as 2 tentativas sem sucesso desde então | Seu último acesso foi em 14/11/2026 17:38. Desde então, 2 tentativa(s) de entrar com o seu usuário não deram certo. Se n |
 | ✓ | Acesso | o aviso de último acesso fecha |  |
 | ✓ | Acessibilidade | Cadastro, busca e auditoria · Editar cadastro com contato de emergência: sem violações WCAG A/AA |  |
 | ✓ | Cadastro | contato de emergência sem telefone é recusado |  |
@@ -475,6 +476,7 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:35, no Chrome (Playwright), 
 | ✓ | Regras nas ações | paciente01: nenhuma ação estoura erro com id que não existe (RS-31) |  |
 | ✓ | Regras nas ações | autora sem vínculo com o caso não anula o documento (RS-04) | Sem permissão. |
 | ✓ | Textos | o menu da conta mostra o cargo da pessoa ("Estagiária"), não "Estagiário(a)" | Bia Estagiária |
+| ✓ | Visual | ficha de identificação em lista de rótulo e valor, em duas colunas no computador, sem linha em branco no meio | colunas=2 |
 | ✓ | Textos | valor vazio vira palavra: auditoria e caso recém-triado sem "—" sozinho | 0 / ‹ Casos Paciente Exemplo 07  33 anos · sem grupo · supervisão: a definir  Aguardando alocação Cópia em PDF  Caso c07 · início 11/11/2026 · estagiários: aind |
 | ✓ | Acessibilidade | Diálogo · Diálogo de confirmação aberto: sem violações WCAG A/AA |  |
 | ✓ | Diálogo | desativar conta abre o diálogo do Vinculum, com título ligado e foco em "Cancelar" | True nao Desativar a conta de Caio? |
@@ -483,10 +485,10 @@ Gerado por `testes/testar_site.py` em 14/11/2026 20:35, no Chrome (Playwright), 
 | ✓ | Banco (simulado) | login errado: nada é gravado no banco 'em nome de visitante' (fica no registro do Supabase Auth) |  |
 | ✓ | Banco (simulado) | login pelo Supabase Auth e dados carregados da API |  |
 | ✓ | Banco (simulado) | gravação aceita a resposta 201 sem corpo (Prefer: return=minimal) |  |
-| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T20:35:00.000Z |
+| ✓ | Banco (simulado) | data e hora vão com fuso (ISO em UTC), não como hora local solta | 2026-11-14T20:38:00.000Z |
 | ✓ | Banco (simulado) | evento de auditoria vai sem hora e sem hash (quem carimba e encadeia é o banco) |  |
 | ✓ | Banco (simulado) | token de acesso curto é renovado sozinho antes de vencer |  |
-| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgv7832nyv2 |
+| ✓ | Banco (simulado) | anexo vai para o Storage no caminho <caso>/<arquivo> | /storage/v1/object/anexos/c01/arq-mwgvbr80l5mh |
 | ✓ | Banco (simulado) | nenhum erro de JavaScript até aqui (respostas 201 e 204 sem corpo são aceitas) |  |
 | ✓ | Banco (simulado) | erro do servidor não leva para o console o conteúdo da linha recusada | Failed to load resource: the server responded with a status of 400 (Bad Request); Failed to load resource: the server responded with a status of 400 (Bad Reques |
 | ✓ | Banco (simulado) | conta com segundo fator no Supabase: depois da senha, o site pede o código e ainda não entra |  |

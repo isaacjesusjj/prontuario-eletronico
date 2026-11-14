@@ -210,6 +210,9 @@ PEP.telas = PEP.telas || {};
     return html + '</div>';
   }
 
+  // Um par rótulo/valor da ficha (o valor já vem escapado)
+  function item(rotulo, valor) { return '<div><dt>' + rotulo + '</dt><dd>' + valor + '</dd></div>'; }
+
   function abaResumo(u, caso) {
     var p = PEP.ui.pacienteDoCaso(caso);
     var canal = PEP.lista('canaisLembrete').filter(function (c) { return c.valor === p.canalLembrete; })[0];
@@ -217,15 +220,20 @@ PEP.telas = PEP.telas || {};
     var disc = PEP.privacidade.discreto(), oculto = '<span class="suave">oculto no modo discreto</span>';
     return '<div class="cartao"><div class="linha entre"><h2>Identificação</h2>' +
       (R().podeEditarCadastro(u) ? '<a class="botao secundario pequeno" href="#/paciente/' + p.id + '/editar">Editar cadastro</a>' : '') + '</div>' +
-      '<div class="grade-2"><p><strong>Nome:</strong> ' + (disc ? esc(PEP.ui.nomePaciente(p, caso.id)) : esc(p.nome) + (p.nomeSocial ? '<br><strong>Nome social:</strong> ' + esc(p.nomeSocial) : '')) +
-      '<br><strong>Nascimento:</strong> ' + data(p.dataNascimento) + ' (' + esc(PEP.ui.idade(p)) + ' anos)' +
-      '<br><strong>CPF:</strong> ' + esc(PEP.validar.ocultarCpf(p.cpf)) + '</p>' +
-      '<p><strong>Telefone:</strong> ' + (disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) + '<br><strong>E-mail:</strong> ' + (disc ? oculto : esc(p.email || 'não informado')) +
-      (p.responsavelNome ? '<br><strong>Responsável legal:</strong> ' + (disc ? esc(PEP.privacidade.iniciais(p.responsavelNome)) : esc(p.responsavelNome)) : '') +
-      '<br><strong>Contato de emergência:</strong> ' + (!p.emergenciaNome ? 'não informado' : disc ? oculto : esc(p.emergenciaNome) + (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') +
-        ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone))) +
-      '<br><strong>Lembretes:</strong> ' + esc(canal ? canal.nome : 'não escolhido') +
-      '<br><strong>Guarda mínima do prontuário até:</strong> ' + data(R().guardaAte(caso)) + '</p></div>' +
+      // Ficha em lista de definição: rótulo em cima, valor embaixo; 1 coluna no celular, 2 no computador
+      '<dl class="ficha">' +
+      item('Nome', disc ? esc(PEP.ui.nomePaciente(p, caso.id)) : esc(p.nome)) +
+      (!disc && p.nomeSocial ? item('Nome social', esc(p.nomeSocial)) : '') +
+      item('Nascimento', data(p.dataNascimento) + ' (' + esc(PEP.ui.idade(p)) + ' anos)') +
+      item('CPF', esc(PEP.validar.ocultarCpf(p.cpf))) +
+      item('Telefone', disc ? oculto : esc(PEP.validar.formatarTelefone(p.telefone))) +
+      item('E-mail', disc ? oculto : esc(p.email || 'não informado')) +
+      (p.responsavelNome ? item('Responsável legal', disc ? esc(PEP.privacidade.iniciais(p.responsavelNome)) : esc(p.responsavelNome)) : '') +
+      item('Contato de emergência', !p.emergenciaNome ? 'não informado' : disc ? oculto : esc(p.emergenciaNome) +
+        (p.emergenciaVinculo ? ' (' + esc(p.emergenciaVinculo) + ')' : '') + ', ' + esc(PEP.validar.formatarTelefone(p.emergenciaTelefone))) +
+      item('Lembretes', esc(canal ? canal.nome : 'não escolhido')) +
+      item('Guarda mínima do prontuário até', data(R().guardaAte(caso))) +
+      '</dl>' +
       (PEP.ui.idade(p) < 18 ? '<div class="aviso info pequeno">Paciente menor de idade: atendimento autorizado pelo responsável. Ao responsável, comunica-se só o essencial para o cuidado (Código de Ética, arts. 8º e 13).</div>' : '') +
       (u.perfil === 'tecnico' ? blocoPortal(p) : '') + '</div>' +
       blocoAnamnese(u, caso) + blocoConsentimentos(u, caso) + blocoPassagem(u, caso) + blocoEncerramento(u, caso);

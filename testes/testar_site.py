@@ -1846,6 +1846,13 @@ def cargo_no_menu(nav, base):
     s.p.click("#botao-conta")
     quem = s.p.locator(".menu-conta-quem").inner_text()
     conferir("Textos", "o menu da conta mostra o cargo da pessoa (\"Estagiária\"), não \"Estagiário(a)\"", "Estagiária" in quem and "(a)" not in quem, quem.replace("\n", " "))
+    s.p.keyboard.press("Escape")
+    s.ir("#/caso/c01")
+    ficha = s.p.locator("#app .cartao").first
+    colunas = s.js("getComputedStyle(document.querySelector('#app .ficha')).gridTemplateColumns.split(' ').length")
+    conferir("Visual", "ficha de identificação em lista de rótulo e valor, em duas colunas no computador, sem linha em branco no meio",
+             ficha.locator(".ficha dt").count() >= 8 and ficha.locator(".ficha dt").count() == ficha.locator(".ficha dd").count()
+             and colunas == 2 and ficha.locator("p:empty, br + br").count() == 0, f"colunas={colunas}")
     s.fechar()
 
 
