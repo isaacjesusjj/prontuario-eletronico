@@ -1879,6 +1879,9 @@ def regras_nas_acoes(nav, base):
     r = burla(s, "atribuir-caso", {"id": "c01"}, {"cs-c01": "d-a2"})
     conferir("Regras nas ações", "supervisora não troca a dupla de um caso que já tem dupla sem a passagem (RS-02)",
              caso(s, "c01", "subgrupoId") == "d-a1" and conta(s, "transferencias") == tr0, r)
+    r = burla(s, "definir-dupla", {"grupo": "g-a", "id": "u-est1"}, {"dup-u-est1": "d-a2"})
+    conferir("Regras nas ações", "supervisora não troca a dupla de quem já tem uma regravando o vínculo (RS-25)",
+             s.js("PEP.regras.alocacaoDoEstagiario('u-est1').subgrupoId") == "d-a1", r)
     s.sair()
 
     # Técnica: alocação só de caso aguardando; pedidos em ordem; triagem uma vez só

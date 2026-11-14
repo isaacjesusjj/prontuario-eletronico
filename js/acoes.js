@@ -771,6 +771,8 @@ window.PEP = PEP;
       var u = usuario(), g = repo().porId('grupos', b.getAttribute('data-grupo')), id = b.getAttribute('data-id');
       var a = R().alocacaoDoEstagiario(id);
       if (!g || g.supervisorId !== u.id || !a || a.grupoId !== g.id) return negar();
+      // Só para quem está sem dupla (como na tela): trocar de dupla regravaria o vínculo e apagaria o histórico
+      if (a.subgrupoId) return PEP.ui.toast('Este estagiário já está numa dupla ou trio.');
       var sub = repo().porId('subgrupos', val('dup-' + id));
       if (!sub || sub.grupoId !== g.id) return PEP.ui.toast('Crie uma dupla ou trio primeiro.');
       repo().atualizar('alocacoes', a.id, { subgrupoId: sub.id });

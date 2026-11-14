@@ -505,6 +505,10 @@ await como('u-tec', async () => {
 });
 // desfaz (como administrador, no modo de migração) para não mudar a fila que os indicadores conferem adiante
 await db.exec("set app.migracao = 'on'; update inscricoes set status = 'aguardando' where id = 'i05'; reset app.migracao;");
+// Dupla: definida só para quem está sem dupla (u-est1 está na d-a1)
+await como('u-sup1', async () => {
+  await recusaCom('supervisora não troca a dupla de quem já tem uma (o histórico ficaria regravado)', "update alocacoes set subgrupo_id = 'd-a2' where estagiario_id = 'u-est1' and fim is null", 'já está numa dupla');
+});
 await como('u-est1', async () => {
   await recusaCom('estagiária não grava evento de auditoria em caso que não vê', "insert into auditoria (usuario_id, acao, alvo) values ('u-est1', 'Gerou cópia do prontuário (PDF)', 'c04')", 'row-level security');
   let erro = '';

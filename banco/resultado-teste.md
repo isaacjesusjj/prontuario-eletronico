@@ -1,13 +1,13 @@
 # Resultado do teste do banco
 
-Gerado por `banco/testar_banco.mjs` em 2026-11-14 17:41 (UTC), num PostgreSQL 18.6 (PGlite).
+Gerado por `banco/testar_banco.mjs` em 2026-11-14 18:08 (UTC), num PostgreSQL 18.6 (PGlite).
 
-**200 de 200 verificações passaram.**
+**201 de 201 verificações passaram.**
 
 | | Verificação | Detalhe |
 |---|---|---|
 | ✓ | schema.sql roda sem erro | 36 tabelas |
-| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1830 ms) |
+| ✓ | migração JSON → banco: mesmas quantidades em todas as tabelas | 268 registros em 26 tabelas (1505 ms) |
 | ✓ | CPF com dígito verificador errado é recusado | recusado: new row for relation "pacientes" violates check constraint "pacientes_cpf_check" |
 | ✓ | CPF repetido é recusado | recusado: duplicate key value violates unique constraint "pacientes_cpf_unico" |
 | ✓ | telefone inválido é recusado | recusado: value for domain app.telefone violates check constraint "telefone_check" |
@@ -195,6 +195,7 @@ Gerado por `banco/testar_banco.mjs` em 2026-11-14 17:41 (UTC), num PostgreSQL 18
 | ✓ | pedido entregue não volta a "identidade conferida" | recusado: O pedido de cópia segue a ordem: recebido, identidade conferida, entregue. |
 | ✓ | paciente não avisa falta de sessão de hoje que já passou do horário | recusado: Paciente só pode confirmar presença ou avisar, antes da sessão, que não vai. |
 | ✓ | inscrição que já saiu da fila não volta para ela nem muda de destino | recusado: Inscrição já triada não muda: quem volta faz uma inscrição nova. |
+| ✓ | supervisora não troca a dupla de quem já tem uma (o histórico ficaria regravado) | recusado: Este estagiário já está numa dupla ou trio. |
 | ✓ | estagiária não grava evento de auditoria em caso que não vê | recusado: new row violates row-level security policy for table "auditoria" |
 | ✓ | estagiária grava evento de auditoria no próprio caso |  |
 | ✓ | visitante se inscreve na fila sem login |  |

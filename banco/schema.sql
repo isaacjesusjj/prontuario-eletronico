@@ -790,6 +790,8 @@ begin
   if new.subgrupo_id is distinct from old.subgrupo_id then
     if perfil = 'direcao' then raise exception 'A dupla ou trio é definida pelo supervisor.'; end if;
     if old.fim is not null and old.fim <= current_date then raise exception 'Vínculo encerrado não muda de dupla.'; end if;
+    -- Quem já tem dupla não troca regravando o vínculo (o histórico de quem atendeu com quem se perderia)
+    if old.subgrupo_id is not null and not app.eh_admin() then raise exception 'Este estagiário já está numa dupla ou trio.'; end if;
     if new.subgrupo_id is not null and not exists (select 1 from subgrupos s where s.id = new.subgrupo_id and s.grupo_id = new.grupo_id) then
       raise exception 'A dupla ou trio precisa ser do mesmo grupo.';
     end if;
