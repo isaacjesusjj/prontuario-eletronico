@@ -1,6 +1,6 @@
 # Revisão técnica independente do Vinculum (novembro de 2026)
 
-Branch `revisao-tecnica`. Pedido: validar e revisar todo o projeto e o site, com autonomia para corrigir (prompts em [`docs/prompts/`](prompts/)). Nada foi publicado na `main`.
+Branch `revisao-tecnica`. Pedido: validar e revisar todo o projeto e o site, com autonomia para corrigir (prompts em [`docs/prompts/`](prompts/)). Publicado na `main` em 14/11/2026, junto com o visual sem "cara de IA" (o estado anterior é o commit `31bd555`).
 
 ## Resumo para o grupo (5 linhas)
 
